@@ -1,0 +1,11 @@
+# Data Analysis for HRMS Dashboard
+pandas
+numpy
+
+# Reporting & Barcode Engine Fixes
+# We use the [bracket] syntax to ensure the graphics extras are installed
+reportlab[renderPM,pycairo]
+rlPyCairo
+
+# Standard Odoo dependencies (if not already handled by the platform)
+Pillow
