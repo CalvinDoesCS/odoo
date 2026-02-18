@@ -45,6 +45,13 @@ class DisasterClassSession(models.Model):
         domain="[('is_instructor', '=', True)]",
         tracking=True,
     )
+    schedule_id = fields.Many2one(
+        comodel_name='disaster.class.schedule',
+        string='From Schedule',
+        ondelete='set null',
+        readonly=True,
+        help='Populated automatically when this session is generated from a recurring schedule.',
+    )
     date_start = fields.Datetime(
         string='Start Time',
         required=True,

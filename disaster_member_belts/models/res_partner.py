@@ -13,9 +13,15 @@ Extends res.partner with:
                       exceeds the threshold defined in disaster.belt.rank.config
   contract_ids      – all membership contracts for this partner
   active_contract_id– the current active/trial contract
+  member_barcode    – barcode / badge ID for kiosk check-in (unique)
+  kiosk_pin         – numeric PIN (4-6 digits) for kiosk check-in
 """
 
+import re
+from random import choice
+from string import digits
 from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 
 BELT_SELECTION = [
@@ -51,6 +57,50 @@ class ResPartner(models.Model):
         default=False,
         tracking=True,
     )
+    instructor_specializations = fields.Char(
+        string='Specializations',
+        help='e.g. Karate, BJJ, Kids Classes',
+    )
+    instructor_bio = fields.Text(
+        string='Instructor Bio',
+    )
+    instructor_belt_rank = fields.Selection(
+        selection=BELT_SELECTION,
+        string="Instructor's Belt Rank",
+    )
+    # Members supervised / assigned to this instructor
+    assigned_member_ids = fields.Many2many(
+        comodel_name='res.partner',
+        relation='disaster_instructor_member_rel',
+        column1='instructor_id',
+        column2='member_id',
+        string='Assigned Students',
+        domain="[('is_member', '=', True)]",
+    )
+    assigned_member_count = fields.Integer(
+        string='Assigned Students',
+        compute='_compute_instructor_stats',
+    )
+    # Courses led by this instructor
+    led_course_ids = fields.One2many(
+        comodel_name='disaster.course',
+        inverse_name='instructor_id',
+        string='Courses Led',
+    )
+    led_course_count = fields.Integer(
+        string='Courses Led',
+        compute='_compute_instructor_stats',
+    )
+    # Sessions taught by this instructor
+    session_instructor_ids = fields.One2many(
+        comodel_name='disaster.class.session',
+        inverse_name='instructor_id',
+        string='Sessions Taught',
+    )
+    sessions_taught_count = fields.Integer(
+        string='Sessions Taught',
+        compute='_compute_instructor_stats',
+    )
     member_stage = fields.Selection(
         selection=[
             ('lead',     'Lead / Prospect'),
@@ -67,6 +117,23 @@ class ResPartner(models.Model):
         string='Join Date',
         tracking=True,
     )
+
+    # ------------------------------------------------------------------
+    # Kiosk identification – barcode / PIN
+    # ------------------------------------------------------------------
+    member_barcode = fields.Char(
+        string='Badge / Barcode ID',
+        copy=False,
+        index=True,
+        help='Scan this barcode on the kiosk to check in. '
+             'Generate one from the Attendance/Point-of-Sale badge view.',
+    )
+    kiosk_pin = fields.Char(
+        string='Kiosk PIN',
+        copy=False,
+        help='4-digit PIN the member uses to check in at the kiosk.',
+    )
+
     emergency_contact = fields.Char(string='Emergency Contact')
     emergency_phone = fields.Char(string='Emergency Phone')
     date_of_birth = fields.Date(string='Date of Birth')
@@ -139,6 +206,12 @@ class ResPartner(models.Model):
     # ------------------------------------------------------------------
     # Computed fields
     # ------------------------------------------------------------------
+    def _compute_instructor_stats(self):
+        for p in self:
+            p.assigned_member_count = len(p.assigned_member_ids)
+            p.led_course_count = len(p.led_course_ids)
+            p.sessions_taught_count = len(p.session_instructor_ids)
+
     @api.depends('belt_rank', 'attendance_count')
     def _compute_ready_for_test(self):
         Config = self.env['disaster.belt.rank.config']
@@ -191,6 +264,54 @@ class ResPartner(models.Model):
             partner.contract_count = len(partner.member_contract_ids)
 
     # ------------------------------------------------------------------
+    # Constraints
+    # ------------------------------------------------------------------
+    @api.constrains('kiosk_pin')
+    def _check_kiosk_pin(self):
+        for partner in self:
+            if partner.kiosk_pin:
+                if not partner.kiosk_pin.isdigit() or len(partner.kiosk_pin) != 4:
+                    raise ValidationError(
+                        'Kiosk PIN must be exactly 4 digits (numbers only).'
+                    )
+
+    @api.constrains('member_barcode')
+    def _check_member_barcode(self):
+        for partner in self:
+            if partner.member_barcode:
+                dup = self.search([
+                    ('member_barcode', '=', partner.member_barcode),
+                    ('id', '!=', partner.id),
+                ], limit=1)
+                if dup:
+                    raise ValidationError(
+                        f'Badge/Barcode "{partner.member_barcode}" is already '
+                        f'assigned to {dup.name}.'
+                    )
+
+    # ------------------------------------------------------------------
+    # Barcode generation & badge printing
+    # ------------------------------------------------------------------
+    def action_generate_member_barcode(self):
+        """Generate a random 12-digit barcode for this member (EAN-13-style prefix 041)."""
+        for partner in self:
+            while True:
+                code = '041' + ''.join(choice(digits) for _ in range(9))
+                if not self.search([('member_barcode', '=', code)], limit=1):
+                    partner.member_barcode = code
+                    break
+
+    def action_print_member_badge(self):
+        """Return the member badge PDF report action for this partner.
+        config=False skips the document-layout configurator that would
+        otherwise intercept the action and show an invoice-style setup page.
+        """
+        self.ensure_one()
+        return self.env.ref(
+            'disaster_member_belts.action_report_member_badge'
+        ).report_action(self, config=False)
+
+    # ------------------------------------------------------------------
     # Actions
     # ------------------------------------------------------------------
     def action_view_attendance(self):
@@ -230,4 +351,49 @@ class ResPartner(models.Model):
                 'default_partner_id': self.id,
                 'default_current_rank': self.belt_rank,
             },
+        }
+
+    def action_view_assigned_students(self):
+        """Instructor: open list of assigned students."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Students – {self.name}',
+            'res_model': 'res.partner',
+            'view_mode': 'list,kanban,form',
+            'domain': [('id', 'in', self.assigned_member_ids.ids)],
+        }
+
+    def action_view_led_courses(self):
+        """Instructor: open list of courses they lead."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Courses – {self.name}',
+            'res_model': 'disaster.course',
+            'view_mode': 'list,form',
+            'domain': [('instructor_id', '=', self.id)],
+            'context': {'default_instructor_id': self.id},
+        }
+
+    def action_view_sessions_taught(self):
+        """Instructor: open list of sessions where they were instructor."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Sessions Taught – {self.name}',
+            'res_model': 'disaster.class.session',
+            'view_mode': 'list,form',
+            'domain': [('instructor_id', '=', self.id)],
+        }
+
+    def action_view_enrolled_courses(self):
+        """Member: open courses they are enrolled in."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Courses – {self.name}',
+            'res_model': 'disaster.course',
+            'view_mode': 'list,form',
+            'domain': [('enrolled_member_ids', 'in', [self.id])],
         }

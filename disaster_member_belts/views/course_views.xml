@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         Course – Kanban
+    ============================================================ -->
+    <record id="view_course_kanban" model="ir.ui.view">
+        <field name="name">disaster.course.kanban</field>
+        <field name="model">disaster.course</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_small_column" default_group_by="instructor_id"
+                    quick_create="false">
+                <field name="name"/>
+                <field name="instructor_id"/>
+                <field name="enrolled_count"/>
+                <field name="schedule_count"/>
+                <field name="color"/>
+                <field name="active"/>
+                <templates>
+                    <t t-name="card">
+                        <div t-attf-class="oe_kanban_color_#{record.color.value}">
+                            <field name="color" widget="kanban_color" class="mt8 float-end"/>
+                            <strong><field name="name"/></strong>
+                            <div class="text-muted small mt4">
+                                <i class="fa fa-user me-1"/>
+                                <t t-if="record.instructor_id.value">
+                                    <field name="instructor_id"/>
+                                </t>
+                                <t t-else="">No instructor</t>
+                            </div>
+                            <div class="mt8 d-flex gap-3">
+                                <span class="badge text-bg-primary">
+                                    <i class="fa fa-users me-1"/>
+                                    <field name="enrolled_count"/> students
+                                </span>
+                                <span class="badge text-bg-secondary">
+                                    <i class="fa fa-calendar me-1"/>
+                                    <field name="schedule_count"/> schedules
+                                </span>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         Course – List
+    ============================================================ -->
+    <record id="view_course_list" model="ir.ui.view">
+        <field name="name">disaster.course.list</field>
+        <field name="model">disaster.course</field>
+        <field name="arch" type="xml">
+            <list string="Courses" decoration-muted="not active">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="instructor_id"/>
+                <field name="min_belt_rank"/>
+                <field name="max_belt_rank"/>
+                <field name="enrolled_count" string="Enrolled"/>
+                <field name="schedule_count" string="Schedules"/>
+                <field name="absent_alert_days" string="Absent Alert (days)"/>
+                <field name="active" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         Course – Form
+    ============================================================ -->
+    <record id="view_course_form" model="ir.ui.view">
+        <field name="name">disaster.course.form</field>
+        <field name="model">disaster.course</field>
+        <field name="arch" type="xml">
+            <form string="Course / Program">
+                <header>
+                    <field name="active" widget="boolean_toggle" string="Active"/>
+                </header>
+                <sheet>
+                    <!-- Smart buttons -->
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_enrolled" type="object"
+                                class="oe_stat_button" icon="fa-users">
+                            <field name="enrolled_count" widget="statinfo" string="Students"/>
+                        </button>
+                        <button name="action_view_schedules" type="object"
+                                class="oe_stat_button" icon="fa-calendar">
+                            <field name="schedule_count" widget="statinfo" string="Schedules"/>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="e.g. Kids Karate – White to Yellow"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Instructors">
+                            <field name="instructor_id"/>
+                            <field name="co_instructor_ids" widget="many2many_tags"/>
+                        </group>
+                        <group string="Belt Eligibility">
+                            <field name="min_belt_rank"/>
+                            <field name="max_belt_rank"/>
+                        </group>
+                    </group>
+
+                    <group string="Automation">
+                        <field name="absent_alert_days"
+                               help="Create a follow-up task for the instructor when a student has not attended for this many days. Set to 0 to disable."/>
+                    </group>
+
+                    <notebook>
+                        <page string="Description">
+                            <field name="description" placeholder="Course overview, goals, curriculum…"/>
+                        </page>
+
+                        <page string="Enrolled Students">
+                            <field name="enrolled_member_ids" widget="many2many_list">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="belt_rank"/>
+                                    <field name="member_stage"/>
+                                    <field name="attendance_count"/>
+                                    <field name="ready_for_test"/>
+                                    <field name="phone"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Schedules">
+                            <field name="schedule_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="day_of_week"/>
+                                    <field name="time_start_display" string="Time"/>
+                                    <field name="instructor_id"/>
+                                    <field name="capacity"/>
+                                    <field name="session_count" string="Sessions"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Co-Instructors">
+                            <field name="co_instructor_ids" widget="many2many_list">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="instructor_specializations"/>
+                                    <field name="instructor_belt_rank"/>
+                                    <field name="phone"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         Course – Search
+    ============================================================ -->
+    <record id="view_course_search" model="ir.ui.view">
+        <field name="name">disaster.course.search</field>
+        <field name="model">disaster.course</field>
+        <field name="arch" type="xml">
+            <search string="Search Courses">
+                <field name="name"/>
+                <field name="instructor_id"/>
+                <filter string="Active" name="active" domain="[('active','=',True)]"/>
+                <filter string="Archived" name="archived" domain="[('active','=',False)]"/>
+                <separator/>
+                <filter string="Instructor" name="grp_instructor" context="{'group_by': 'instructor_id'}"/>
+                <filter string="Min Belt" name="grp_belt" context="{'group_by': 'min_belt_rank'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         Action
+    ============================================================ -->
+    <record id="action_course" model="ir.actions.act_window">
+        <field name="name">Courses</field>
+        <field name="res_model">disaster.course</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="context">{'search_default_active': True}</field>
+    </record>
+
+</odoo>

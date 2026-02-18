@@ -69,6 +69,8 @@
                             <field name="instructor_id"/>
                             <field name="location"/>
                             <field name="capacity"/>
+                            <field name="schedule_id" readonly="1"
+                                   invisible="not schedule_id"/>
                         </group>
                         <group string="Schedule">
                             <field name="date_start"/>

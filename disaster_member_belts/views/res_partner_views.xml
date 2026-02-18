@@ -97,6 +97,40 @@
                     </group>
                 </group>
 
+                <group string="Kiosk Check-In" invisible="not is_member" class="o_belt_rank_group">
+                    <group>
+                        <field name="member_barcode"
+                               placeholder="e.g. 0411234567"
+                               help="Scan this barcode at the kiosk to check in."/>
+                        <!-- Generate button – visible only when barcode is empty -->
+                        <button string="Generate Barcode"
+                                type="object"
+                                name="action_generate_member_barcode"
+                                class="btn-secondary"
+                                invisible="member_barcode != False"
+                                title="Auto-generate a unique barcode for this member"/>
+                        <!-- Print Badge button – visible only when barcode exists -->
+                        <button string="🖨 Print Badge"
+                                type="object"
+                                name="action_print_member_badge"
+                                class="btn-primary"
+                                invisible="not member_barcode"
+                                title="Print the member's ID badge with barcode"/>
+                        <!-- Visual barcode render -->
+                        <field name="member_barcode"
+                               widget="barcode"
+                               nolabel="1"
+                               readonly="1"
+                               invisible="not member_barcode"/>
+                    </group>
+                    <group>
+                        <field name="kiosk_pin"
+                               password="True"
+                               placeholder="4–6 digits"
+                               help="Numeric PIN the member can use at the kiosk instead of a barcode."/>
+                    </group>
+                </group>
+
                 <!-- For non-members: simple flag to enrol them -->
                 <group invisible="is_member">
                     <field name="is_member"/>

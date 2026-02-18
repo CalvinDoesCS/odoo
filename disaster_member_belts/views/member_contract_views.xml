@@ -16,6 +16,8 @@
                 <field name="plan_id"/>
                 <field name="billing_cycle"/>
                 <field name="price"/>
+                <field name="assigned_instructor_id" string="Instructor"/>
+                <field name="course_id" string="Course"/>
                 <field name="date_start"/>
                 <field name="date_end"/>
                 <field name="next_billing_date"/>
@@ -70,6 +72,12 @@
                                    invisible="state not in ('trial','active')"/>
                         </group>
                     </group>
+                    <group string="Course &amp; Instructor">
+                        <group>
+                            <field name="course_id"/>
+                            <field name="assigned_instructor_id"/>
+                        </group>
+                    </group>
                     <group string="Financials">
                         <group>
                             <field name="price"/>
@@ -110,6 +118,10 @@
                             context="{'group_by': 'plan_id'}"/>
                     <filter string="Status" name="group_state"
                             context="{'group_by': 'state'}"/>
+                    <filter string="Instructor" name="group_instructor"
+                            context="{'group_by': 'assigned_instructor_id'}"/>
+                    <filter string="Course" name="group_course"
+                            context="{'group_by': 'course_id'}"/>
                 </group>
             </search>
         </field>

@@ -97,6 +97,21 @@ class DisasterMemberContract(models.Model):
         store=True,
     )
 
+    # ---- Instructor & Course assignment --------------------
+    assigned_instructor_id = fields.Many2one(
+        comodel_name='res.partner',
+        string='Assigned Instructor',
+        domain="[('is_instructor', '=', True)]",
+        tracking=True,
+        help='Primary instructor responsible for this member under this contract.',
+    )
+    course_id = fields.Many2one(
+        comodel_name='disaster.course',
+        string='Enrolled Course',
+        tracking=True,
+        ondelete='set null',
+    )
+
     notes = fields.Text(string='Notes')
     cancellation_reason = fields.Text(string='Cancellation Reason')
 
@@ -149,6 +164,24 @@ class DisasterMemberContract(models.Model):
             })
             rec.partner_id.member_stage = 'active'
             rec.partner_id.is_member = True
+
+            # Auto-enroll in course if set
+            if rec.course_id:
+                rec.course_id.enrolled_member_ids = [(4, rec.partner_id.id)]
+
+            # Auto-assign instructor if course has one and none set on contract
+            if rec.course_id and rec.course_id.instructor_id and not rec.assigned_instructor_id:
+                rec.assigned_instructor_id = rec.course_id.instructor_id
+
+            # Welcome chatter message
+            rec.partner_id.message_post(
+                body=f"🎉 Welcome! Contract <b>{rec.display_name}</b> has been activated. "
+                     f"Plan: {rec.plan_id.name}."
+                     + (f" Course: {rec.course_id.name}." if rec.course_id else "")
+                     + (f" Instructor: {rec.assigned_instructor_id.name}." if rec.assigned_instructor_id else ""),
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+            )
 
     def action_cancel(self):
         for rec in self:

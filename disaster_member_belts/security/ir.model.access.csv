@@ -16,3 +16,7 @@ access_disaster_class_attendance_portal,disaster.class.attendance portal,model_d
 access_disaster_member_contract_portal,disaster.member.contract portal,model_disaster_member_contract,base.group_portal,1,0,0,0
 access_disaster_membership_plan_portal,disaster.membership.plan portal,model_disaster_membership_plan,base.group_portal,1,0,0,0
 access_disaster_belt_rank_config_portal,disaster.belt.rank.config portal,model_disaster_belt_rank_config,base.group_portal,1,0,0,0
+access_disaster_class_schedule_user,disaster.class.schedule user,model_disaster_class_schedule,,1,1,1,0
+access_disaster_class_schedule_manager,disaster.class.schedule manager,model_disaster_class_schedule,base.group_system,1,1,1,1
+access_disaster_course_user,disaster.course user,model_disaster_course,,1,1,1,0
+access_disaster_course_manager,disaster.course manager,model_disaster_course,base.group_system,1,1,1,1
