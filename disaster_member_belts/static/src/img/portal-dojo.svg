@@ -1,0 +1,42 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="#FBEAD0"/>
+
+  <!-- Belt left arm -->
+  <rect x="4" y="26" width="22" height="12" rx="3" fill="#212529"/>
+  <!-- Belt right arm -->
+  <rect x="38" y="26" width="22" height="12" rx="3" fill="#212529"/>
+
+  <!-- Gold rank stripe on belt arms -->
+  <rect x="6"  y="30" width="18" height="3" rx="1" fill="#FFC107" opacity="0.85"/>
+  <rect x="40" y="30" width="18" height="3" rx="1" fill="#FFC107" opacity="0.85"/>
+
+  <!-- Knot block (obi knot) -->
+  <rect x="22" y="17" width="20" height="30" rx="3" fill="#343A40"/>
+  <!-- Knot highlight fold crease -->
+  <rect x="24" y="19" width="16" height="26" rx="2" fill="#212529"/>
+  <!-- Knot center line (fold) -->
+  <line x1="32" y1="19" x2="32" y2="45" stroke="#495057" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Knot horizontal crease -->
+  <line x1="25" y1="32" x2="39" y2="32" stroke="#495057" stroke-width="1" stroke-linecap="round"/>
+
+  <!-- Left tail -->
+  <rect x="24" y="45" width="6"  height="15" rx="2" fill="#212529"/>
+  <!-- Right tail -->
+  <rect x="34" y="45" width="6"  height="15" rx="2" fill="#212529"/>
+
+  <!-- Gold stripe on tails -->
+  <rect x="24" y="54" width="6" height="2" rx="1" fill="#FFC107" opacity="0.7"/>
+  <rect x="34" y="54" width="6" height="2" rx="1" fill="#FFC107" opacity="0.7"/>
+
+  <!-- Outline: belt left -->
+  <rect x="4" y="26" width="22" height="12" rx="3" stroke="#374874" stroke-width="1.2"/>
+  <!-- Outline: belt right -->
+  <rect x="38" y="26" width="22" height="12" rx="3" stroke="#374874" stroke-width="1.2"/>
+  <!-- Outline: knot -->
+  <rect x="22" y="17" width="20" height="30" rx="3" stroke="#374874" stroke-width="1.2"/>
+  <!-- Outline: left tail -->
+  <rect x="24" y="45" width="6"  height="15" rx="2" stroke="#374874" stroke-width="1"/>
+  <!-- Outline: right tail -->
+  <rect x="34" y="45" width="6"  height="15" rx="2" stroke="#374874" stroke-width="1"/>
+</svg>

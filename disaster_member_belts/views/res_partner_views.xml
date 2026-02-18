@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========================================================
+         res.partner – Inherit Form View
+    ======================================================== -->
+    <record id="view_partner_belt_rank_form" model="ir.ui.view">
+        <field name="name">res.partner.belt.rank.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Belt statusbar + Promote button (only for members) -->
+            <xpath expr="//sheet" position="before">
+                <header invisible="not is_member">
+                    <field
+                        name="belt_rank"
+                        widget="statusbar"
+                        statusbar_visible="white,yellow,orange,green,blue,purple,brown,red,black"
+                        class="o_belt_rank_statusbar"
+                        options="{'clickable': false}"
+                    />
+                    <button
+                        name="action_open_promote_wizard"
+                        type="object"
+                        string="Promote"
+                        class="btn-primary oe_highlight"
+                        invisible="belt_rank == 'black' or not is_member"
+                        title="Promote this member to the next belt rank"
+                    />
+                </header>
+            </xpath>
+
+            <!-- Smart buttons -->
+            <xpath expr="//div[hasclass('oe_button_box')]" position="inside">
+                <button
+                    class="oe_stat_button"
+                    type="object"
+                    name="action_view_attendance"
+                    icon="fa-calendar-check-o"
+                    invisible="not is_member"
+                >
+                    <field name="attendance_count" widget="statinfo" string="Attendances"/>
+                </button>
+                <button
+                    class="oe_stat_button"
+                    type="object"
+                    name="action_view_contracts"
+                    icon="fa-file-text-o"
+                    invisible="not is_member"
+                >
+                    <field name="contract_count" widget="statinfo" string="Contracts"/>
+                </button>
+            </xpath>
+
+            <!-- "Ready for Test" banner -->
+            <xpath expr="//div[hasclass('mb8')]" position="before">
+                <div
+                    class="alert alert-success o_belt_ready_banner"
+                    invisible="not ready_for_test"
+                    role="alert"
+                >
+                    <strong>🥋 Ready for Test!</strong>
+                    This member has met the attendance requirement and is ready
+                    to be promoted to <field name="next_belt_rank" readonly="1" nolabel="1"/>.
+                </div>
+            </xpath>
+
+            <!-- Member Details + Belt Rank groups before the notebook -->
+            <xpath expr="//notebook" position="before">
+
+                <group string="Member Details" invisible="not is_member" class="o_belt_rank_group">
+                    <group>
+                        <field name="is_member"/>
+                        <field name="is_instructor"/>
+                        <field name="member_stage"/>
+                        <field name="join_date"/>
+                        <field name="date_of_birth"/>
+                        <field name="age" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="plan_id" readonly="1"/>
+                        <field name="active_contract_id" readonly="1"/>
+                        <field name="emergency_contact"/>
+                        <field name="emergency_phone"/>
+                    </group>
+                </group>
+
+                <group string="Belt Rank" invisible="not is_member" class="o_belt_rank_group">
+                    <group>
+                        <field name="belt_rank"/>
+                        <field name="attendance_count"/>
+                    </group>
+                    <group>
+                        <field name="ready_for_test" readonly="1"/>
+                        <field name="next_belt_rank" readonly="1"/>
+                    </group>
+                </group>
+
+                <!-- For non-members: simple flag to enrol them -->
+                <group invisible="is_member">
+                    <field name="is_member"/>
+                    <field name="is_instructor"/>
+                </group>
+
+            </xpath>
+
+        </field>
+    </record>
+
+    <!-- ========================================================
+         res.partner – Inherit Kanban View
+    ======================================================== -->
+    <record id="view_partner_belt_rank_kanban" model="ir.ui.view">
+        <field name="name">res.partner.belt.rank.kanban</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.res_partner_kanban_view"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//kanban" position="inside">
+                <field name="belt_rank"/>
+                <field name="ready_for_test"/>
+                <field name="is_member"/>
+                <field name="member_stage"/>
+            </xpath>
+
+            <xpath expr="//main/div[hasclass('mb-1')]" position="after">
+                <div
+                    t-if="record.is_member.raw_value and record.belt_rank.raw_value"
+                    t-attf-class="o_belt_badge o_belt_#{record.belt_rank.raw_value}"
+                    title="Belt Rank"
+                >
+                    <t t-esc="record.belt_rank.value"/>
+                </div>
+                <div
+                    t-if="record.ready_for_test.raw_value"
+                    class="o_belt_ready_badge"
+                    title="Ready for Test"
+                >
+                    ★ Ready
+                </div>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

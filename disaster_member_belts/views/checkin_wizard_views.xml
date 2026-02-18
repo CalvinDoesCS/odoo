@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_checkin_wizard_form" model="ir.ui.view">
+        <field name="name">disaster.checkin.wizard.form</field>
+        <field name="model">disaster.checkin.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Check In Members">
+                <sheet>
+                    <group>
+                        <field name="session_id"/>
+                        <field name="partner_ids" widget="many2many_tags"
+                               placeholder="Select members to check in..."/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_checkin" string="Check In"
+                            type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

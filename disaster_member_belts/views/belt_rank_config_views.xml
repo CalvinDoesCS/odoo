@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========================================================
+         Belt Rank Config – Tree / List view
+    ======================================================== -->
+    <record id="view_disaster_belt_rank_config_tree" model="ir.ui.view">
+        <field name="name">disaster.belt.rank.config.tree</field>
+        <field name="model">disaster.belt.rank.config</field>
+        <field name="arch" type="xml">
+            <list string="Belt Rank Thresholds" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="rank"/>
+                <field name="rank_label" readonly="1"/>
+                <field name="min_attendance"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ========================================================
+         Belt Rank Config – Form view
+    ======================================================== -->
+    <record id="view_disaster_belt_rank_config_form" model="ir.ui.view">
+        <field name="name">disaster.belt.rank.config.form</field>
+        <field name="model">disaster.belt.rank.config</field>
+        <field name="arch" type="xml">
+            <form string="Belt Rank Threshold">
+                <sheet>
+                    <group>
+                        <field name="rank"/>
+                        <field name="min_attendance"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ========================================================
+         Action
+    ======================================================== -->
+    <record id="action_disaster_belt_rank_config" model="ir.actions.act_window">
+        <field name="name">Belt Rank Thresholds</field>
+        <field name="res_model">disaster.belt.rank.config</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No thresholds configured yet.
+            </p>
+            <p>
+                Add one row per belt rank and set the minimum attendance count
+                a member must reach before being flagged as <em>Ready for Test</em>.
+            </p>
+        </field>
+    </record>
+
+
+</odoo>

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         Members — dedicated list action (is_member = True filter)
+    ============================================================ -->
+    <record id="action_member_list" model="ir.actions.act_window">
+        <field name="name">Members</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('is_member', '=', True)]</field>
+        <field name="context">{'default_is_member': True}</field>
+    </record>
+
+    <record id="action_trial_list" model="ir.actions.act_window">
+        <field name="name">Trials</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('member_stage', '=', 'trial')]</field>
+        <field name="context">{'default_is_member': True, 'default_member_stage': 'trial'}</field>
+    </record>
+
+    <record id="action_lead_list" model="ir.actions.act_window">
+        <field name="name">Leads / Prospects</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('member_stage', '=', 'lead')]</field>
+        <field name="context">{'default_member_stage': 'lead'}</field>
+    </record>
+
+    <record id="action_instructor_list" model="ir.actions.act_window">
+        <field name="name">Instructors</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_instructor', '=', True)]</field>
+        <field name="context">{'default_is_instructor': True}</field>
+    </record>
+
+    <!-- ============================================================
+         Main Application Menu
+    ============================================================ -->
+    <menuitem id="menu_disaster_root"
+              name="Dojo Manager"
+              sequence="50"/>
+
+    <!-- Members -->
+    <menuitem id="menu_members"
+              name="Members"
+              parent="menu_disaster_root"
+              sequence="10"/>
+
+    <menuitem id="menu_member_list"
+              name="All Members"
+              parent="menu_members"
+              action="action_member_list"
+              sequence="10"/>
+
+    <menuitem id="menu_trial_list"
+              name="Trials"
+              parent="menu_members"
+              action="action_trial_list"
+              sequence="20"/>
+
+    <menuitem id="menu_lead_list"
+              name="Leads"
+              parent="menu_members"
+              action="action_lead_list"
+              sequence="30"/>
+
+    <menuitem id="menu_instructor_list"
+              name="Instructors"
+              parent="menu_members"
+              action="action_instructor_list"
+              sequence="40"/>
+
+    <!-- Classes -->
+    <menuitem id="menu_classes"
+              name="Classes"
+              parent="menu_disaster_root"
+              sequence="20"/>
+
+    <menuitem id="menu_class_session"
+              name="Sessions"
+              parent="menu_classes"
+              action="action_class_session"
+              sequence="10"/>
+
+    <menuitem id="menu_class_attendance"
+              name="Attendance"
+              parent="menu_classes"
+              action="action_class_attendance"
+              sequence="20"/>
+
+    <!-- Contracts -->
+    <menuitem id="menu_billing"
+              name="Billing"
+              parent="menu_disaster_root"
+              sequence="30"/>
+
+    <menuitem id="menu_member_contract"
+              name="Contracts"
+              parent="menu_billing"
+              action="action_member_contract"
+              sequence="10"/>
+
+    <menuitem id="menu_membership_plan"
+              name="Membership Plans"
+              parent="menu_billing"
+              action="action_membership_plan"
+              sequence="20"/>
+
+    <!-- Configuration -->
+    <menuitem id="menu_config"
+              name="Configuration"
+              parent="menu_disaster_root"
+              sequence="100"/>
+
+    <menuitem id="menu_belt_config"
+              name="Belt Rank Thresholds"
+              parent="menu_config"
+              action="action_disaster_belt_rank_config"
+              sequence="10"/>
+
+</odoo>

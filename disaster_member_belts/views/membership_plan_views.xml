@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         Membership Plan — List
+    ============================================================ -->
+    <record id="view_membership_plan_list" model="ir.ui.view">
+        <field name="name">disaster.membership.plan.list</field>
+        <field name="model">disaster.membership.plan</field>
+        <field name="arch" type="xml">
+            <list string="Membership Plans">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="billing_cycle"/>
+                <field name="price"/>
+                <field name="contract_duration_months"/>
+                <field name="classes_per_week"/>
+                <field name="belt_program" widget="boolean_toggle"/>
+                <field name="contract_count" string="Active Members"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         Membership Plan — Form
+    ============================================================ -->
+    <record id="view_membership_plan_form" model="ir.ui.view">
+        <field name="name">disaster.membership.plan.form</field>
+        <field name="model">disaster.membership.plan</field>
+        <field name="arch" type="xml">
+            <form string="Membership Plan">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_contracts" type="object"
+                                class="oe_stat_button" icon="fa-users">
+                            <field name="contract_count" widget="statinfo"
+                                   string="Active Members"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Adult Monthly Unlimited"/></h1>
+                    </div>
+                    <group>
+                        <group string="Pricing">
+                            <field name="billing_cycle"/>
+                            <field name="price"/>
+                            <field name="setup_fee"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group string="Terms">
+                            <field name="contract_duration_months"/>
+                            <field name="classes_per_week"
+                                   help="0 = unlimited"/>
+                            <field name="belt_program"/>
+                        </group>
+                    </group>
+                    <field name="description" placeholder="Plan description visible to members..."/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         Membership Plan — Action
+    ============================================================ -->
+    <record id="action_membership_plan" model="ir.actions.act_window">
+        <field name="name">Membership Plans</field>
+        <field name="res_model">disaster.membership.plan</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

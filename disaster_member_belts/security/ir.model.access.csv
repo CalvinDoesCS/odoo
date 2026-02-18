@@ -1,0 +1,18 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_disaster_belt_rank_config_user,disaster.belt.rank.config user,model_disaster_belt_rank_config,,1,0,0,0
+access_disaster_belt_rank_config_manager,disaster.belt.rank.config manager,model_disaster_belt_rank_config,base.group_system,1,1,1,1
+access_disaster_promote_wizard_user,disaster.promote.wizard user,model_disaster_promote_wizard,,1,1,1,1
+access_disaster_class_session_user,disaster.class.session user,model_disaster_class_session,,1,1,1,0
+access_disaster_class_session_manager,disaster.class.session manager,model_disaster_class_session,base.group_system,1,1,1,1
+access_disaster_class_attendance_user,disaster.class.attendance user,model_disaster_class_attendance,,1,1,1,0
+access_disaster_class_attendance_manager,disaster.class.attendance manager,model_disaster_class_attendance,base.group_system,1,1,1,1
+access_disaster_membership_plan_user,disaster.membership.plan user,model_disaster_membership_plan,,1,0,0,0
+access_disaster_membership_plan_manager,disaster.membership.plan manager,model_disaster_membership_plan,base.group_system,1,1,1,1
+access_disaster_member_contract_user,disaster.member.contract user,model_disaster_member_contract,,1,1,1,0
+access_disaster_member_contract_manager,disaster.member.contract manager,model_disaster_member_contract,base.group_system,1,1,1,1
+access_disaster_checkin_wizard_user,disaster.checkin.wizard user,model_disaster_checkin_wizard,,1,1,1,1
+access_disaster_class_session_portal,disaster.class.session portal,model_disaster_class_session,base.group_portal,1,0,0,0
+access_disaster_class_attendance_portal,disaster.class.attendance portal,model_disaster_class_attendance,base.group_portal,1,1,1,0
+access_disaster_member_contract_portal,disaster.member.contract portal,model_disaster_member_contract,base.group_portal,1,0,0,0
+access_disaster_membership_plan_portal,disaster.membership.plan portal,model_disaster_membership_plan,base.group_portal,1,0,0,0
+access_disaster_belt_rank_config_portal,disaster.belt.rank.config portal,model_disaster_belt_rank_config,base.group_portal,1,0,0,0
