@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ─────────────────────────────────────────────────────────────
+         disaster.broadcast.wizard  –  Bulk SMS / Email Broadcast
+         ───────────────────────────────────────────────────────────── -->
+
+    <record id="view_broadcast_wizard_form" model="ir.ui.view">
+        <field name="name">disaster.broadcast.wizard.form</field>
+        <field name="model">disaster.broadcast.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Send Broadcast Message">
+                <sheet>
+                    <group string="Compose Message">
+                        <field name="subject"/>
+                        <field name="channel" widget="radio"/>
+                        <field name="body" widget="text" placeholder="Type your message here..."/>
+                    </group>
+                    <group string="Recipients">
+                        <field name="recipient_filter" widget="radio"/>
+                        <field name="belt_rank_filter"
+                               invisible="recipient_filter != 'belt_rank'"/>
+                        <field name="specific_partner_ids" widget="many2many_tags"
+                               invisible="recipient_filter != 'specific'"/>
+                        <div class="text-muted mt-2">
+                            <strong>Estimated Recipients:</strong>
+                            <field name="recipient_count" readonly="1"/> contact(s)
+                        </div>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_send"
+                            string="Send Now"
+                            type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action to open the wizard -->
+    <record id="action_broadcast_wizard" model="ir.actions.act_window">
+        <field name="name">Broadcast Message</field>
+        <field name="res_model">disaster.broadcast.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

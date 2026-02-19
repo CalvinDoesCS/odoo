@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ─────────────────────────────────────────────────────────────
+         disaster.billing.invoice  –  Recurring Billing Views
+         ───────────────────────────────────────────────────────────── -->
+
+    <!-- LIST -->
+    <record id="view_billing_invoice_list" model="ir.ui.view">
+        <field name="name">disaster.billing.invoice.list</field>
+        <field name="model">disaster.billing.invoice</field>
+        <field name="arch" type="xml">
+            <list string="Billing Invoices"
+                  decoration-danger="state=='overdue'"
+                  decoration-success="state=='paid'"
+                  decoration-muted="state=='cancelled'">
+                <field name="display_name" string="Reference"/>
+                <field name="partner_id"/>
+                <field name="contract_id"/>
+                <field name="amount"/>
+                <field name="currency_id" optional="hide"/>
+                <field name="date_due"/>
+                <field name="date_paid" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-danger="state=='overdue'"
+                       decoration-success="state=='paid'"
+                       decoration-warning="state=='sent'"
+                       decoration-muted="state=='cancelled'"/>
+                <button name="action_generate_invoice" type="object"
+                        string="Generate Invoice" class="btn-sm btn-secondary"
+                        invisible="state not in ('draft',) or account_move_id != False"/>
+                <button name="action_mark_paid" type="object"
+                        string="Mark Paid" class="btn-sm btn-primary"
+                        invisible="state not in ('sent','overdue')"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM -->
+    <record id="view_billing_invoice_form" model="ir.ui.view">
+        <field name="name">disaster.billing.invoice.form</field>
+        <field name="model">disaster.billing.invoice</field>
+        <field name="arch" type="xml">
+            <form string="Billing Invoice">
+                <header>
+                    <button name="action_generate_invoice"
+                            string="Generate Invoice"
+                            type="object"
+                            class="btn-primary"
+                            invisible="account_move_id != False"/>
+                    <button name="action_mark_paid"
+                            string="Mark as Paid"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state not in ('sent','overdue')"/>
+                    <button name="action_mark_overdue"
+                            string="Mark Overdue"
+                            type="object"
+                            class="btn-warning"
+                            invisible="state not in ('draft','sent')"/>
+                    <button name="action_cancel"
+                            string="Cancel"
+                            type="object"
+                            class="btn-danger"
+                            invisible="state in ('paid','cancelled')"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,sent,paid"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Billing">
+                            <field name="contract_id"/>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="amount"/>
+                            <field name="currency_id"/>
+                        </group>
+                        <group string="Dates">
+                            <field name="date_due"/>
+                            <field name="date_paid" readonly="1"/>
+                            <field name="account_move_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <field name="notes" placeholder="Notes..."/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- SEARCH -->
+    <record id="view_billing_invoice_search" model="ir.ui.view">
+        <field name="name">disaster.billing.invoice.search</field>
+        <field name="model">disaster.billing.invoice</field>
+        <field name="arch" type="xml">
+            <search string="Search Billing">
+                <field name="partner_id"/>
+                <field name="contract_id"/>
+                <filter string="Draft" name="f_draft" domain="[('state','=','draft')]"/>
+                <filter string="Sent" name="f_sent" domain="[('state','=','sent')]"/>
+                <filter string="Overdue" name="f_overdue" domain="[('state','=','overdue')]"/>
+                <filter string="Paid" name="f_paid" domain="[('state','=','paid')]"/>
+                <separator/>
+<filter string="Member" name="gb_partner" context="{'group_by':'partner_id'}"/>
+                    <filter string="Status" name="gb_state" context="{'group_by':'state'}"/>
+                    <filter string="Due Date" name="gb_due" context="{'group_by':'date_due'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ACTION -->
+    <record id="action_billing_invoice" model="ir.actions.act_window">
+        <field name="name">Billing Invoices</field>
+        <field name="res_model">disaster.billing.invoice</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_billing_invoice_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No billing records yet. Run the billing cron or create one manually.
+            </p>
+        </field>
+    </record>
+
+</odoo>

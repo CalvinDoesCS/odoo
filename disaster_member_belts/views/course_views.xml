@@ -101,9 +101,11 @@
                             <field name="instructor_id"/>
                             <field name="co_instructor_ids" widget="many2many_tags"/>
                         </group>
-                        <group string="Belt Eligibility">
+                        <group string="Belt Eligibility &amp; Enrollment">
                             <field name="min_belt_rank"/>
                             <field name="max_belt_rank"/>
+                            <field name="open_enrollment"
+                                   help="Ticked = any member meeting the belt rank requirement can check in.&#10;Unticked = only students listed in Enrolled Students can attend."/>
                         </group>
                     </group>
 

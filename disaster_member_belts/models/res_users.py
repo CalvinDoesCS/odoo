@@ -23,9 +23,8 @@ class ResUsers(models.Model):
     belt_rank = fields.Selection(
         related='partner_id.belt_rank',
         string='Belt Rank',
-        readonly=False,           # allow writing directly on the user too
-        store=True,               # stored so it can be searched/filtered
-        tracking=True,
+        readonly=False,
+        store=True,
     )
 
     attendance_count = fields.Integer(
@@ -33,7 +32,6 @@ class ResUsers(models.Model):
         string='Attendance Count',
         readonly=False,
         store=True,
-        tracking=True,
     )
 
     ready_for_test = fields.Boolean(

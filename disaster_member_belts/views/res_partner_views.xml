@@ -51,6 +51,60 @@
                 >
                     <field name="contract_count" widget="statinfo" string="Contracts"/>
                 </button>
+                <button
+                    class="oe_stat_button"
+                    type="object"
+                    name="action_view_referrals"
+                    icon="fa-users"
+                    invisible="not is_member"
+                >
+                    <field name="referral_count" widget="statinfo" string="Referrals"/>
+                </button>
+                <button
+                    class="oe_stat_button"
+                    type="object"
+                    name="action_view_leads"
+                    icon="fa-bullhorn"
+                    invisible="not is_member"
+                >
+                    <field name="lead_count" widget="statinfo" string="Leads"/>
+                </button>
+                <button
+                    class="oe_stat_button"
+                    type="object"
+                    name="action_view_billing_invoices"
+                    icon="fa-file-text"
+                    invisible="not is_member"
+                >
+                    <field name="billing_invoice_count" widget="statinfo" string="Invoices"/>
+                </button>
+                <button
+                    class="oe_stat_button"
+                    type="object"
+                    name="action_view_dojo_sales"
+                    icon="fa-shopping-cart"
+                    invisible="not is_member"
+                >
+                    <field name="dojo_sale_count" widget="statinfo" string="Sales"/>
+                </button>
+                <button
+                    class="oe_stat_button"
+                    type="object"
+                    name="action_view_belt_tests"
+                    icon="fa-trophy"
+                    invisible="not is_member"
+                >
+                    <field name="belt_test_count" widget="statinfo" string="Belt Tests"/>
+                </button>
+                <button
+                    class="oe_stat_button"
+                    type="object"
+                    name="action_view_enrolled_courses"
+                    icon="fa-graduation-cap"
+                    invisible="not is_member"
+                >
+                    <field name="enrolled_course_count" widget="statinfo" string="Courses"/>
+                </button>
             </xpath>
 
             <!-- "Ready for Test" banner -->
@@ -83,6 +137,8 @@
                         <field name="active_contract_id" readonly="1"/>
                         <field name="emergency_contact"/>
                         <field name="emergency_phone"/>
+                        <field name="referred_by_id"/>
+                        <field name="referral_count" readonly="1"/>
                     </group>
                 </group>
 

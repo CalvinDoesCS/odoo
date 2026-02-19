@@ -37,13 +37,24 @@
                     </t>
                 </div>
                 <!-- Exit button (top-right) -->
-                <a href="/dojo/kiosk/exit" class="kiosk-exit-btn" title="Staff Exit">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                        <polyline points="16 17 21 12 16 7"/>
-                        <line x1="21" y1="12" x2="9" y2="12"/>
-                    </svg>
-                </a>
+                <div class="kiosk-header-actions">
+                    <a href="/dojo/kiosk/instructor" onclick="return kioskOpenInstructor(event)"
+                       class="kiosk-instructor-btn" title="Instructor Mode">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        Staff
+                    </a>
+                    <a href="/dojo/kiosk" class="kiosk-exit-btn" title="Back to Kiosk Home">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                    </a>
+                </div>
             </div>
 
             <!-- Mode tabs -->
@@ -157,12 +168,108 @@
                 </div>
             </div>
 
+            <!-- ============================================================
+                 Class Select overlay (shown after member identified)
+            ============================================================ -->
+            <div id="kiosk-class-select" class="kiosk-overlay" style="display:none">
+                <div class="kiosk-cs-card">
+
+                    <!-- Member identity section -->
+                    <div class="kiosk-cs-member">
+                        <img id="kiosk-cs-avatar" src="" alt="" class="kiosk-cs-avatar"/>
+                        <div class="kiosk-cs-info">
+                            <div id="kiosk-cs-name" class="kiosk-cs-name"></div>
+                            <div id="kiosk-cs-belt" class="kiosk-cs-belt"></div>
+                        </div>
+                        <button class="kiosk-not-me-btn" onclick="kioskNotMe()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="15" y1="9" x2="9" y2="15"/>
+                                <line x1="9" y1="9" x2="15" y2="15"/>
+                            </svg>
+                            This is not me
+                        </button>
+                    </div>
+
+                    <div class="kiosk-cs-body">
+                        <!-- Left: class selection -->
+                        <div class="kiosk-cs-left">
+                            <div class="kiosk-cs-section-title">Choose your class</div>
+                            <div id="kiosk-cs-sessions" class="kiosk-cs-sessions">
+                                <!-- Filled by JS -->
+                            </div>
+                            <div id="kiosk-cs-no-session" class="kiosk-cs-no-session" style="display:none">
+                                No classes scheduled today. Ask your instructor.
+                            </div>
+                        </div>
+
+                        <!-- Right: recent history -->
+                        <div class="kiosk-cs-right">
+                            <div class="kiosk-cs-section-title">Recent Classes</div>
+                            <div id="kiosk-cs-history" class="kiosk-cs-history">
+                                <!-- Filled by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Check-in button -->
+                    <div class="kiosk-cs-footer">
+                        <button id="kiosk-cs-checkin-btn"
+                                class="kiosk-cs-checkin-btn"
+                                onclick="kioskClassCheckin()"
+                                disabled="disabled">
+                            Check In →
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================
+                 Instructor PIN gate overlay (client-side PIN before redirect)
+            ============================================================ -->
+            <div id="kiosk-instructor-gate" class="kiosk-overlay" style="display:none">
+                <div class="kiosk-pin-card kiosk-gate-card">
+                    <div class="kiosk-pin-title">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px;">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                        </svg>
+                        Instructor Access
+                    </div>
+                    <div id="kiosk-gate-error" class="kiosk-pin-error" style="display:none">
+                        Incorrect PIN. Try again.
+                    </div>
+                    <div class="kiosk-pin-dots" id="gate-dots">
+                        <span class="pin-dot" id="gdot-0"/>
+                        <span class="pin-dot" id="gdot-1"/>
+                        <span class="pin-dot" id="gdot-2"/>
+                        <span class="pin-dot" id="gdot-3"/>
+                    </div>
+                    <div class="kiosk-numpad">
+                        <t t-foreach="[1,2,3,4,5,6,7,8,9,'',0,'back']" t-as="key">
+                            <button t-if="key != ''" type="button"
+                                    t-attf-class="kiosk-num-btn #{key == 'back' and 'kiosk-del-btn' or ''}"
+                                    t-att-data-key="key"
+                                    onclick="kioskGatePinKey(this.dataset.key)">
+                                <t t-if="key == 'back'">&#8592;</t>
+                                <t t-else=""><t t-esc="key"/></t>
+                            </button>
+                            <div t-else="" class="kiosk-num-empty"/>
+                        </t>
+                    </div>
+                    <div class="kiosk-pin-actions">
+                        <button type="button" class="kiosk-pin-cancel" onclick="kioskCloseGate()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Confirmation overlay (shown after check-in) -->
-            <div id="kiosk-confirm" class="kiosk-confirm" style="display:none">
+            <div id="kiosk-confirm" class="kiosk-overlay kiosk-confirm" style="display:none">
                 <div class="kiosk-confirm-card">
                     <img id="kiosk-confirm-avatar" src="" alt="" class="kiosk-confirm-avatar"/>
                     <div id="kiosk-confirm-name"  class="kiosk-confirm-name"></div>
                     <div id="kiosk-confirm-belt"  class="kiosk-confirm-belt"></div>
+                    <div id="kiosk-confirm-class" class="kiosk-confirm-class"></div>
                     <div id="kiosk-confirm-msg"   class="kiosk-confirm-msg">✅ Checked In!</div>
                     <div class="kiosk-confirm-timer">
                         <div id="kiosk-timer-bar" class="kiosk-timer-bar"></div>

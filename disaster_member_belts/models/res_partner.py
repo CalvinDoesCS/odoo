@@ -52,6 +52,122 @@ class ResPartner(models.Model):
         tracking=True,
         help='Tick to mark this contact as a dojo member.',
     )
+
+    # ------------------------------------------------------------------
+    # Referral tracking
+    # ------------------------------------------------------------------
+    referred_by_id = fields.Many2one(
+        comodel_name='res.partner',
+        string='Referred By',
+        domain="[('is_member', '=', True)]",
+        ondelete='set null',
+        tracking=True,
+    )
+    referral_ids = fields.One2many(
+        comodel_name='res.partner',
+        inverse_name='referred_by_id',
+        string='Referrals',
+    )
+    referral_count = fields.Integer(
+        string='Referrals Made',
+        compute='_compute_referral_count',
+        store=True,
+    )
+
+    @api.depends('referral_ids')
+    def _compute_referral_count(self):
+        for partner in self:
+            partner.referral_count = len(partner.referral_ids)
+
+    # ------------------------------------------------------------------
+    # Leads (CRM-style prospects converted from this member/contact)
+    # ------------------------------------------------------------------
+    lead_ids = fields.One2many(
+        comodel_name='disaster.lead',
+        inverse_name='partner_id',
+        string='Leads',
+    )
+    lead_count = fields.Integer(
+        string='Leads',
+        compute='_compute_lead_count',
+    )
+
+    @api.depends('lead_ids')
+    def _compute_lead_count(self):
+        for partner in self:
+            partner.lead_count = len(partner.lead_ids)
+
+    # ------------------------------------------------------------------
+    # Billing invoices
+    # ------------------------------------------------------------------
+    billing_invoice_ids = fields.One2many(
+        comodel_name='disaster.billing.invoice',
+        inverse_name='partner_id',
+        string='Billing Invoices',
+    )
+    billing_invoice_count = fields.Integer(
+        string='Invoices',
+        compute='_compute_billing_invoice_count',
+    )
+
+    @api.depends('billing_invoice_ids')
+    def _compute_billing_invoice_count(self):
+        for partner in self:
+            partner.billing_invoice_count = len(partner.billing_invoice_ids)
+
+    # ------------------------------------------------------------------
+    # Dojo / front-desk sales
+    # ------------------------------------------------------------------
+    dojo_sale_ids = fields.One2many(
+        comodel_name='disaster.dojo.sale',
+        inverse_name='partner_id',
+        string='Dojo Sales',
+    )
+    dojo_sale_count = fields.Integer(
+        string='Sales',
+        compute='_compute_dojo_sale_count',
+    )
+
+    @api.depends('dojo_sale_ids')
+    def _compute_dojo_sale_count(self):
+        for partner in self:
+            partner.dojo_sale_count = len(partner.dojo_sale_ids)
+
+    # ------------------------------------------------------------------
+    # Belt tests this member has been invited to
+    # ------------------------------------------------------------------
+    belt_test_ids = fields.Many2many(
+        comodel_name='disaster.belt.test',
+        relation='disaster_belt_test_invited_rel',
+        column1='partner_id',
+        column2='test_id',
+        string='Belt Tests',
+    )
+    belt_test_count = fields.Integer(
+        string='Belt Tests',
+        compute='_compute_belt_test_count',
+    )
+
+    @api.depends('belt_test_ids')
+    def _compute_belt_test_count(self):
+        for partner in self:
+            partner.belt_test_count = len(partner.belt_test_ids)
+
+    # ------------------------------------------------------------------
+    # Enrolled courses counter (courses are queried via domain; no new table)
+    # ------------------------------------------------------------------
+    enrolled_course_count = fields.Integer(
+        string='Courses',
+        compute='_compute_enrolled_course_count',
+    )
+
+    def _compute_enrolled_course_count(self):
+        Course = self.env['disaster.course']
+        for partner in self:
+            partner.enrolled_course_count = Course.search_count(
+                [('enrolled_member_ids', 'in', [partner.id])]
+            )
+
     is_instructor = fields.Boolean(
         string='Is Instructor',
         default=False,
@@ -396,4 +512,63 @@ class ResPartner(models.Model):
             'res_model': 'disaster.course',
             'view_mode': 'list,form',
             'domain': [('enrolled_member_ids', 'in', [self.id])],
+        }
+
+    def action_view_leads(self):
+        """Member: open their CRM leads/prospects."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Leads – {self.name}',
+            'res_model': 'disaster.lead',
+            'view_mode': 'list,form',
+            'domain': [('partner_id', '=', self.id)],
+            'context': {'default_partner_id': self.id},
+        }
+
+    def action_view_billing_invoices(self):
+        """Member: open their billing invoices."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Invoices – {self.name}',
+            'res_model': 'disaster.billing.invoice',
+            'view_mode': 'list,form',
+            'domain': [('partner_id', '=', self.id)],
+            'context': {'default_partner_id': self.id},
+        }
+
+    def action_view_dojo_sales(self):
+        """Member: open their dojo/front-desk sales."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Sales – {self.name}',
+            'res_model': 'disaster.dojo.sale',
+            'view_mode': 'list,form',
+            'domain': [('partner_id', '=', self.id)],
+            'context': {'default_partner_id': self.id},
+        }
+
+    def action_view_belt_tests(self):
+        """Member: open belt tests they were invited to."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Belt Tests – {self.name}',
+            'res_model': 'disaster.belt.test',
+            'view_mode': 'list,form',
+            'domain': [('invited_member_ids', 'in', [self.id])],
+        }
+
+    def action_view_referrals(self):
+        """Member: open list of people they referred."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Referrals by {self.name}',
+            'res_model': 'res.partner',
+            'view_mode': 'list,kanban,form',
+            'domain': [('referred_by_id', '=', self.id)],
+            'context': {'default_referred_by_id': self.id, 'default_is_member': True},
         }

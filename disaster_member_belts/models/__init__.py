@@ -8,3 +8,9 @@ from . import class_session
 from . import class_attendance
 from . import membership_plan
 from . import member_contract
+from . import lead
+from . import billing_invoice
+from . import belt_test
+from . import dojo_sale
+from . import broadcast_wizard
+from . import hr_instructor

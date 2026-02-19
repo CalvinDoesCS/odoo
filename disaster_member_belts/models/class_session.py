@@ -52,6 +52,16 @@ class DisasterClassSession(models.Model):
         readonly=True,
         help='Populated automatically when this session is generated from a recurring schedule.',
     )
+    course_id = fields.Many2one(
+        comodel_name='disaster.course',
+        string='Course',
+        store=True,
+        related='schedule_id.course_id',
+        readonly=False,
+        index=True,
+        help='The course this session belongs to. Auto-set from the schedule; '
+             'can be overridden for ad-hoc sessions.',
+    )
     date_start = fields.Datetime(
         string='Start Time',
         required=True,

@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ─────────────────────────────────────────────────────────────
+         disaster.dojo.sale  –  Front-Desk Sales Views
+         ───────────────────────────────────────────────────────────── -->
+
+    <!-- LIST — sale orders -->
+    <record id="view_dojo_sale_list" model="ir.ui.view">
+        <field name="name">disaster.dojo.sale.list</field>
+        <field name="model">disaster.dojo.sale</field>
+        <field name="arch" type="xml">
+            <list string="Dojo Sales" decoration-success="state=='invoiced'"
+                  decoration-muted="state=='cancelled'">
+                <field name="reference"/>
+                <field name="date"/>
+                <field name="partner_id"/>
+                <field name="cashier_id"/>
+                <field name="total"/>
+                <field name="currency_id" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state=='invoiced'"
+                       decoration-info="state=='confirmed'"
+                       decoration-muted="state=='cancelled'"/>
+                <button name="action_confirm" string="Confirm" type="object"
+                        class="btn-sm btn-primary" invisible="state != 'draft'"/>
+                <button name="action_create_invoice" string="Invoice" type="object"
+                        class="btn-sm btn-secondary" invisible="state != 'confirmed'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM — sale order -->
+    <record id="view_dojo_sale_form" model="ir.ui.view">
+        <field name="name">disaster.dojo.sale.form</field>
+        <field name="model">disaster.dojo.sale</field>
+        <field name="arch" type="xml">
+            <form string="Dojo Sale">
+                <header>
+                    <button name="action_confirm"
+                            string="Confirm"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_create_invoice"
+                            string="Create Invoice"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'confirmed'"/>
+                    <button name="action_cancel"
+                            string="Cancel"
+                            type="object"
+                            class="btn-danger"
+                            invisible="state in ('invoiced','cancelled')"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,confirmed,invoiced"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="reference" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Sale Info">
+                            <field name="date"/>
+                            <field name="partner_id"/>
+                            <field name="cashier_id"/>
+                        </group>
+                        <group string="Totals">
+                            <field name="total" readonly="1"/>
+                            <field name="currency_id"/>
+                            <field name="account_move_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="product_id"/>
+                            <field name="description"/>
+                            <field name="qty"/>
+                            <field name="unit_price"/>
+                            <field name="subtotal" readonly="1"/>
+                        </list>
+                    </field>
+                    <field name="notes" placeholder="Notes..."/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- SEARCH -->
+    <record id="view_dojo_sale_search" model="ir.ui.view">
+        <field name="name">disaster.dojo.sale.search</field>
+        <field name="model">disaster.dojo.sale</field>
+        <field name="arch" type="xml">
+            <search string="Search Sales">
+                <field name="reference"/>
+                <field name="partner_id"/>
+                <field name="cashier_id"/>
+                <filter string="Draft" name="f_draft" domain="[('state','=','draft')]"/>
+                <filter string="Confirmed" name="f_confirmed" domain="[('state','=','confirmed')]"/>
+                <filter string="Invoiced" name="f_invoiced" domain="[('state','=','invoiced')]"/>
+                <separator/>
+<filter string="Member" name="gb_partner" context="{'group_by':'partner_id'}"/>
+                    <filter string="Cashier" name="gb_cashier" context="{'group_by':'cashier_id'}"/>
+                    <filter string="Status" name="gb_state" context="{'group_by':'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ACTION -->
+    <record id="action_dojo_sale" model="ir.actions.act_window">
+        <field name="name">Front-Desk Sales</field>
+        <field name="res_model">disaster.dojo.sale</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_dojo_sale_search"/>
+        <field name="context">{'default_cashier_id': uid}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No sales yet. Create a new front-desk sale!
+            </p>
+        </field>
+    </record>
+
+    <!-- Sequence for POS reference numbering -->
+    <record id="seq_dojo_sale" model="ir.sequence">
+        <field name="name">Dojo Front-Desk Sale</field>
+        <field name="code">disaster.dojo.sale</field>
+        <field name="prefix">POS/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="number_next">1</field>
+        <field name="number_increment">1</field>
+    </record>
+
+</odoo>

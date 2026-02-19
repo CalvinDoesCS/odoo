@@ -97,6 +97,32 @@ class DisasterCourse(models.Model):
         store=True,
     )
 
+    # Member contracts linked to this course
+    contract_ids = fields.One2many(
+        comodel_name='disaster.member.contract',
+        inverse_name='course_id',
+        string='Member Contracts',
+    )
+    contract_count = fields.Integer(
+        string='Contracts',
+        compute='_compute_contract_count',
+    )
+
+    @api.depends('contract_ids')
+    def _compute_contract_count(self):
+        for course in self:
+            course.contract_count = len(course.contract_ids)
+
+    # ---- Enrollment & eligibility ---------------------------
+    open_enrollment = fields.Boolean(
+        string='Open Enrollment',
+        default=True,
+        help='If enabled, any member whose belt rank meets the requirement can '
+             'check in to sessions of this course without being explicitly '
+             'enrolled.\n\n'
+             'If disabled, only members listed in Enrolled Students can check in.',
+    )
+
     # ---- Automation settings --------------------------------
     absent_alert_days = fields.Integer(
         string='Absent Alert (days)',

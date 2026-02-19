@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         Instructor Kiosk Dashboard
+         Accessible at /dojo/kiosk/instructor
+         PIN-gated on entry from the student kiosk
+    ================================================================ -->
+    <template id="kiosk_instructor" name="Dojo Kiosk – Instructor Mode">
+        <t t-call="web.layout">
+            <t t-set="head">
+                <link rel="stylesheet" href="/disaster_member_belts/static/src/css/kiosk.css"/>
+                <link rel="stylesheet" href="/disaster_member_belts/static/src/css/kiosk_instructor.css"/>
+            </t>
+            <t t-set="title">Instructor Mode – Dojo Kiosk</t>
+
+        <div id="ki-root" class="ki-root">
+
+            <!-- ── Header ──────────────────────────────────────────────── -->
+            <div class="ki-header">
+                <div class="ki-header-left">
+                    <div class="ki-badge">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        Instructor Mode
+                    </div>
+                    <div id="ki-clock" class="ki-clock">00:00</div>
+                </div>
+                <div class="ki-header-right">
+                    <a href="/dojo/kiosk" class="ki-back-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="15 18 9 12 15 6"/>
+                        </svg>
+                        Back to Check-In
+                    </a>
+                </div>
+            </div>
+
+            <!-- ── Two-column layout ──────────────────────────────────── -->
+            <div class="ki-body">
+
+                <!-- LEFT: Today's Sessions panel -->
+                <div class="ki-sessions-panel">
+                    <div class="ki-panel-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        Today's Classes
+                    </div>
+
+                    <t t-if="sessions">
+                        <t t-foreach="sessions" t-as="s">
+                            <div t-attf-class="ki-session-row ki-session-#{s.state}"
+                                 t-att-data-id="s.id"
+                                 onclick="kiInstructor.selectSession(this.dataset.id)">
+                                <div class="ki-session-left">
+                                    <div class="ki-session-dot"></div>
+                                    <div class="ki-session-info">
+                                        <div class="ki-session-name">
+                                            <t t-esc="s.name"/>
+                                        </div>
+                                        <div class="ki-session-meta">
+                                            <t t-esc="s.date_start" t-options='{"widget":"datetime","format":"hh:mm a"}'/>
+                                            <t t-if="s.instructor_id"> · <t t-esc="s.instructor_id.name"/></t>
+                                            <t t-if="s.location"> · <t t-esc="s.location"/></t>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ki-session-right">
+                                    <span t-attf-class="ki-session-badge ki-badge-#{s.state}">
+                                        <t t-esc="dict(scheduled='Scheduled',in_progress='In Progress',done='Done',cancelled='Cancelled').get(s.state, s.state)"/>
+                                    </span>
+                                    <span class="ki-session-count">
+                                        <t t-esc="s.attendance_count"/>/<t t-esc="s.capacity"/>
+                                    </span>
+                                </div>
+                            </div>
+                        </t>
+                    </t>
+                    <t t-else="">
+                        <div class="ki-empty-state">
+                            <div class="ki-empty-icon">📅</div>
+                            <div>No classes scheduled for today</div>
+                        </div>
+                    </t>
+                </div>
+
+                <!-- RIGHT: Active session detail panel -->
+                <div class="ki-detail-panel">
+
+                    <!-- Empty state before a session is selected -->
+                    <div id="ki-detail-empty" class="ki-empty-state ki-detail-empty">
+                        <div class="ki-empty-icon">👆</div>
+                        <div>Tap a class on the left to manage it</div>
+                    </div>
+
+                    <!-- Session detail (hidden until selected) -->
+                    <div id="ki-detail-content" style="display:none">
+
+                        <!-- Session header -->
+                        <div class="ki-detail-header">
+                            <div>
+                                <div id="ki-det-name" class="ki-det-name"></div>
+                                <div id="ki-det-meta" class="ki-det-meta"></div>
+                            </div>
+                            <div class="ki-det-actions">
+                                <button id="ki-btn-start"  class="ki-action-btn ki-btn-start"
+                                        onclick="kiInstructor.sessionAction('start')">
+                                    ▶ Start Class
+                                </button>
+                                <button id="ki-btn-end"    class="ki-action-btn ki-btn-end"
+                                        onclick="kiInstructor.sessionAction('end')">
+                                    ■ End Class
+                                </button>
+                                <button id="ki-btn-cancel" class="ki-action-btn ki-btn-cancel"
+                                        onclick="kiInstructor.sessionAction('cancel')">
+                                    ✕ Cancel
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Stats row -->
+                        <div class="ki-stats-row">
+                            <div class="ki-stat">
+                                <div id="ki-stat-count" class="ki-stat-number">0</div>
+                                <div class="ki-stat-label">Checked In</div>
+                            </div>
+                            <div class="ki-stat">
+                                <div id="ki-stat-capacity" class="ki-stat-number">0</div>
+                                <div class="ki-stat-label">Capacity</div>
+                            </div>
+                            <div class="ki-stat">
+                                <div id="ki-stat-remaining" class="ki-stat-number">0</div>
+                                <div class="ki-stat-label">Spots Left</div>
+                            </div>
+                        </div>
+
+                        <!-- Add student row -->
+                        <div class="ki-add-student-row">
+                            <div class="ki-add-search-wrap">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                </svg>
+                                <input id="ki-add-input" type="text" placeholder="Add student by name…"
+                                       oninput="kiInstructor.onAddInput(this.value)"
+                                       autocomplete="off"/>
+                            </div>
+                            <div id="ki-add-results" class="ki-add-results" style="display:none"></div>
+                        </div>
+
+                        <!-- Attendance list -->
+                        <div class="ki-attendance-section">
+                            <div class="ki-attendance-title">
+                                <span>Attendance</span>
+                                <button class="ki-refresh-btn" onclick="kiInstructor.refreshAttendees()" title="Refresh">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="23 4 23 10 17 10"/>
+                                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div id="ki-attendee-list" class="ki-attendee-list">
+                                <!-- Filled dynamically -->
+                            </div>
+                            <div id="ki-attendee-empty" class="ki-att-empty" style="display:none">
+                                No one checked in yet
+                            </div>
+                        </div>
+
+                    </div><!-- /#ki-detail-content -->
+                </div><!-- /.ki-detail-panel -->
+            </div><!-- /.ki-body -->
+
+        </div><!-- /#ki-root -->
+
+        <script src="/disaster_member_belts/static/src/js/kiosk_instructor.js"></script>
+        </t>
+    </template>
+
+</odoo>

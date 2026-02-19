@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ─────────────────────────────────────────────────────────────
+         disaster.belt.test  –  Belt Promotion Test Views
+         ───────────────────────────────────────────────────────────── -->
+
+    <!-- LIST -->
+    <record id="view_belt_test_list" model="ir.ui.view">
+        <field name="name">disaster.belt.test.list</field>
+        <field name="model">disaster.belt.test</field>
+        <field name="arch" type="xml">
+            <list string="Belt Tests" decoration-success="state=='done'"
+                  decoration-muted="state=='cancelled'">
+                <field name="name"/>
+                <field name="test_date"/>
+                <field name="belt_rank_awarded" widget="badge"/>
+                <field name="instructor_id"/>
+                <field name="invited_count" string="Invited"/>
+                <field name="passed_count" string="Passed"/>
+                <field name="failed_count" string="Failed"/>
+                <field name="test_fee"/>
+                <field name="state" widget="badge"
+                       decoration-success="state=='done'"
+                       decoration-info="state=='open'"
+                       decoration-muted="state=='cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM -->
+    <record id="view_belt_test_form" model="ir.ui.view">
+        <field name="name">disaster.belt.test.form</field>
+        <field name="model">disaster.belt.test</field>
+        <field name="arch" type="xml">
+            <form string="Belt Promotion Test">
+                <header>
+                    <button name="action_open"
+                            string="Open Test"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_invite_ready_members"
+                            string="Auto-Invite Ready Members"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="state == 'done'"/>
+                    <button name="action_close"
+                            string="Complete &amp; Promote Passed"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'open'"/>
+                    <button name="action_cancel"
+                            string="Cancel"
+                            type="object"
+                            class="btn-danger"
+                            invisible="state in ('done','cancelled')"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,open,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Belt Test Name"/></h1>
+                    </div>
+                    <group>
+                        <group string="Event Details">
+                            <field name="test_date"/>
+                            <field name="location"/>
+                            <field name="instructor_id"/>
+                        </group>
+                        <group string="Belt &amp; Fee">
+                            <field name="belt_rank_awarded"/>
+                            <field name="test_fee"/>
+                            <field name="currency_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Invited Members">
+                            <field name="invited_member_ids" widget="many2many_tags"
+                                   domain="[('is_member','=',True)]"/>
+                        </page>
+                        <page string="Passed">
+                            <field name="passed_ids" widget="many2many_tags"
+                                   domain="[('is_member','=',True)]"/>
+                        </page>
+                        <page string="Did Not Pass">
+                            <field name="failed_ids" widget="many2many_tags"
+                                   domain="[('is_member','=',True)]"/>
+                        </page>
+                        <page string="Notes / Requirements">
+                            <field name="notes" placeholder="Requirements, checklist, notes..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- SEARCH -->
+    <record id="view_belt_test_search" model="ir.ui.view">
+        <field name="name">disaster.belt.test.search</field>
+        <field name="model">disaster.belt.test</field>
+        <field name="arch" type="xml">
+            <search string="Search Belt Tests">
+                <field name="name"/>
+                <field name="instructor_id"/>
+                <filter string="Planned" name="f_draft" domain="[('state','=','draft')]"/>
+                <filter string="Open" name="f_open" domain="[('state','=','open')]"/>
+                <filter string="Completed" name="f_done" domain="[('state','=','done')]"/>
+                <separator/>
+<filter string="Belt Rank" name="gb_rank" context="{'group_by':'belt_rank_awarded'}"/>
+                    <filter string="Instructor" name="gb_instructor" context="{'group_by':'instructor_id'}"/>
+                    <filter string="Status" name="gb_status" context="{'group_by':'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- CALENDAR -->
+    <record id="view_belt_test_calendar" model="ir.ui.view">
+        <field name="name">disaster.belt.test.calendar</field>
+        <field name="model">disaster.belt.test</field>
+        <field name="arch" type="xml">
+            <calendar string="Belt Test Calendar" date_start="test_date"
+                      color="belt_rank_awarded" mode="month">
+                <field name="name"/>
+                <field name="belt_rank_awarded"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- ACTION -->
+    <record id="action_belt_test" model="ir.actions.act_window">
+        <field name="name">Belt Tests</field>
+        <field name="res_model">disaster.belt.test</field>
+        <field name="view_mode">list,form,calendar</field>
+        <field name="search_view_id" ref="view_belt_test_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No belt tests scheduled yet. Create one!
+            </p>
+        </field>
+    </record>
+
+</odoo>

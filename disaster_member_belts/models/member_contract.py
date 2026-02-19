@@ -187,11 +187,15 @@ class DisasterMemberContract(models.Model):
         for rec in self:
             rec.write({'state': 'cancelled'})
             rec.partner_id.member_stage = 'inactive'
+            if rec.course_id:
+                rec.course_id.enrolled_member_ids = [(3, rec.partner_id.id)]
 
     def action_expire(self):
         for rec in self:
             rec.write({'state': 'expired'})
             rec.partner_id.member_stage = 'inactive'
+            if rec.course_id:
+                rec.course_id.enrolled_member_ids = [(3, rec.partner_id.id)]
 
     # ------------------------------------------------------------------
     # Scheduled action helper (called by cron)
@@ -230,3 +234,20 @@ class DisasterMemberContract(models.Model):
         ])
         for t in expired_trials:
             t.partner_id.member_stage = 'inactive'
+
+    def _advance_billing_date(self):
+        """Advance the next_billing_date by one billing cycle period."""
+        _CYCLE_DELTA = {
+            'weekly':    relativedelta(weeks=1),
+            'monthly':   relativedelta(months=1),
+            'quarterly': relativedelta(months=3),
+            'annual':    relativedelta(years=1),
+            'one_time':  None,
+        }
+        for rec in self:
+            if not rec.next_billing_date:
+                continue
+            cycle = rec.billing_cycle or 'monthly'
+            delta = _CYCLE_DELTA.get(cycle)
+            if delta:
+                rec.next_billing_date = rec.next_billing_date + delta

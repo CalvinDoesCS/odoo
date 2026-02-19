@@ -11,6 +11,7 @@
             <list string="Class Sessions" decoration-muted="state == 'cancelled'"
                   decoration-success="state == 'done'" decoration-info="state == 'in_progress'">
                 <field name="name"/>
+                <field name="course_id" optional="show"/>
                 <field name="class_type"/>
                 <field name="instructor_id"/>
                 <field name="date_start"/>
@@ -69,6 +70,9 @@
                             <field name="instructor_id"/>
                             <field name="location"/>
                             <field name="capacity"/>
+                            <field name="course_id"
+                                   options="{'no_create': True}"
+                                   help="The course this session belongs to. Controls belt rank and enrollment requirements."/>
                             <field name="schedule_id" readonly="1"
                                    invisible="not schedule_id"/>
                         </group>

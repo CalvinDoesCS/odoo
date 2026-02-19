@@ -20,3 +20,14 @@ access_disaster_class_schedule_user,disaster.class.schedule user,model_disaster_
 access_disaster_class_schedule_manager,disaster.class.schedule manager,model_disaster_class_schedule,base.group_system,1,1,1,1
 access_disaster_course_user,disaster.course user,model_disaster_course,,1,1,1,0
 access_disaster_course_manager,disaster.course manager,model_disaster_course,base.group_system,1,1,1,1
+access_disaster_lead_user,disaster.lead user,model_disaster_lead,,1,1,1,0
+access_disaster_lead_manager,disaster.lead manager,model_disaster_lead,base.group_system,1,1,1,1
+access_disaster_billing_invoice_user,disaster.billing.invoice user,model_disaster_billing_invoice,,1,1,1,0
+access_disaster_billing_invoice_manager,disaster.billing.invoice manager,model_disaster_billing_invoice,base.group_system,1,1,1,1
+access_disaster_belt_test_user,disaster.belt.test user,model_disaster_belt_test,,1,1,1,0
+access_disaster_belt_test_manager,disaster.belt.test manager,model_disaster_belt_test,base.group_system,1,1,1,1
+access_disaster_dojo_sale_user,disaster.dojo.sale user,model_disaster_dojo_sale,,1,1,1,0
+access_disaster_dojo_sale_manager,disaster.dojo.sale manager,model_disaster_dojo_sale,base.group_system,1,1,1,1
+access_disaster_dojo_sale_line_user,disaster.dojo.sale.line user,model_disaster_dojo_sale_line,,1,1,1,0
+access_disaster_dojo_sale_line_manager,disaster.dojo.sale.line manager,model_disaster_dojo_sale_line,base.group_system,1,1,1,1
+access_disaster_broadcast_wizard_user,disaster.broadcast.wizard user,model_disaster_broadcast_wizard,,1,1,1,1
