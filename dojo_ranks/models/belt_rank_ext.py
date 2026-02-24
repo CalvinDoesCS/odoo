@@ -42,3 +42,20 @@ class BeltRankConfigExt(models.Model):
                 ('belt_rank', '=', rec.rank),
                 ('is_member', '=', True),
             ])
+
+    def action_view_members_at_rank(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Members at Rank',
+            'res_model': 'res.partner',
+            'view_mode': 'list,kanban,form',
+            'domain': [
+                ('is_member', '=', True),
+                ('belt_rank', '=', self.rank),
+            ],
+            'context': {
+                'default_is_member': True,
+                'search_default_is_member': 1,
+            },
+        }
