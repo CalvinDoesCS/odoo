@@ -5,7 +5,7 @@
     <record id="view_belt_rank_config_dojo_ranks_ext" model="ir.ui.view">
         <field name="name">disaster.belt.rank.config.dojo.ranks.ext</field>
         <field name="model">disaster.belt.rank.config</field>
-        <field name="inherit_id" ref="disaster_member_belts.view_belt_rank_config_form"/>
+        <field name="inherit_id" ref="disaster_member_belts.view_disaster_belt_rank_config_form"/>
         <field name="arch" type="xml">
 
             <!-- Add member count stat button -->

@@ -1,3 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_dojo_household_user,dojo.household user,model_dojo_household,base.group_user,1,1,1,0
-access_dojo_household_manager,dojo.household manager,model_dojo_household,base.group_system,1,1,1,1
+access_dojo_household_user,dojo.household user,dojo_members.model_dojo_household,base.group_user,1,1,1,0
+access_dojo_household_manager,dojo.household manager,dojo_members.model_dojo_household,base.group_system,1,1,1,1
