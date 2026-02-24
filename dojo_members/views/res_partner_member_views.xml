@@ -5,7 +5,7 @@
     <record id="view_partner_dojo_members_ext" model="ir.ui.view">
         <field name="name">res.partner.dojo.members.ext</field>
         <field name="model">res.partner</field>
-        <field name="inherit_id" ref="disaster_member_belts.res_partner_view_form"/>
+        <field name="inherit_id" ref="disaster_member_belts.view_partner_belt_rank_form"/>
         <field name="arch" type="xml">
 
             <!-- Smart button: Household -->

@@ -25,9 +25,9 @@
                 </group>
             </xpath>
 
-            <!-- Add curriculum page -->
-            <xpath expr="//notebook" position="inside">
-                <page string="Curriculum" name="dojo_curriculum">
+            <!-- Parent view has no notebook; add sections directly inside sheet -->
+            <xpath expr="//sheet" position="inside">
+                <group string="Curriculum">
                     <field name="dojo_curriculum_ids">
                         <list editable="bottom">
                             <field name="sequence" widget="handle"/>
@@ -35,8 +35,8 @@
                             <field name="required_for_promotion"/>
                         </list>
                     </field>
-                </page>
-                <page string="Promotion History" name="dojo_history">
+                </group>
+                <group string="Promotion History">
                     <field name="dojo_history_ids" readonly="1">
                         <list>
                             <field name="awarded_dt"/>
@@ -45,7 +45,7 @@
                             <field name="belt_test_id"/>
                         </list>
                     </field>
-                </page>
+                </group>
             </xpath>
 
         </field>
