@@ -12,33 +12,9 @@
           Apps, Settings, Tests, Link Tracker
     -->
 
-    <record id="hr_payroll_community.menu_hr_payroll_community_root" model="ir.ui.menu">
-        <field name="group_ids" eval="[(6, 0, [
-            ref('disaster_member_belts.group_dojo_admin'),
-            ref('base.group_system'),
-        ])]"/>
-    </record>
-
-    <record id="hr_resignation.hr_resignation_menu_root" model="ir.ui.menu">
-        <field name="group_ids" eval="[(6, 0, [
-            ref('disaster_member_belts.group_dojo_admin'),
-            ref('base.group_system'),
-        ])]"/>
-    </record>
-
-    <record id="spreadsheet_dashboard.spreadsheet_dashboard_menu_root" model="ir.ui.menu">
-        <field name="group_ids" eval="[(6, 0, [
-            ref('disaster_member_belts.group_dojo_admin'),
-            ref('base.group_system'),
-        ])]"/>
-    </record>
-
-    <record id="hr_expense.menu_hr_expense_root" model="ir.ui.menu">
-        <field name="group_ids" eval="[(6, 0, [
-            ref('disaster_member_belts.group_dojo_admin'),
-            ref('base.group_system'),
-        ])]"/>
-    </record>
+    <!-- Optional module menus removed from this base module to avoid install-time
+         XML-ID errors when those modules are not installed. Keep only menus from
+         dependencies guaranteed by this module. -->
 
     <record id="base.menu_management" model="ir.ui.menu">
         <field name="group_ids" eval="[(6, 0, [

@@ -1,9 +1,9 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_dojo_curriculum_tag_user,dojo.curriculum.tag user,model_dojo_curriculum_tag,base.group_user,1,0,0,0
-access_dojo_curriculum_tag_manager,dojo.curriculum.tag manager,model_dojo_curriculum_tag,base.group_system,1,1,1,1
-access_dojo_curriculum_content_user,dojo.curriculum.content user,model_dojo_curriculum_content,base.group_user,1,0,0,0
-access_dojo_curriculum_content_manager,dojo.curriculum.content manager,model_dojo_curriculum_content,base.group_system,1,1,1,1
-access_dojo_rank_curriculum_user,dojo.rank.curriculum user,model_dojo_rank_curriculum,base.group_user,1,0,0,0
-access_dojo_rank_curriculum_manager,dojo.rank.curriculum manager,model_dojo_rank_curriculum,base.group_system,1,1,1,1
-access_dojo_rank_history_user,dojo.rank.history user,model_dojo_rank_history,base.group_user,1,0,0,0
-access_dojo_rank_history_manager,dojo.rank.history manager,model_dojo_rank_history,base.group_system,1,1,1,1
+access_dojo_curriculum_tag_user,dojo.curriculum.tag user,dojo_ranks.model_dojo_curriculum_tag,base.group_user,1,0,0,0
+access_dojo_curriculum_tag_manager,dojo.curriculum.tag manager,dojo_ranks.model_dojo_curriculum_tag,base.group_system,1,1,1,1
+access_dojo_curriculum_content_user,dojo.curriculum.content user,dojo_ranks.model_dojo_curriculum_content,base.group_user,1,0,0,0
+access_dojo_curriculum_content_manager,dojo.curriculum.content manager,dojo_ranks.model_dojo_curriculum_content,base.group_system,1,1,1,1
+access_dojo_rank_curriculum_user,dojo.rank.curriculum user,dojo_ranks.model_dojo_rank_curriculum,base.group_user,1,0,0,0
+access_dojo_rank_curriculum_manager,dojo.rank.curriculum manager,dojo_ranks.model_dojo_rank_curriculum,base.group_system,1,1,1,1
+access_dojo_rank_history_user,dojo.rank.history user,dojo_ranks.model_dojo_rank_history,base.group_user,1,0,0,0
+access_dojo_rank_history_manager,dojo.rank.history manager,dojo_ranks.model_dojo_rank_history,base.group_system,1,1,1,1
