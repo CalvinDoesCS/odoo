@@ -1,0 +1,11 @@
+first_name,last_name,email,phone,belt_rank,status,total_attendance,date_of_birth
+John,Miller,john.miller@email.com,555-0101,blue,active,142,1990-03-15
+Sarah,Chen,sarah.chen@email.com,555-0102,green,active,87,1995-07-22
+Marcus,Johnson,marcus.j@email.com,555-0103,purple,active,210,1985-11-08
+Lucia,Garcia,lucia.garcia@email.com,555-0104,yellow,trial,12,2000-04-30
+Tommy,Nguyen,tommy.n@email.com,555-0105,white,trial,3,2005-09-12
+Diana,Ross,diana.ross@email.com,555-0106,brown,active,305,1980-01-25
+Kevin,Park,kevin.park@email.com,555-0107,orange,active,55,1998-06-17
+Alex,Mendez,alex.mendez@email.com,555-0108,black,active,520,1975-12-03
+Emily,Torres,emily.t@email.com,555-0109,white,inactive,8,2003-08-19
+Ryan,Okafor,ryan.okafor@email.com,555-0110,blue,active,175,1992-02-14

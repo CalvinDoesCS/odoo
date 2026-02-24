@@ -27,7 +27,6 @@
             </list>
         </field>
     </record>
-
     <!-- ============================================================
          Class Session — Form View
     ============================================================ -->
@@ -43,6 +42,12 @@
                     <button name="action_check_in_member" string="Check In Member"
                             type="object" class="btn-primary oe_highlight"
                             invisible="state == 'done' or state == 'cancelled'"/>
+                    <button name="action_open_attendance_roster"
+                            string="📋 Take Roster"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state == 'done' or state == 'cancelled'"
+                            title="Open the visual roll-call roster for this session"/>
                     <button name="action_done" string="Mark Done"
                             type="object"
                             invisible="state != 'in_progress'"/>
@@ -85,6 +90,16 @@
                     <field name="notes" placeholder="Class notes..."/>
                     <notebook>
                         <page string="Attendance" name="attendance">
+                            <div class="alert alert-info mb-2" role="alert"
+                                 invisible="attendance_count != 0">
+                                <strong>No check-ins yet.</strong>
+                                This tab shows students who have been
+                                <em>checked in</em> (via kiosk, manual check-in, or
+                                saving the 📋 Roster).
+                                Use the <strong>📋 Take Roster</strong> button above
+                                to open the roll-call — it shows all
+                                <em>enrolled students</em> regardless of check-in status.
+                            </div>
                             <field name="attendance_ids" mode="list">
                                 <list>
                                     <field name="partner_id"/>

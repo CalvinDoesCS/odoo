@@ -6,6 +6,8 @@ from . import class_schedule
 from . import course
 from . import class_session
 from . import class_attendance
+from . import attendance_roster
+from . import twilio_config
 from . import membership_plan
 from . import member_contract
 from . import lead
@@ -14,3 +16,5 @@ from . import belt_test
 from . import dojo_sale
 from . import broadcast_wizard
 from . import hr_instructor
+from . import member_attendance_bridge
+from . import announcement

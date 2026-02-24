@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════ Household Form ═══════════ -->
+    <record id="view_dojo_household_form" model="ir.ui.view">
+        <field name="name">dojo.household.form</field>
+        <field name="model">dojo.household</field>
+        <field name="arch" type="xml">
+            <form string="Household">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_members" type="object"
+                                class="oe_stat_button" icon="fa-users">
+                            <field name="member_count" widget="statinfo" string="Members"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Smith Family"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="company_id" options="{'no_create': True}"/>
+                            <field name="primary_guardian_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Members">
+                            <field name="member_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="dojo_member_number"/>
+                                    <field name="date_of_birth"/>
+                                    <field name="belt_rank"/>
+                                    <field name="dojo_consent_state"/>
+                                    <field name="member_stage"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes">
+                            <field name="notes" placeholder="Internal notes…"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════ Household List ═══════════ -->
+    <record id="view_dojo_household_list" model="ir.ui.view">
+        <field name="name">dojo.household.list</field>
+        <field name="model">dojo.household</field>
+        <field name="arch" type="xml">
+            <list string="Households">
+                <field name="name"/>
+                <field name="primary_guardian_id"/>
+                <field name="member_count"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ═══════════ Household Search ═══════════ -->
+    <record id="view_dojo_household_search" model="ir.ui.view">
+        <field name="name">dojo.household.search</field>
+        <field name="model">dojo.household</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="primary_guardian_id"/>
+                <separator/>
+                <filter string="Active" name="active" domain="[('active','=',True)]"/>
+                <group>
+                    <filter string="Company" name="group_company" context="{'group_by': 'company_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ═══════════ Action ═══════════ -->
+    <record id="action_dojo_household" model="ir.actions.act_window">
+        <field name="name">Households</field>
+        <field name="res_model">dojo.household</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create your first household!</p>
+        </field>
+    </record>
+
+</odoo>

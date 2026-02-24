@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_dojo_rank_history_form" model="ir.ui.view">
+        <field name="name">dojo.rank.history.form</field>
+        <field name="model">dojo.rank.history</field>
+        <field name="arch" type="xml">
+            <form string="Rank Promotion">
+                <sheet>
+                    <group>
+                        <group string="Promotion">
+                            <field name="member_id" options="{'no_create': True}"/>
+                            <field name="belt_rank_id" options="{'no_create': True}"/>
+                            <field name="previous_belt_rank_id" options="{'no_create': True}"/>
+                            <field name="awarded_dt"/>
+                            <field name="awarded_by_id" options="{'no_create': True}"/>
+                        </group>
+                        <group string="Reference">
+                            <field name="belt_test_id" options="{'no_create': True}"/>
+                            <field name="company_id" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                    <field name="notes" placeholder="Notes…"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_dojo_rank_history_list" model="ir.ui.view">
+        <field name="name">dojo.rank.history.list</field>
+        <field name="model">dojo.rank.history</field>
+        <field name="arch" type="xml">
+            <list string="Promotion History" create="1" delete="0">
+                <field name="awarded_dt"/>
+                <field name="member_id"/>
+                <field name="belt_rank_id"/>
+                <field name="previous_belt_rank_id" optional="show"/>
+                <field name="awarded_by_id" optional="show"/>
+                <field name="belt_test_id" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_dojo_rank_history" model="ir.actions.act_window">
+        <field name="name">Promotion History</field>
+        <field name="res_model">dojo.rank.history</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No promotions logged yet.</p>
+        </field>
+    </record>
+
+    <!-- Promote member action (quick form) -->
+    <record id="action_dojo_promote_member" model="ir.actions.act_window">
+        <field name="name">Record Promotion</field>
+        <field name="res_model">dojo.rank.history</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

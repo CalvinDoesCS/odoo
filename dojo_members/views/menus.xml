@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         Members — root nav menu
+    ============================================================ -->
+    <menuitem id="menu_members_root"
+              name="Members"
+              sequence="10"/>
+
+    <menuitem id="menu_member_all"
+              name="All Members"
+              parent="menu_members_root"
+              action="disaster_member_belts.action_member_list"
+              sequence="10"/>
+
+    <menuitem id="menu_member_trials"
+              name="Trials"
+              parent="menu_members_root"
+              action="disaster_member_belts.action_trial_list"
+              sequence="20"/>
+
+    <menuitem id="menu_member_leads"
+              name="Leads"
+              parent="menu_members_root"
+              action="disaster_member_belts.action_lead_list"
+              sequence="30"/>
+
+    <menuitem id="menu_member_instructors"
+              name="Instructors"
+              parent="menu_members_root"
+              action="disaster_member_belts.action_instructor_list"
+              sequence="40"/>
+
+    <menuitem id="menu_member_households"
+              name="Households"
+              parent="menu_members_root"
+              action="dojo_members.action_dojo_household"
+              sequence="50"/>
+
+    <menuitem id="menu_member_consent_pending"
+              name="Consent Pending"
+              parent="menu_members_root"
+              action="dojo_members.action_dojo_consent_pending"
+              sequence="60"/>
+
+    <!-- Configuration (admin tools) -->
+    <menuitem id="menu_members_config"
+              name="Configuration"
+              parent="menu_members_root"
+              sequence="90"/>
+
+    <menuitem id="menu_members_belt_config"
+              name="Belt Rank Thresholds"
+              parent="menu_members_config"
+              action="disaster_member_belts.action_disaster_belt_rank_config"
+              sequence="10"/>
+
+    <menuitem id="menu_members_spark"
+              name="📥 Import from Spark"
+              parent="menu_members_config"
+              action="disaster_member_belts.action_spark_migration_wizard"
+              sequence="20"/>
+
+    <menuitem id="menu_members_twilio"
+              name="📞 Twilio Settings"
+              parent="menu_members_config"
+              action="disaster_member_belts.action_open_twilio_settings"
+              sequence="30"
+              groups="base.group_system"/>
+
+</odoo>

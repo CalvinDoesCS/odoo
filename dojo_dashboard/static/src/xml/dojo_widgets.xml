@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       To-Do Widget
+  ══════════════════════════════════════════════════════════════════════ -->
+  <t t-name="dojo_dashboard.TodoWidget">
+    <div class="dojo-widget dojo-widget-todo">
+
+      <div class="dojo-widget-header">
+        <div class="dojo-widget-title">
+          <i class="fa fa-check-square-o dojo-widget-icon icon-todo"/>
+          To‑Do
+        </div>
+        <button class="dojo-widget-action" t-on-click="openTodos" title="Open full To-Do list">
+          <i class="fa fa-external-link"/>
+        </button>
+      </div>
+
+      <!-- Quick-add input -->
+      <div class="dojo-widget-add">
+        <input type="text"
+               class="dojo-widget-input"
+               placeholder="Add a to-do…"
+               t-model="state.newTodo"
+               t-on-keydown="onKeydown"/>
+        <button class="dojo-widget-add-btn" t-on-click="addTodo">
+          <i class="fa fa-plus"/>
+        </button>
+      </div>
+
+      <!-- List -->
+      <div class="dojo-widget-body">
+        <t t-if="state.loading">
+          <div class="dojo-widget-loading"><i class="fa fa-spinner fa-spin"/></div>
+        </t>
+        <t t-elif="state.todos.length === 0">
+          <div class="dojo-widget-empty">
+            <i class="fa fa-check-circle-o dojo-empty-icon"/>
+            <span>All done!</span>
+          </div>
+        </t>
+        <t t-else="">
+          <t t-foreach="state.todos" t-as="todo" t-key="todo.id">
+            <div class="dojo-widget-row dojo-todo-row">
+              <label class="dojo-todo-check">
+                <input type="checkbox"
+                       class="dojo-checkbox"
+                       t-on-change="() => this.markDone(todo.id)"/>
+                <span class="dojo-checkmark"/>
+              </label>
+              <span class="dojo-todo-text"
+                    t-att-class="todo.priority === '1' ? 'dojo-priority-high' : ''"
+                    t-esc="todo.name"/>
+              <t t-if="todo.date_deadline">
+                <span class="dojo-todo-due" t-esc="todo.date_deadline"/>
+              </t>
+            </div>
+          </t>
+        </t>
+      </div>
+
+    </div>
+  </t>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       Calendar Widget
+  ══════════════════════════════════════════════════════════════════════ -->
+  <t t-name="dojo_dashboard.CalendarWidget">
+    <div class="dojo-widget dojo-widget-calendar">
+
+      <div class="dojo-widget-header">
+        <div class="dojo-widget-title">
+          <i class="fa fa-calendar dojo-widget-icon icon-cal"/>
+          Upcoming
+          <span class="dojo-widget-subtitle">next 14 days</span>
+        </div>
+        <div class="d-flex gap-1">
+          <button class="dojo-widget-action" t-on-click="openNewEvent" title="New event">
+            <i class="fa fa-plus"/>
+          </button>
+          <button class="dojo-widget-action" t-on-click="openCalendar" title="Open Calendar">
+            <i class="fa fa-external-link"/>
+          </button>
+        </div>
+      </div>
+
+      <div class="dojo-widget-body">
+        <t t-if="state.loading">
+          <div class="dojo-widget-loading"><i class="fa fa-spinner fa-spin"/></div>
+        </t>
+        <t t-elif="state.events.length === 0">
+          <div class="dojo-widget-empty">
+            <i class="fa fa-calendar-o dojo-empty-icon"/>
+            <span>No upcoming events</span>
+          </div>
+        </t>
+        <t t-else="">
+          <t t-foreach="state.events" t-as="ev" t-key="ev.id">
+            <div class="dojo-widget-row dojo-cal-row">
+              <div t-att-class="'dojo-cal-accent ' + (ev.type === 'session' ? 'dojo-cal-accent-session' : '')"/>
+              <div class="dojo-cal-content">
+                <div class="dojo-cal-title">
+                  <t t-if="ev.type === 'session'">
+                    <span class="dojo-cal-badge-session">Class</span>
+                  </t>
+                  <t t-esc="ev.name"/>
+                </div>
+                <div class="dojo-cal-meta">
+                  <span class="dojo-cal-day" t-esc="dayLabel(ev.start)"/>
+                  <span class="dojo-cal-time" t-esc="timeLabel(ev.start, ev.allday)"/>
+                  <t t-if="ev.location">
+                    <span class="dojo-cal-loc">
+                      <i class="fa fa-map-marker"/> <t t-esc="ev.location"/>
+                    </span>
+                  </t>
+                  <t t-if="ev.instructor">
+                    <span class="dojo-cal-instructor">
+                      <i class="fa fa-user"/> <t t-esc="ev.instructor"/>
+                    </span>
+                  </t>
+                </div>
+              </div>
+            </div>
+          </t>
+        </t>
+      </div>
+
+    </div>
+  </t>
+
+</templates>

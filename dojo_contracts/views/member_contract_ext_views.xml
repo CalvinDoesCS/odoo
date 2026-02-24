@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Extend the existing member contract form with hold/delinquency fields -->
+    <record id="view_member_contract_dojo_ext" model="ir.ui.view">
+        <field name="name">disaster.member.contract.dojo.ext</field>
+        <field name="model">disaster.member.contract</field>
+        <field name="inherit_id" ref="disaster_member_belts.view_member_contract_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Add hold/billing buttons after the status bar -->
+            <xpath expr="//header" position="inside">
+                <button name="action_put_on_hold" type="object"
+                        string="Put On Hold"
+                        class="btn-warning"
+                        invisible="dojo_on_hold or state not in ['active','trial']"/>
+                <button name="action_resume_from_hold" type="object"
+                        string="Resume"
+                        class="btn-success"
+                        invisible="not dojo_on_hold"/>
+                <button name="action_mark_past_due" type="object"
+                        string="Mark Past Due"
+                        class="btn-danger"
+                        invisible="dojo_past_due or state not in ['active']"/>
+                <button name="action_clear_past_due" type="object"
+                        string="Clear Past Due"
+                        class="btn-secondary"
+                        invisible="not dojo_past_due"/>
+            </xpath>
+
+            <!-- Add hold/delinquency group in the form -->
+            <xpath expr="//sheet//group[last()]" position="after">
+                <group string="Hold / Delinquency" name="dojo_hold_group"
+                       invisible="not dojo_on_hold and not dojo_past_due and state == 'active'">
+                    <group>
+                        <field name="dojo_on_hold" widget="boolean_toggle"/>
+                        <field name="dojo_hold_reason" invisible="not dojo_on_hold"/>
+                        <field name="dojo_hold_until" invisible="not dojo_on_hold"/>
+                    </group>
+                    <group>
+                        <field name="dojo_past_due" widget="boolean_toggle"/>
+                        <field name="dojo_past_due_since" invisible="not dojo_past_due"/>
+                        <field name="dojo_dunning_count" invisible="not dojo_past_due"/>
+                        <field name="dojo_next_dunning_date" invisible="not dojo_past_due"/>
+                    </group>
+                </group>
+                <group string="Billing Configuration" name="dojo_billing_group">
+                    <group>
+                        <field name="dojo_billing_day"/>
+                        <field name="dojo_payment_ref"/>
+                    </group>
+                    <group>
+                        <field name="dojo_wallet_id" readonly="1" optional="show"/>
+                    </group>
+                </group>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

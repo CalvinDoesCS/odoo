@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+  <t t-name="dojo_dashboard.Main">
+    <div class="dojo-analytics-wrapper o_action">
+
+      <!-- ── Loading ─────────────────────────────────────────────────── -->
+      <t t-if="state.loading">
+        <div class="dojo-full-loader">
+          <i class="fa fa-spinner fa-spin fa-3x text-muted"/>
+        </div>
+      </t>
+
+      <t t-else="">
+
+        <!-- Payment gateway warning -->
+        <t t-if="!state.data.has_payment_gateway">
+          <div class="dojo-gateway-banner">
+            <i class="fa fa-exclamation-circle dojo-gateway-icon"/>
+            <span class="dojo-gateway-text">
+              <strong>Payment gateway not configured</strong> — online payments are disabled.
+            </span>
+            <button class="dojo-gateway-btn" t-on-click="configurePayments">
+              Configure now
+              <i class="fa fa-arrow-right ms-1"/>
+            </button>
+          </div>
+        </t>
+
+        <!-- ── Page header ─────────────────────────────────────────── -->
+        <div class="dojo-page-header">
+          <div class="dojo-page-title">
+            <i class="fa fa-tachometer me-2"/>
+            Dojo Dashboard
+            <span class="dojo-month-pill" t-esc="state.month_label"/>
+          </div>
+          <div class="dojo-page-actions">
+            <button class="dojo-hdr-btn" t-on-click="openBarcodeLabels">
+              <i class="fa fa-barcode me-1"/> Barcode Labels
+            </button>
+            <button class="dojo-hdr-btn dojo-hdr-btn-primary" t-on-click="openKiosk">
+              <i class="fa fa-desktop me-1"/> Open Kiosk
+            </button>
+          </div>
+        </div>
+
+        <!-- ── Main layout: KPIs left, sidebar right ───────────────── -->
+        <div class="dojo-layout">
+
+          <!-- KPI Section -->
+          <div class="dojo-kpi-section">
+
+            <!-- Engagement -->
+            <div class="dojo-section-label">Engagement</div>
+            <div class="dojo-kpi-row">
+              <div class="dojo-kpi-card" t-on-click="() => {}">
+                <div class="dojo-kpi-icon"><i class="fa fa-globe"/></div>
+                <div class="dojo-kpi-value" t-esc="state.data.web_visits_month || 0"/>
+                <div class="dojo-kpi-label">Web Visits</div>
+              </div>
+              <div class="dojo-kpi-card dojo-kpi-blue" t-on-click="openNewContacts">
+                <div class="dojo-kpi-icon"><i class="fa fa-user-plus"/></div>
+                <div class="dojo-kpi-value" t-esc="state.data.new_contacts_month || 0"/>
+                <div class="dojo-kpi-label">New Contacts</div>
+              </div>
+              <div class="dojo-kpi-card dojo-kpi-green" t-on-click="openActiveMembers">
+                <div class="dojo-kpi-icon"><i class="fa fa-users"/></div>
+                <div class="dojo-kpi-value" t-esc="state.data.active_members || 0"/>
+                <div class="dojo-kpi-label">Active Students</div>
+              </div>
+              <div class="dojo-kpi-card" t-on-click="() => this.openAttendance(30)">
+                <div class="dojo-kpi-icon"><i class="fa fa-calendar-check-o"/></div>
+                <div class="dojo-kpi-value" t-esc="state.data.attendance_30d || 0"/>
+                <div class="dojo-kpi-label">Attendance <small>30 days</small></div>
+              </div>
+              <div class="dojo-kpi-card" t-on-click="() => this.openAttendance(7)">
+                <div class="dojo-kpi-icon"><i class="fa fa-calendar-check-o"/></div>
+                <div class="dojo-kpi-value" t-esc="state.data.attendance_7d || 0"/>
+                <div class="dojo-kpi-label">Attendance <small>7 days</small></div>
+              </div>
+              <div class="dojo-kpi-card dojo-kpi-orange" t-on-click="openTrialMembers">
+                <div class="dojo-kpi-icon"><i class="fa fa-clock-o"/></div>
+                <div class="dojo-kpi-value" t-esc="state.data.trial_members || 0"/>
+                <div class="dojo-kpi-label">Trial Members</div>
+              </div>
+            </div>
+
+            <!-- Memberships -->
+            <div class="dojo-section-label">Memberships</div>
+            <div class="dojo-kpi-row">
+              <div class="dojo-kpi-card dojo-kpi-green" t-on-click="openNewMemberships">
+                <div class="dojo-kpi-icon"><i class="fa fa-id-card-o"/></div>
+                <div class="dojo-kpi-value" t-esc="state.data.new_memberships_month || 0"/>
+                <div class="dojo-kpi-label">New Memberships</div>
+              </div>
+              <div class="dojo-kpi-card dojo-kpi-blue" t-on-click="openUpdatedMemberships">
+                <div class="dojo-kpi-icon"><i class="fa fa-refresh"/></div>
+                <div class="dojo-kpi-value" t-esc="state.data.updated_memberships_month || 0"/>
+                <div class="dojo-kpi-label">Updated</div>
+              </div>
+              <div class="dojo-kpi-card" t-on-click="openRenewals">
+                <div class="dojo-kpi-icon"><i class="fa fa-repeat"/></div>
+                <div class="dojo-kpi-value" t-esc="state.data.renewal_month || 0"/>
+                <div class="dojo-kpi-label">Renewals</div>
+              </div>
+              <div class="dojo-kpi-card dojo-kpi-orange" t-on-click="openTrialAppts">
+                <div class="dojo-kpi-icon"><i class="fa fa-handshake-o"/></div>
+                <div class="dojo-kpi-value" t-esc="state.data.trial_appts || 0"/>
+                <div class="dojo-kpi-label">Intro Appts</div>
+              </div>
+              <div class="dojo-kpi-card" t-on-click="openUpdateAppts">
+                <div class="dojo-kpi-icon"><i class="fa fa-tasks"/></div>
+                <div class="dojo-kpi-value" t-esc="state.data.update_appts || 0"/>
+                <div class="dojo-kpi-label">Update Appts</div>
+              </div>
+            </div>
+
+            <!-- Billing -->
+            <div class="dojo-section-label">Billing</div>
+            <div class="dojo-kpi-row">
+              <div class="dojo-kpi-card dojo-kpi-green dojo-kpi-wide" t-on-click="openInvoices">
+                <div class="dojo-kpi-icon"><i class="fa fa-money"/></div>
+                <div class="dojo-kpi-value">
+                  <t t-esc="state.data.currency_symbol || '$'"/><!--
+                  --><t t-esc="(state.data.net_billing || 0).toFixed(2)"/>
+                </div>
+                <div class="dojo-kpi-label">Net Billing</div>
+              </div>
+              <div class="dojo-kpi-card dojo-kpi-blue dojo-kpi-wide" t-on-click="openInvoices">
+                <div class="dojo-kpi-icon"><i class="fa fa-credit-card"/></div>
+                <div class="dojo-kpi-value">
+                  <t t-esc="state.data.currency_symbol || '$'"/><!--
+                  --><t t-esc="(state.data.month_income || 0).toFixed(2)"/>
+                </div>
+                <div class="dojo-kpi-label">Income Collected</div>
+              </div>
+              <div class="dojo-kpi-card dojo-kpi-wide" t-on-click="openInvoices">
+                <div class="dojo-kpi-icon"><i class="fa fa-line-chart"/></div>
+                <div class="dojo-kpi-value">
+                  <t t-esc="state.data.currency_symbol || '$'"/><!--
+                  --><t t-esc="(state.data.expected_income || 0).toFixed(2)"/>
+                </div>
+                <div class="dojo-kpi-label">Expected Income</div>
+              </div>
+            </div>
+
+          </div><!-- /dojo-kpi-section -->
+
+          <!-- ── Sidebar ─────────────────────────────────────────────── -->
+          <div class="dojo-sidebar">
+
+            <!-- To-Do Widget -->
+            <DojoTodoWidget/>
+
+            <!-- Calendar Widget -->
+            <DojoCalendarWidget/>
+
+            <!-- Announcements (inline) -->
+            <div class="dojo-widget dojo-widget-ann">
+              <div class="dojo-widget-header">
+                <div class="dojo-widget-title">
+                  <i class="fa fa-bullhorn dojo-widget-icon icon-ann"/>
+                  Announcements
+                </div>
+                <button class="dojo-widget-action" t-on-click="openAnnouncements">
+                  <i class="fa fa-external-link"/>
+                </button>
+              </div>
+              <div class="dojo-widget-body">
+                <t t-if="state.announcements.length === 0">
+                  <div class="dojo-widget-empty">
+                    <i class="fa fa-bullhorn dojo-empty-icon"/>
+                    <span>No active announcements</span>
+                  </div>
+                </t>
+                <t t-foreach="state.announcements" t-as="ann" t-key="ann.id">
+                  <div class="dojo-widget-row dojo-ann-row"
+                       t-on-click="() => this.openAnnouncement(ann.id)">
+                    <i t-if="ann.is_pinned" class="fa fa-thumb-tack icon-pinned flex-shrink-0"/>
+                    <i t-else="" class="fa fa-circle dojo-ann-dot flex-shrink-0"/>
+                    <div class="dojo-ann-content">
+                      <div class="dojo-ann-title" t-esc="ann.name"/>
+                      <div t-if="ann.summary" class="dojo-ann-summary" t-esc="ann.summary"/>
+                    </div>
+                  </div>
+                </t>
+              </div>
+            </div>
+
+          </div><!-- /dojo-sidebar -->
+
+        </div><!-- /dojo-layout -->
+
+      </t>
+    </div>
+  </t>
+
+</templates>

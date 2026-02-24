@@ -101,6 +101,10 @@ class ResPartnerInstructor(models.Model):
                 'res_id': self.employee_ids[0].id,
                 'view_mode': 'form',
             }
+        # Resolve Instructors department
+        dept = self.env.ref(
+            'disaster_member_belts.hr_dept_instructors', raise_if_not_found=False
+        ) or self.env['hr.department'].search([('name', '=', 'Instructors')], limit=1)
         # Create employee linked to this partner
         employee = self.env['hr.employee'].create({
             'name':                     self.name,
@@ -108,6 +112,7 @@ class ResPartnerInstructor(models.Model):
             'work_email':               self.email or '',
             'work_phone':               self.phone or '',
             'job_title':                'Dojo Instructor',
+            'department_id':            dept.id if dept else False,
             'is_dojo_instructor':       True,
             'instructor_belt_rank':     self.instructor_belt_rank or False,
             'instructor_specializations': self.instructor_specializations or '',

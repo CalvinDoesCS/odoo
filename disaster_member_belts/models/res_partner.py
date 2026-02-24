@@ -153,21 +153,6 @@ class ResPartner(models.Model):
         for partner in self:
             partner.belt_test_count = len(partner.belt_test_ids)
 
-    # ------------------------------------------------------------------
-    # Enrolled courses counter (courses are queried via domain; no new table)
-    # ------------------------------------------------------------------
-    enrolled_course_count = fields.Integer(
-        string='Courses',
-        compute='_compute_enrolled_course_count',
-    )
-
-    def _compute_enrolled_course_count(self):
-        Course = self.env['disaster.course']
-        for partner in self:
-            partner.enrolled_course_count = Course.search_count(
-                [('enrolled_member_ids', 'in', [partner.id])]
-            )
-
     is_instructor = fields.Boolean(
         string='Is Instructor',
         default=False,
@@ -195,27 +180,7 @@ class ResPartner(models.Model):
     )
     assigned_member_count = fields.Integer(
         string='Assigned Students',
-        compute='_compute_instructor_stats',
-    )
-    # Courses led by this instructor
-    led_course_ids = fields.One2many(
-        comodel_name='disaster.course',
-        inverse_name='instructor_id',
-        string='Courses Led',
-    )
-    led_course_count = fields.Integer(
-        string='Courses Led',
-        compute='_compute_instructor_stats',
-    )
-    # Sessions taught by this instructor
-    session_instructor_ids = fields.One2many(
-        comodel_name='disaster.class.session',
-        inverse_name='instructor_id',
-        string='Sessions Taught',
-    )
-    sessions_taught_count = fields.Integer(
-        string='Sessions Taught',
-        compute='_compute_instructor_stats',
+        compute='_compute_assigned_member_count',
     )
     member_stage = fields.Selection(
         selection=[
@@ -244,16 +209,31 @@ class ResPartner(models.Model):
         help='Scan this barcode on the kiosk to check in. '
              'Generate one from the Attendance/Point-of-Sale badge view.',
     )
-    kiosk_pin = fields.Char(
-        string='Kiosk PIN',
-        copy=False,
-        help='4-digit PIN the member uses to check in at the kiosk.',
-    )
-
     emergency_contact = fields.Char(string='Emergency Contact')
     emergency_phone = fields.Char(string='Emergency Phone')
     date_of_birth = fields.Date(string='Date of Birth')
     age = fields.Integer(string='Age', compute='_compute_age')
+
+    # ------------------------------------------------------------------
+    # Parent / Guardian – for minors; used by Attendance Roster notifications
+    # ------------------------------------------------------------------
+    guardian_id = fields.Many2one(
+        comodel_name='res.partner',
+        string='Parent / Guardian',
+        ondelete='set null',
+        help='Parent or guardian contact.  '
+             'Absence notifications are sent to this person.',
+    )
+    notify_absence_email = fields.Boolean(
+        string='Email on Absence',
+        default=True,
+        help='Send an email to the guardian when this student is marked absent.',
+    )
+    notify_absence_sms = fields.Boolean(
+        string='SMS on Absence',
+        default=False,
+        help='Send an SMS to the guardian when this student is marked absent.',
+    )
 
     # ------------------------------------------------------------------
     # Contract fields
@@ -299,12 +279,6 @@ class ResPartner(models.Model):
         help='Auto-incremented each time a class attendance record is created.',
     )
 
-    attendance_ids = fields.One2many(
-        comodel_name='disaster.class.attendance',
-        inverse_name='partner_id',
-        string='Attendance Records',
-    )
-
     ready_for_test = fields.Boolean(
         string='Ready for Test',
         compute='_compute_ready_for_test',
@@ -322,11 +296,10 @@ class ResPartner(models.Model):
     # ------------------------------------------------------------------
     # Computed fields
     # ------------------------------------------------------------------
-    def _compute_instructor_stats(self):
+    @api.depends('assigned_member_ids')
+    def _compute_assigned_member_count(self):
         for p in self:
             p.assigned_member_count = len(p.assigned_member_ids)
-            p.led_course_count = len(p.led_course_ids)
-            p.sessions_taught_count = len(p.session_instructor_ids)
 
     @api.depends('belt_rank', 'attendance_count')
     def _compute_ready_for_test(self):
@@ -382,15 +355,6 @@ class ResPartner(models.Model):
     # ------------------------------------------------------------------
     # Constraints
     # ------------------------------------------------------------------
-    @api.constrains('kiosk_pin')
-    def _check_kiosk_pin(self):
-        for partner in self:
-            if partner.kiosk_pin:
-                if not partner.kiosk_pin.isdigit() or len(partner.kiosk_pin) != 4:
-                    raise ValidationError(
-                        'Kiosk PIN must be exactly 4 digits (numbers only).'
-                    )
-
     @api.constrains('member_barcode')
     def _check_member_barcode(self):
         for partner in self:
@@ -430,18 +394,6 @@ class ResPartner(models.Model):
     # ------------------------------------------------------------------
     # Actions
     # ------------------------------------------------------------------
-    def action_view_attendance(self):
-        """Open the list of class attendance records for this member."""
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': f'Attendance – {self.name}',
-            'res_model': 'disaster.class.attendance',
-            'view_mode': 'list,form',
-            'domain': [('partner_id', '=', self.id)],
-            'context': {'default_partner_id': self.id},
-        }
-
     def action_view_contracts(self):
         """Open contracts for this member."""
         self.ensure_one()
@@ -467,51 +419,6 @@ class ResPartner(models.Model):
                 'default_partner_id': self.id,
                 'default_current_rank': self.belt_rank,
             },
-        }
-
-    def action_view_assigned_students(self):
-        """Instructor: open list of assigned students."""
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': f'Students – {self.name}',
-            'res_model': 'res.partner',
-            'view_mode': 'list,kanban,form',
-            'domain': [('id', 'in', self.assigned_member_ids.ids)],
-        }
-
-    def action_view_led_courses(self):
-        """Instructor: open list of courses they lead."""
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': f'Courses – {self.name}',
-            'res_model': 'disaster.course',
-            'view_mode': 'list,form',
-            'domain': [('instructor_id', '=', self.id)],
-            'context': {'default_instructor_id': self.id},
-        }
-
-    def action_view_sessions_taught(self):
-        """Instructor: open list of sessions where they were instructor."""
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': f'Sessions Taught – {self.name}',
-            'res_model': 'disaster.class.session',
-            'view_mode': 'list,form',
-            'domain': [('instructor_id', '=', self.id)],
-        }
-
-    def action_view_enrolled_courses(self):
-        """Member: open courses they are enrolled in."""
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': f'Courses – {self.name}',
-            'res_model': 'disaster.course',
-            'view_mode': 'list,form',
-            'domain': [('enrolled_member_ids', 'in', [self.id])],
         }
 
     def action_view_leads(self):
@@ -571,4 +478,31 @@ class ResPartner(models.Model):
             'view_mode': 'list,kanban,form',
             'domain': [('referred_by_id', '=', self.id)],
             'context': {'default_referred_by_id': self.id, 'default_is_member': True},
+        }
+
+    def action_call_guardian(self):
+        """Open the Twilio call wizard to call this member's guardian."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': '📞 Call Guardian',
+            'res_model': 'disaster.twilio.call.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_student_id': self.id,
+                'default_call_reason': 'general',
+            },
+        }
+
+    def action_view_assigned_students(self):
+        """Instructor: open list of students assigned to them."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Students – {self.name}',
+            'res_model': 'res.partner',
+            'view_mode': 'list,kanban,form',
+            'domain': [('id', 'in', self.assigned_member_ids.ids)],
+            'context': {'default_is_member': True},
         }

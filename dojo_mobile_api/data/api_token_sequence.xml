@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="seq_dojo_api_token" model="ir.sequence">
+            <field name="name">Dojo API Token</field>
+            <field name="code">dojo.api.token</field>
+            <field name="prefix">DAT</field>
+            <field name="padding">8</field>
+            <field name="company_id" eval="False" />
+        </record>
+    </data>
+</odoo>

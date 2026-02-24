@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dojo_kpi_report_user,dojo.kpi.report user,model_dojo_kpi_report,base.group_user,1,1,1,1
+access_dojo_cohort_report_user,dojo.cohort.report user,model_dojo_cohort_report,base.group_user,1,0,0,0
+access_dojo_attendance_report_user,dojo.attendance.report user,model_dojo_attendance_report,base.group_user,1,0,0,0

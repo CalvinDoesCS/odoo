@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dojo_session_roster_user,dojo.session.roster user,model_dojo_session_roster,base.group_user,1,1,1,0
+access_dojo_session_roster_manager,dojo.session.roster manager,model_dojo_session_roster,base.group_system,1,1,1,1

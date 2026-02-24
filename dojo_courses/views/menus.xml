@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         Courses menu – under the shared Dojo Manager root
+    ============================================================ -->
+    <menuitem id="menu_courses"
+              name="Courses"
+              sequence="25"/>
+
+    <menuitem id="menu_course_list"
+              name="All Courses"
+              parent="menu_courses"
+              action="disaster_member_belts.action_course"
+              sequence="10"/>
+
+</odoo>

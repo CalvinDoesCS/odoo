@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         Extend res.partner form – add Attendance and Sessions smart buttons.
+         Inherits the belt-rank form view added by disaster_member_belts.
+    ============================================================ -->
+    <record id="view_partner_classes_form_inherit" model="ir.ui.view">
+        <field name="name">res.partner.classes.form.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="disaster_member_belts.view_partner_belt_rank_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//div[hasclass('oe_button_box')]" position="inside">
+                <!-- Attendance count for members -->
+                <button
+                    class="oe_stat_button"
+                    type="object"
+                    name="action_view_attendance"
+                    icon="fa-calendar-check-o"
+                    invisible="not is_member"
+                >
+                    <field name="attendance_count" widget="statinfo" string="Attendances"/>
+                </button>
+
+                <!-- Sessions Taught for instructors -->
+                <button
+                    class="oe_stat_button"
+                    type="object"
+                    name="action_view_sessions_taught"
+                    icon="fa-chalkboard"
+                    invisible="not is_instructor"
+                >
+                    <field name="sessions_taught_count" widget="statinfo" string="Sessions Taught"/>
+                </button>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

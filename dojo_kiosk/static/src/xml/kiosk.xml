@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+<t t-name="dojo_kiosk.KioskApp">
+  <div class="dk-root" t-on-click="onActivity">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         TOP BAR
+    ═══════════════════════════════════════════════════════════════ -->
+    <div class="dk-topbar">
+      <!-- Search -->
+      <div class="dk-search-wrap">
+        <span class="dk-search-ico">🔍</span>
+        <input id="dk-search-input"
+               class="dk-search-input"
+               type="text"
+               placeholder="Search name or scan badge..."
+               autocomplete="off"
+               t-att-value="state.searchQuery"
+               t-on-input="onSearchInput"/>
+        <button t-if="state.searchQuery" class="dk-search-clear" t-on-click="clearSearch">✕</button>
+      </div>
+
+      <!-- Session filter -->
+      <select class="dk-filter-select" t-on-change="onSessionFilterChange">
+        <option value="all">All Rosters</option>
+        <t t-foreach="state.sessions" t-as="s" t-key="s.id">
+          <option t-att-value="s.id"><t t-esc="s.name"/></option>
+        </t>
+      </select>
+
+      <!-- Refresh -->
+      <button class="dk-icon-btn" t-on-click="refreshRoster" title="Refresh">
+        <span t-att-class="state.loading ? 'dk-spin-icon' : ''">↺</span>
+      </button>
+
+      <!-- Settings -->
+      <button class="dk-icon-btn" t-on-click="openSettings" title="Settings">⚙</button>
+
+      <!-- Instructor toggle -->
+      <div class="dk-instructor-wrap">
+        <span class="dk-instructor-lbl">Instructor mode</span>
+        <button t-att-class="'dk-toggle ' + (state.instructorMode ? 'dk-toggle-on' : '')"
+                t-on-click="toggleInstructorMode">
+          <span class="dk-toggle-knob"/>
+        </button>
+        <span t-att-class="'dk-instructor-state ' + (state.instructorMode ? 'dk-state-enabled' : '')">
+          <t t-esc="state.instructorMode ? 'Enabled' : 'Disabled'"/>
+        </span>
+      </div>
+    </div>
+
+    <!-- hidden barcode field -->
+    <input id="dk-barcode-input" class="dk-barcode-hidden" type="text"
+           autocomplete="off" t-on-input="onBarcodeInput"/>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         MAIN ROSTER BODY
+    ═══════════════════════════════════════════════════════════════ -->
+    <div class="dk-body">
+
+      <!-- Loading skeleton -->
+      <div t-if="state.loading &amp;&amp; !state.sessions.length" class="dk-loading-center">
+        <div class="dk-spinner-lg"/>
+        <p>Loading rosters…</p>
+      </div>
+
+      <!-- No sessions today -->
+      <div t-elif="!state.loading &amp;&amp; !filteredSessions.length" class="dk-empty-body">
+        <div class="dk-empty-icon">📅</div>
+        <h2>No sessions today</h2>
+        <p t-if="state.searchQuery">No members match "<t t-esc="state.searchQuery"/>"</p>
+        <p t-else="">Check back when a class is scheduled.</p>
+      </div>
+
+      <!-- Session blocks -->
+      <t t-foreach="filteredSessions" t-as="sess" t-key="sess.id">
+        <div class="dk-session-block">
+          <!-- Session header bar -->
+          <div class="dk-session-header">
+            <div class="dk-sh-left">
+              <div class="dk-sh-course-title">
+                <span class="dk-sh-course-label">Course:</span>
+                <span class="dk-sh-name" t-esc="sess.course || sess.name || 'Untitled Course'"/>
+              </div>
+              <span t-if="sess.instructor" class="dk-sh-inst">Instructor: <t t-esc="sess.instructor"/></span>
+            </div>
+            <div class="dk-sh-right">
+              <span class="dk-sh-time">
+                <t t-esc="sess.time"/>
+                <t t-if="sess.time_end"> - <t t-esc="sess.time_end"/></t>
+              </span>
+              <span t-att-class="'dk-sh-state dk-state-' + sess.state" t-esc="sess.state"/>
+            </div>
+          </div>
+
+          <!-- Member avatar grid -->
+          <div class="dk-avatar-grid">
+            <t t-if="!sess.members.length">
+              <div class="dk-no-members">No roster members yet</div>
+            </t>
+            <t t-foreach="sess.members" t-as="m" t-key="m.id">
+              <div t-att-class="'dk-avatar-card' + (m.is_checked_in ? ' dk-card-in' : '')"
+                   t-on-click="() => openMember(m, sess.id)">
+                <div class="dk-ac-img-wrap">
+                  <img class="dk-ac-img" t-att-src="m.avatar_url" t-att-alt="m.name" loading="lazy"/>
+                  <!-- Status badge (instructor mode only) -->
+                  <div t-if="state.instructorMode"
+                       t-att-class="'dk-status-badge ' + (m.is_checked_in ? 'dk-badge-in' : 'dk-badge-out')">
+                    <t t-if="m.is_checked_in">✓</t>
+                    <t t-else="">✕</t>
+                  </div>
+                  <!-- Belt dot -->
+                  <div t-if="m.belt_rank" class="dk-belt-dot"
+                       t-att-style="'background:' + m.belt_color"/>
+                </div>
+                <div class="dk-ac-name" t-esc="m.name"/>
+              </div>
+            </t>
+          </div>
+        </div>
+      </t>
+    </div><!-- /dk-body -->
+
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SEARCH RESULTS OVERLAY (when searching + no roster match)
+    ═══════════════════════════════════════════════════════════════ -->
+    <div t-if="state.showSearchOverlay" class="dk-overlay">
+      <div class="dk-popup dk-search-popup">
+        <div class="dk-popup-header">
+          <h2>Search Results</h2>
+          <button class="dk-popup-close" t-on-click="closeSearchOverlay">✕</button>
+        </div>
+        <div t-if="state.searchLoading" class="dk-loading-center" style="min-height:120px">
+          <div class="dk-spinner"/>
+        </div>
+        <div t-elif="!state.globalSearchResults.length" class="dk-popup-empty">
+          No members found matching "<t t-esc="state.searchQuery"/>"
+        </div>
+        <div t-else="" class="dk-search-results-grid">
+          <t t-foreach="state.globalSearchResults" t-as="m" t-key="m.id">
+            <div class="dk-avatar-card" t-on-click="() => openMemberFromSearch(m)">
+              <div class="dk-ac-img-wrap">
+                <img class="dk-ac-img" t-att-src="m.avatar_url" t-att-alt="m.name" loading="lazy"/>
+                <div t-if="m.belt_rank" class="dk-belt-dot" t-att-style="'background:' + m.belt_color"/>
+              </div>
+              <div class="dk-ac-name" t-esc="m.name"/>
+            </div>
+          </t>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════════════════════
+         PIN MODAL (enable instructor mode)
+    ═══════════════════════════════════════════════════════════════ -->
+    <div t-if="state.showPinModal" class="dk-overlay">
+      <div class="dk-popup dk-pin-popup">
+        <button class="dk-popup-close" t-on-click="closePinModal">✕</button>
+        <div class="dk-pin-lock">🔒</div>
+        <h2>Instructor Access</h2>
+        <p>Enter staff PIN to enable instructor mode</p>
+        <div class="dk-pin-display">
+          <t t-foreach="[0,1,2,3]" t-as="i" t-key="i">
+            <div t-att-class="'dk-pin-dot ' + (state.staffPin.length > i ? 'dk-pin-filled' : '')"/>
+          </t>
+        </div>
+        <div class="dk-numpad">
+          <t t-foreach="['1','2','3','4','5','6','7','8','9','','0','⌫']" t-as="d" t-key="d_index">
+            <button t-att-class="'dk-numpad-btn ' + (d === '' ? 'dk-numpad-empty' : '')"
+                    t-att-disabled="d === '' || state.loading"
+                    t-on-click="() => pinPress(d)">
+              <t t-esc="d"/>
+            </button>
+          </t>
+        </div>
+        <div t-if="state.pinError" class="dk-pin-error" t-esc="state.pinError"/>
+        <div t-if="state.loading" class="dk-loading"><div class="dk-spinner"/></div>
+      </div>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════════════════════
+         MEMBER DETAIL POPUP (instructor mode — full management)
+    ═══════════════════════════════════════════════════════════════ -->
+    <div t-if="state.showMemberPopup" class="dk-overlay" t-on-click="closeMemberPopup">
+      <div class="dk-popup dk-member-popup" t-on-click.stop="">
+        <button class="dk-popup-close" t-on-click="closeMemberPopup">✕</button>
+
+        <div t-if="state.loadingMember" class="dk-loading-center" style="min-height:220px">
+          <div class="dk-spinner-lg"/>
+        </div>
+
+        <t t-elif="state.memberDetail">
+          <!-- Avatar + name -->
+          <div class="dk-mpop-hero">
+            <img class="dk-mpop-avatar" t-att-src="state.memberDetail.avatar_url" alt="Member"/>
+            <div t-if="state.memberDetail.belt_rank" class="dk-belt-dot dk-mpop-belt-dot"
+                 t-att-style="'background:' + state.memberDetail.belt_color"/>
+          </div>
+          <h2 class="dk-mpop-name" t-esc="state.memberDetail.name"/>
+
+          <!-- Stats row -->
+          <div class="dk-mpop-stats">
+            <div class="dk-mpop-stat">
+              <span class="dk-mpop-stat-ico">🏆</span>
+              <span class="dk-mpop-stat-val" t-esc="state.memberDetail.attendance_count"/>
+              <span class="dk-mpop-stat-lbl">Classes</span>
+            </div>
+            <div class="dk-mpop-stat">
+              <span class="dk-mpop-stat-ico">🥋</span>
+              <span class="dk-mpop-stat-val" t-esc="state.memberDetail.belt_rank || '—'"/>
+              <span class="dk-mpop-stat-lbl">Belt</span>
+            </div>
+            <div class="dk-mpop-stat">
+              <span class="dk-mpop-stat-ico">📋</span>
+              <span class="dk-mpop-stat-val" t-esc="state.memberDetail.today_sessions.length"/>
+              <span class="dk-mpop-stat-lbl">Today</span>
+            </div>
+          </div>
+
+          <!-- Issues -->
+          <div t-if="state.memberDetail.issues.length" class="dk-mpop-issues">
+            <t t-foreach="state.memberDetail.issues" t-as="issue" t-key="issue">
+              <div class="dk-issue-pill">⚠ <t t-esc="issue"/></div>
+            </t>
+          </div>
+
+          <!-- Today's sessions + Actions -->
+          <div class="dk-mpop-sessions">
+            <t t-foreach="state.memberDetail.today_sessions" t-as="ts" t-key="ts.session_id">
+              <div class="dk-mpop-sess-row">
+                <span class="dk-mpop-sess-name" t-esc="ts.session_name"/>
+                <span class="dk-mpop-sess-time" t-esc="ts.time"/>
+                <div class="dk-mpop-sess-actions">
+                  <t t-if="ts.is_checked_in">
+                    <span class="dk-checked-badge">✓ Checked in <t t-esc="ts.check_in_time"/></span>
+                    <button class="dk-btn dk-btn-sm dk-btn-warn"
+                            t-on-click="() => doCheckout(ts.attendance_id, ts.session_id)">
+                      Check Out
+                    </button>
+                  </t>
+                  <t t-else="">
+                    <button class="dk-btn dk-btn-sm dk-btn-primary"
+                            t-on-click="() => doCheckin(state.memberDetail.id, ts.session_id)">
+                      Check In
+                    </button>
+                    <button class="dk-btn dk-btn-sm dk-btn-danger"
+                            t-on-click="() => removeFromRoster(ts.roster_id, ts.session_id)">
+                      Remove
+                    </button>
+                  </t>
+                </div>
+              </div>
+            </t>
+            <div t-if="!state.memberDetail.today_sessions.length" class="dk-mpop-no-sessions">
+              Not on any roster today
+            </div>
+          </div>
+
+          <!-- Add to roster button (for the session context we opened from) -->
+          <div t-if="state.popupSessionId &amp;&amp; !isMemberInPopupSession()" class="dk-mpop-add-bar">
+            <button class="dk-btn dk-btn-primary dk-btn-full"
+                    t-on-click="() => addToRoster(state.memberDetail.id, state.popupSessionId)">
+              + Add to This Roster
+            </button>
+          </div>
+
+          <!-- Course enrollments -->
+          <div t-if="state.memberDetail.courses.length" class="dk-mpop-courses">
+            <div class="dk-mpop-courses-header">
+              <span>Course</span><span>Attendance</span>
+            </div>
+            <t t-foreach="state.memberDetail.courses" t-as="c" t-key="c.name">
+              <div class="dk-mpop-course-row">
+                <span class="dk-mpop-course-name" t-esc="c.name"/>
+                <span class="dk-mpop-course-att" t-esc="c.attendance"/>
+              </div>
+            </t>
+          </div>
+        </t>
+      </div>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════════════════════
+         CHECK-IN CONFIRM POPUP (student mode click)
+    ═══════════════════════════════════════════════════════════════ -->
+    <div t-if="state.showCheckinPopup &amp;&amp; state.checkinMember" class="dk-overlay" t-on-click="closeCheckinPopup">
+      <div class="dk-popup dk-checkin-popup" t-on-click.stop="">
+        <button class="dk-popup-close" t-on-click="closeCheckinPopup">✕</button>
+        <img class="dk-mpop-avatar" t-att-src="state.checkinMember.avatar_url" alt="Member"/>
+        <h2 class="dk-mpop-name" t-esc="state.checkinMember.name"/>
+        <p class="dk-checkin-session">
+          <t t-esc="state.checkinSessionName"/>
+        </p>
+        <div t-if="state.checkinMember.belt_rank" class="dk-belt-pill-lg"
+             t-att-style="'background:' + state.checkinMember.belt_color">
+          <t t-esc="state.checkinMember.belt_rank"/> Belt
+        </div>
+        <div class="dk-mpop-stats">
+          <div class="dk-mpop-stat">
+            <span class="dk-mpop-stat-ico">🏆</span>
+            <span class="dk-mpop-stat-val" t-esc="state.checkinMember.attendance_count || 0"/>
+            <span class="dk-mpop-stat-lbl">Classes</span>
+          </div>
+        </div>
+        <div t-if="state.loading" class="dk-loading"><div class="dk-spinner"/></div>
+        <div t-else="" class="dk-checkin-actions">
+          <button class="dk-btn dk-btn-primary dk-btn-lg dk-btn-full"
+                  t-on-click="() => confirmCheckin(state.checkinMember.id, state.checkinSessionId)">
+            ✓ Check In
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SUCCESS TOAST
+    ═══════════════════════════════════════════════════════════════ -->
+    <div t-if="state.showSuccessToast" class="dk-toast dk-toast-success">
+      <span class="dk-toast-ico">✓</span>
+      <span t-esc="state.toastMessage"/>
+    </div>
+
+    <!-- ERROR TOAST -->
+    <div t-if="state.showErrorToast" class="dk-toast dk-toast-error">
+      <span class="dk-toast-ico">✕</span>
+      <span t-esc="state.toastMessage"/>
+    </div>
+
+  </div><!-- /dk-root -->
+</t>
+
+</templates>

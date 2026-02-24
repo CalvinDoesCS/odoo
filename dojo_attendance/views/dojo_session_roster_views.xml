@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════ Roster Form ═══════════ -->
+    <record id="view_dojo_session_roster_form" model="ir.ui.view">
+        <field name="name">dojo.session.roster.form</field>
+        <field name="model">dojo.session.roster</field>
+        <field name="arch" type="xml">
+            <form string="Roster Entry">
+                <header>
+                    <button name="action_check_in" type="object"
+                            string="Check In" class="btn-success"
+                            invisible="state not in ['booked','waitlisted']"/>
+                    <button name="action_check_out" type="object"
+                            string="Check Out" class="btn-secondary"
+                            invisible="state != 'attended' or checkout_dt"/>
+                    <button name="action_mark_no_show" type="object"
+                            string="No Show" class="btn-warning"
+                            invisible="state != 'booked'"/>
+                    <button name="action_cancel" type="object"
+                            string="Cancel" class="btn-danger"
+                            invisible="state in ['attended','cancelled']"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="booked,attended,no_show,cancelled"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="session_id" options="{'no_create': True}"/>
+                            <field name="member_id" options="{'no_create': True}"/>
+                            <field name="source"/>
+                        </group>
+                        <group>
+                            <field name="booked_at" readonly="1"/>
+                            <field name="checkin_dt"/>
+                            <field name="checkout_dt"/>
+                            <field name="notes"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════ Roster List ═══════════ -->
+    <record id="view_dojo_session_roster_list" model="ir.ui.view">
+        <field name="name">dojo.session.roster.list</field>
+        <field name="model">dojo.session.roster</field>
+        <field name="arch" type="xml">
+            <list string="Roster" decoration-success="state == 'attended'"
+                  decoration-warning="state == 'waitlisted'"
+                  decoration-danger="state == 'no_show'"
+                  decoration-muted="state == 'cancelled'">
+                <field name="session_date" optional="show"/>
+                <field name="session_id"/>
+                <field name="member_id"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'attended'"
+                       decoration-warning="state == 'waitlisted'"
+                       decoration-danger="state == 'no_show'"
+                       decoration-muted="state == 'cancelled'"/>
+                <field name="source"/>
+                <field name="checkin_dt" optional="show"/>
+                <field name="checkout_dt" optional="show"/>
+                <button name="action_check_in" type="object"
+                        string="✓ Check In" class="btn-sm btn-success"
+                        invisible="state not in ['booked','waitlisted']"/>
+                <button name="action_mark_no_show" type="object"
+                        string="No Show" class="btn-sm btn-warning"
+                        invisible="state != 'booked'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ═══════════ Roster Search ═══════════ -->
+    <record id="view_dojo_session_roster_search" model="ir.ui.view">
+        <field name="name">dojo.session.roster.search</field>
+        <field name="model">dojo.session.roster</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="member_id"/>
+                <field name="session_id"/>
+                <separator/>
+                <filter string="Booked" name="booked" domain="[('state','=','booked')]"/>
+                <filter string="Waitlisted" name="waitlisted" domain="[('state','=','waitlisted')]"/>
+                <filter string="Attended" name="attended" domain="[('state','=','attended')]"/>
+                <filter string="No Show" name="no_show" domain="[('state','=','no_show')]"/>
+                <filter string="Today" name="today"
+                        domain="[('session_date','&gt;=', (context_today()).strftime('%Y-%m-%d 00:00:00')),
+                                 ('session_date','&lt;=', (context_today()).strftime('%Y-%m-%d 23:59:59'))]"/>
+                <group>
+                    <filter name="group_session" string="Session" context="{'group_by': 'session_id'}"/>
+                    <filter name="group_member" string="Member" context="{'group_by': 'member_id'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ═══════════ Roster Action ═══════════ -->
+    <record id="action_dojo_session_roster" model="ir.actions.act_window">
+        <field name="name">Session Roster</field>
+        <field name="res_model">dojo.session.roster</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_today': 1}</field>
+    </record>
+
+    <!-- ═══════════ Today's Attendance ═══════════ -->
+    <record id="action_dojo_roster_today" model="ir.actions.act_window">
+        <field name="name">Today's Attendance</field>
+        <field name="res_model">dojo.session.roster</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_today': 1, 'search_default_booked': 1}</field>
+    </record>
+
+    <!-- ═══════════ No Shows ═══════════ -->
+    <record id="action_dojo_roster_no_shows" model="ir.actions.act_window">
+        <field name="name">No Shows</field>
+        <field name="res_model">dojo.session.roster</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[('state','=','no_show')]</field>
+    </record>
+
+</odoo>

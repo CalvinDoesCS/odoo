@@ -1,0 +1,17 @@
+email,class_name,check_in,class_type
+john.miller@email.com,Monday BJJ Adults,2026-02-03 18:00:00,bjj
+john.miller@email.com,Wednesday BJJ Adults,2026-02-05 18:00:00,bjj
+john.miller@email.com,Friday Sparring,2026-02-07 17:30:00,sparring
+sarah.chen@email.com,Monday BJJ Adults,2026-02-03 18:00:00,bjj
+sarah.chen@email.com,Tuesday Kids Class,2026-02-04 16:00:00,kids
+marcus.j@email.com,Monday BJJ Adults,2026-02-03 18:00:00,bjj
+marcus.j@email.com,Wednesday BJJ Adults,2026-02-05 18:00:00,bjj
+marcus.j@email.com,Friday Sparring,2026-02-07 17:30:00,sparring
+marcus.j@email.com,Saturday Open Mat,2026-02-08 10:00:00,open_mat
+lucia.garcia@email.com,Monday BJJ Adults,2026-02-10 18:00:00,bjj
+tommy.n@email.com,Monday Kids Class,2026-02-10 16:00:00,kids
+diana.ross@email.com,Wednesday BJJ Adults,2026-02-05 18:00:00,bjj
+diana.ross@email.com,Friday Sparring,2026-02-07 17:30:00,sparring
+kevin.park@email.com,Monday BJJ Adults,2026-02-03 18:00:00,bjj
+ryan.okafor@email.com,Monday BJJ Adults,2026-02-03 18:00:00,bjj
+ryan.okafor@email.com,Wednesday BJJ Adults,2026-02-05 18:00:00,bjj

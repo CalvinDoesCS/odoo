@@ -1,0 +1,11 @@
+email,plan_name,billing_cycle,start_date,end_date,status,price
+john.miller@email.com,Adult BJJ Monthly,monthly,2024-01-15,,active,99.00
+sarah.chen@email.com,Adult BJJ Monthly,monthly,2024-03-01,,active,99.00
+marcus.j@email.com,Adult BJJ Monthly,monthly,2023-06-10,,active,99.00
+lucia.garcia@email.com,Trial 2-Week,monthly,2026-02-01,2026-02-15,active,0.00
+tommy.n@email.com,Trial 2-Week,monthly,2026-02-10,2026-02-24,active,0.00
+diana.ross@email.com,Unlimited Family,monthly,2022-09-01,,active,149.00
+kevin.park@email.com,Adult BJJ Monthly,monthly,2024-11-20,,active,99.00
+alex.mendez@email.com,Instructor Plan,monthly,2020-01-01,,active,0.00
+emily.t@email.com,Adult BJJ Monthly,monthly,2025-01-05,2025-04-05,cancelled,99.00
+ryan.okafor@email.com,Adult BJJ Monthly,monthly,2023-10-15,,active,99.00

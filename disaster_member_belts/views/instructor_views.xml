@@ -13,8 +13,6 @@
                 <field name="instructor_specializations"/>
                 <field name="instructor_belt_rank"/>
                 <field name="assigned_member_count"/>
-                <field name="led_course_count"/>
-                <field name="sessions_taught_count"/>
                 <field name="image_128" widget="image"/>
                 <field name="phone"/>
                 <field name="email"/>
@@ -42,10 +40,6 @@
                                 <i class="fa fa-users me-1" title="Students"/>
                                 <field name="assigned_member_count"/> students
                             </span>
-                            <span class="badge text-bg-success">
-                                <i class="fa fa-book me-1" title="Courses"/>
-                                <field name="led_course_count"/> courses
-                            </span>
                         </div>
                         <div class="mt8 text-muted small">
                             <t t-if="record.phone.value">
@@ -70,8 +64,6 @@
                 <field name="instructor_specializations" string="Specializations"/>
                 <field name="instructor_belt_rank" string="Belt"/>
                 <field name="assigned_member_count" string="Students"/>
-                <field name="led_course_count" string="Courses"/>
-                <field name="sessions_taught_count" string="Sessions Taught"/>
                 <field name="phone"/>
                 <field name="email"/>
             </list>
@@ -79,12 +71,8 @@
     </record>
 
     <!-- ============================================================
-         Instructor – Form (inherits res.partner base form)
-    ============================================================ -->
-    <!-- ============================================================
-         New tab + smart buttons on the partner form
-         (Inherits the disaster belt-rank form which is already built
-          on top of base.view_partner_form)
+         Instructor – Form extension
+         Inherits the disaster belt-rank form.
     ============================================================ -->
     <record id="view_partner_instructor_form" model="ir.ui.view">
         <field name="name">res.partner.instructor.form</field>
@@ -92,35 +80,17 @@
         <field name="inherit_id" ref="disaster_member_belts.view_partner_belt_rank_form"/>
         <field name="arch" type="xml">
 
-            <!-- Smart buttons: sessions taught, students, courses, member enrollments -->
+            <!-- Smart button: assigned students -->
             <xpath expr="//div[@name='button_box']" position="inside">
-                <button name="action_view_sessions_taught" type="object"
-                        class="oe_stat_button" icon="fa-calendar"
-                        invisible="not is_instructor">
-                    <field name="sessions_taught_count" widget="statinfo" string="Sessions Taught"/>
-                </button>
                 <button name="action_view_assigned_students" type="object"
                         class="oe_stat_button" icon="fa-users"
                         invisible="not is_instructor">
                     <field name="assigned_member_count" widget="statinfo" string="Students"/>
                 </button>
-                <button name="action_view_led_courses" type="object"
-                        class="oe_stat_button" icon="fa-book"
-                        invisible="not is_instructor">
-                    <field name="led_course_count" widget="statinfo" string="Courses"/>
-                </button>
-                <button name="action_view_enrolled_courses" type="object"
-                        class="oe_stat_button" icon="fa-graduation-cap"
-                        invisible="not is_member">
-                    <div class="o_stat_info">
-                        <span class="o_stat_text">Courses</span>
-                    </div>
-                </button>
             </xpath>
 
-            <!-- Instructor profile fields: insert after is_instructor -->
-            <xpath expr="//field[@name='is_instructor']"
-                   position="after">
+            <!-- Instructor profile fields -->
+            <xpath expr="//field[@name='is_instructor']" position="after">
                 <field name="instructor_specializations"
                        placeholder="e.g. Karate, BJJ, Kids Classes"
                        invisible="not is_instructor"/>
@@ -128,9 +98,8 @@
                        invisible="not is_instructor"/>
             </xpath>
 
-            <!-- Instructor notebook page inside the existing notebook -->
+            <!-- Instructor notebook page -->
             <xpath expr="//notebook" position="inside">
-
                 <page string="Instructor Profile" invisible="not is_instructor">
                     <group string="Bio">
                         <field name="instructor_bio" nolabel="1"
@@ -147,7 +116,6 @@
                         </list>
                     </field>
                 </page>
-
             </xpath>
 
         </field>

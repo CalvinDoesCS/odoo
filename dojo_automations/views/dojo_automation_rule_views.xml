@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         dojo.automation.rule  – Form
+    ═══════════════════════════════════════════════════════════════════ -->
+    <record id="view_dojo_automation_rule_form" model="ir.ui.view">
+        <field name="name">dojo.automation.rule.form</field>
+        <field name="model">dojo.automation.rule</field>
+        <field name="arch" type="xml">
+            <form string="Automation Rule">
+                <header>
+                    <button name="action_test_run" type="object" string="▶ Test Run"
+                            class="btn-secondary"
+                            confirm="This will execute the rule against a sample active member. Continue?" />
+                    <field name="active" widget="boolean_toggle"
+                           options="{'terminology': {'true_label':'Active','false_label':'Disabled'}}" />
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Rule name…" /></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="trigger" />
+                            <field name="company_id" groups="base.group_multi_company" />
+                            <field name="sequence" />
+                        </group>
+                        <group>
+                            <field name="run_count" />
+                            <field name="last_run_dt" />
+                        </group>
+                    </group>
+                    <group>
+                        <field name="domain_filter"
+                               placeholder='[("belt_rank","=","blue"),("member_stage","=","active")]' />
+                    </group>
+
+                    <notebook>
+                        <page string="Actions" name="actions">
+                            <field name="action_ids" nolabel="1">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle" />
+                                    <field name="action_type" />
+                                    <field name="email_template_id"
+                                           invisible="action_type != 'email'"
+                                           optional="show" />
+                                    <field name="sms_body"
+                                           invisible="action_type != 'sms'"
+                                           optional="show" />
+                                    <field name="push_title"
+                                           invisible="action_type != 'push'"
+                                           optional="show" />
+                                    <field name="push_body"
+                                           invisible="action_type != 'push'"
+                                           optional="show" />
+                                    <field name="webhook_url"
+                                           invisible="action_type != 'webhook'"
+                                           optional="show" />
+                                    <field name="webhook_method"
+                                           invisible="action_type != 'webhook'"
+                                           optional="show" />
+                                    <field name="activity_type_id"
+                                           invisible="action_type != 'create_activity'"
+                                           optional="show" />
+                                    <field name="activity_summary"
+                                           invisible="action_type != 'create_activity'"
+                                           optional="show" />
+                                    <field name="tag_ids"
+                                           widget="many2many_tags"
+                                           invisible="action_type != 'tag'"
+                                           optional="show" />
+                                    <field name="tag_remove_ids"
+                                           widget="many2many_tags"
+                                           invisible="action_type != 'tag'"
+                                           optional="show" />
+                                </list>
+                                <form string="Action">
+                                    <group>
+                                        <group>
+                                            <field name="sequence" />
+                                            <field name="action_type" />
+                                        </group>
+                                    </group>
+                                    <notebook>
+                                        <page string="Email"
+                                              invisible="action_type != 'email'">
+                                            <group>
+                                                <field name="email_template_id" />
+                                            </group>
+                                        </page>
+                                        <page string="SMS"
+                                              invisible="action_type != 'sms'">
+                                            <group>
+                                                <field name="sms_body" />
+                                            </group>
+                                        </page>
+                                        <page string="Push Notification"
+                                              invisible="action_type != 'push'">
+                                            <group>
+                                                <field name="push_title" />
+                                                <field name="push_body" />
+                                            </group>
+                                        </page>
+                                        <page string="Webhook"
+                                              invisible="action_type != 'webhook'">
+                                            <group>
+                                                <field name="webhook_url" />
+                                                <field name="webhook_method" />
+                                                <field name="webhook_headers" widget="code"
+                                                       options="{'mode':'json'}" />
+                                            </group>
+                                            <group>
+                                                <field name="config_json" nolabel="1"
+                                                       widget="code" options="{'mode':'json'}" />
+                                            </group>
+                                        </page>
+                                        <page string="Activity"
+                                              invisible="action_type != 'create_activity'">
+                                            <group>
+                                                <field name="activity_type_id" />
+                                                <field name="activity_summary" />
+                                            </group>
+                                        </page>
+                                        <page string="Tags"
+                                              invisible="action_type != 'tag'">
+                                            <group>
+                                                <field name="tag_ids" widget="many2many_tags" />
+                                                <field name="tag_remove_ids" widget="many2many_tags" />
+                                            </group>
+                                        </page>
+                                    </notebook>
+                                </form>
+                            </field>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="description" />
+                        </page>
+                        <page string="Log" name="log">
+                            <div class="o_setting_box">
+                                <span class="o_form_label">Run Count:</span>
+                                <field name="run_count" readonly="1" class="ms-2" />
+                            </div>
+                            <div class="o_setting_box">
+                                <span class="o_form_label">Last Run:</span>
+                                <field name="last_run_dt" readonly="1" class="ms-2" />
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter />
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         dojo.automation.rule  – List
+    ═══════════════════════════════════════════════════════════════════ -->
+    <record id="view_dojo_automation_rule_list" model="ir.ui.view">
+        <field name="name">dojo.automation.rule.list</field>
+        <field name="model">dojo.automation.rule</field>
+        <field name="arch" type="xml">
+            <list string="Automation Rules" decoration-muted="not active">
+                <field name="sequence" widget="handle" />
+                <field name="name" />
+                <field name="trigger" />
+                <field name="action_ids" string="# Actions" widget="integer" />
+                <field name="run_count" />
+                <field name="last_run_dt" />
+                <field name="active" widget="boolean_toggle" />
+                <field name="company_id" groups="base.group_multi_company" />
+            </list>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         dojo.automation.rule  – Search
+    ═══════════════════════════════════════════════════════════════════ -->
+    <record id="view_dojo_automation_rule_search" model="ir.ui.view">
+        <field name="name">dojo.automation.rule.search</field>
+        <field name="model">dojo.automation.rule</field>
+        <field name="arch" type="xml">
+            <search string="Search Automation Rules">
+                <field name="name" />
+                <field name="trigger" />
+                <filter string="Active" name="active" domain="[('active','=',True)]" />
+                <filter string="Archived" name="archived" domain="[('active','=',False)]" />
+                <separator />
+                <group>
+                    <filter name="group_trigger" string="Trigger"
+                            context="{'group_by':'trigger'}" />
+                    <filter name="group_company" string="Dojo"
+                            context="{'group_by':'company_id'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Action
+    ═══════════════════════════════════════════════════════════════════ -->
+    <record id="action_dojo_automation_rules" model="ir.actions.act_window">
+        <field name="name">Automation Rules</field>
+        <field name="res_model">dojo.automation.rule</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first automation rule!
+            </p>
+            <p>
+                Automation rules let you trigger emails, SMS, push notifications,
+                webhooks, and tag changes automatically when dojo events occur.
+            </p>
+        </field>
+    </record>
+
+</odoo>

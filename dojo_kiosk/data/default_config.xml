@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="default_kiosk_config" model="dojo.kiosk.config">
+        <field name="name">Front Desk Kiosk</field>
+        <field name="welcome_message">Welcome to the Dojo! Scan your badge or search your name to check in.</field>
+        <field name="success_message">You're checked in! Have a great class!</field>
+        <field name="staff_pin">1234</field>
+        <field name="idle_timeout_sec">45</field>
+        <field name="allow_walk_in" eval="True"/>
+        <field name="show_belt_rank" eval="True"/>
+        <field name="show_attendance_count" eval="True"/>
+    </record>
+</odoo>

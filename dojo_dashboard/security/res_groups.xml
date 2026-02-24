@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ── Module category ───────────────────────────────────────────── -->
+    <record id="module_category_dojo" model="ir.module.category">
+        <field name="name">Dojo</field>
+        <field name="sequence">50</field>
+    </record>
+
+    <!-- ── Privilege (groups within the Dojo category) ───────────────── -->
+    <record model="res.groups.privilege" id="privilege_dojo_staff">
+        <field name="name">Dojo Staff</field>
+        <field name="sequence">50</field>
+        <field name="category_id" ref="module_category_dojo"/>
+    </record>
+
+    <!-- ── Instructor ─────────────────────────────────────────────────── -->
+    <record id="group_dojo_instructor" model="res.groups">
+        <field name="name">Instructor</field>
+        <field name="sequence">10</field>
+        <field name="privilege_id" ref="privilege_dojo_staff"/>
+        <field name="implied_ids" eval="[(6, 0, [ref('base.group_user')])]"/>
+        <field name="comment">Can use the Dojo dashboard and check in members. Cannot access HR Employees.</field>
+    </record>
+
+    <!-- ── Manager – inherits Instructor ─────────────────────────────── -->
+    <record id="group_dojo_manager" model="res.groups">
+        <field name="name">Manager</field>
+        <field name="sequence">20</field>
+        <field name="privilege_id" ref="privilege_dojo_staff"/>
+        <field name="implied_ids" eval="[(4, ref('group_dojo_instructor'))]"/>
+        <field name="comment">Full dojo management access including HR Employees.</field>
+    </record>
+
+</odoo>

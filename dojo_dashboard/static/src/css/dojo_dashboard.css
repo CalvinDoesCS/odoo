@@ -1,0 +1,663 @@
+/* ══════════════════════════════════════════════════════════════════════
+   Dojo Dashboard  –  dojo_dashboard.css
+══════════════════════════════════════════════════════════════════════ */
+
+/* ── Outer wrapper ───────────────────────────────────────────────────── */
+.dojo-analytics-wrapper {
+    background: #f1f4fb;
+    min-height: 100vh;
+    font-family: inherit;
+}
+
+/* ── Full-page loader ────────────────────────────────────────────────── */
+.dojo-full-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60vh;
+}
+
+/* ── Page header ─────────────────────────────────────────────────────── */
+.dojo-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 28px 14px;
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f5;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.dojo-page-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1a2a4a;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dojo-page-title .fa {
+    color: #2563eb;
+}
+
+.dojo-month-pill {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #4b68a8;
+    background: #dde8fb;
+    padding: 3px 12px;
+    border-radius: 20px;
+}
+
+.dojo-page-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.dojo-hdr-btn {
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid #c8d4ea;
+    background: #ffffff;
+    color: #344775;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.dojo-hdr-btn:hover {
+    background: #eef2fb;
+    transform: translateY(-1px);
+}
+
+.dojo-hdr-btn-primary {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+}
+
+.dojo-hdr-btn-primary:hover {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+/* ── Payment gateway banner ──────────────────────────────────────────── */
+.dojo-gateway-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 14px 28px 14px;
+    padding: 11px 16px;
+    background: #fff7ed;
+    border: 1.5px solid #fed7aa;
+    border-left: 4px solid #ea580c;
+    border-radius: 10px;
+    font-size: 0.84rem;
+    color: #7c2d12;
+}
+
+.dojo-gateway-icon {
+    font-size: 1.1rem;
+    color: #ea580c;
+    flex-shrink: 0;
+}
+
+.dojo-gateway-text {
+    flex: 1;
+    line-height: 1.5;
+}
+
+.dojo-gateway-btn {
+    padding: 5px 14px;
+    background: #ea580c;
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+
+.dojo-gateway-btn:hover {
+    background: #c2410c;
+}
+
+/* ── Layout: flex row, KPIs expand, sidebar fixed ───────────────────── */
+.dojo-layout {
+    display: flex;
+    align-items: flex-start;
+    min-height: calc(100vh - 76px);
+}
+
+/* ── KPI section ─────────────────────────────────────────────────────── */
+.dojo-kpi-section {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 20px 24px 32px;
+}
+
+/* ── Section labels ──────────────────────────────────────────────────── */
+.dojo-section-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    color: #8a98b8;
+    margin: 18px 0 10px;
+}
+
+/* ── KPI rows ────────────────────────────────────────────────────────── */
+.dojo-kpi-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 4px;
+}
+
+/* ── KPI card ────────────────────────────────────────────────────────── */
+.dojo-kpi-card {
+    flex: 1 1 140px;
+    min-width: 130px;
+    max-width: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 22px 16px 18px;
+    border-radius: 14px;
+    background: #ffffff;
+    border: 1.5px solid #e4eaf5;
+    border-top: 4px solid #c8d4ea;
+    box-shadow: 0 2px 8px rgba(30, 50, 100, 0.07);
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    text-align: center;
+    gap: 6px;
+    user-select: none;
+}
+
+.dojo-kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(30, 50, 100, 0.14);
+}
+
+/* Wide card variant for billing */
+.dojo-kpi-wide {
+    flex: 1 1 180px;
+    max-width: 260px;
+}
+
+/* ── Card parts ──────────────────────────────────────────────────────── */
+.dojo-kpi-icon {
+    font-size: 1.6rem;
+    opacity: 0.5;
+    line-height: 1;
+}
+
+.dojo-kpi-value {
+    font-size: 2.1rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1;
+    color: #1a2a4a;
+}
+
+.dojo-kpi-label {
+    font-size: 0.78rem;
+    color: #6b7a99;
+    font-weight: 500;
+    line-height: 1.4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+}
+
+.dojo-kpi-label small {
+    font-size: 0.68rem;
+    color: #9caacc;
+    font-weight: 400;
+}
+
+/* ── Colour variants ─────────────────────────────────────────────────── */
+.dojo-kpi-green {
+    border-top-color: #16a34a;
+}
+
+.dojo-kpi-green .dojo-kpi-value {
+    color: #16a34a;
+}
+
+.dojo-kpi-green .dojo-kpi-icon {
+    color: #16a34a;
+    opacity: 0.6;
+}
+
+.dojo-kpi-blue {
+    border-top-color: #2563eb;
+}
+
+.dojo-kpi-blue .dojo-kpi-value {
+    color: #2563eb;
+}
+
+.dojo-kpi-blue .dojo-kpi-icon {
+    color: #2563eb;
+    opacity: 0.6;
+}
+
+.dojo-kpi-orange {
+    border-top-color: #ea580c;
+}
+
+.dojo-kpi-orange .dojo-kpi-value {
+    color: #ea580c;
+}
+
+.dojo-kpi-orange .dojo-kpi-icon {
+    color: #ea580c;
+    opacity: 0.6;
+}
+
+.dojo-kpi-red {
+    border-top-color: #dc2626;
+}
+
+.dojo-kpi-red .dojo-kpi-value {
+    color: #dc2626;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────── */
+.dojo-sidebar {
+    width: 320px;
+    min-width: 300px;
+    flex-shrink: 0;
+    border-left: 1px solid #e0e6ed;
+    background: #f8fafc;
+    min-height: calc(100vh - 76px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Widget shell  (shared by Todo, Calendar, Announcements)
+══════════════════════════════════════════════════════════════════════ */
+.dojo-widget {
+    background: #ffffff;
+    border-bottom: 1px solid #e8edf5;
+}
+
+.dojo-widget-todo {
+    /* first widget – no top border needed */
+}
+
+.dojo-widget-calendar {}
+
+.dojo-widget-ann {
+    flex: 1;
+}
+
+.dojo-widget-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid #f0f4fa;
+}
+
+.dojo-widget-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1a2a4a;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.dojo-widget-subtitle {
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: #96a3bc;
+    margin-left: 2px;
+}
+
+.dojo-widget-icon {
+    font-size: 1rem;
+}
+
+.icon-todo {
+    color: #2563eb;
+}
+
+.icon-cal {
+    color: #d97706;
+}
+
+.icon-ann {
+    color: #dc2626;
+}
+
+.dojo-widget-action {
+    background: none;
+    border: none;
+    padding: 4px 6px;
+    border-radius: 6px;
+    color: #96a3bc;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background 0.12s, color 0.12s;
+}
+
+.dojo-widget-action:hover {
+    background: #eef2fb;
+    color: #2563eb;
+}
+
+.dojo-widget-body {
+    padding: 8px 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.dojo-widget-loading {
+    text-align: center;
+    padding: 12px 0;
+    color: #96a3bc;
+    font-size: 1.1rem;
+}
+
+.dojo-widget-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 0;
+    color: #adb5bd;
+    font-size: 0.82rem;
+}
+
+.dojo-empty-icon {
+    font-size: 1.6rem;
+    opacity: 0.5;
+}
+
+/* ── Widget row (shared) ─────────────────────────────────────────────── */
+.dojo-widget-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 7px 4px;
+    border-radius: 6px;
+    transition: background 0.12s;
+}
+
+.dojo-widget-row:hover {
+    background: #f5f8ff;
+}
+
+/* ── To-Do widget specifics ──────────────────────────────────────────── */
+.dojo-widget-add {
+    display: flex;
+    gap: 6px;
+    padding: 10px 14px 6px;
+}
+
+.dojo-widget-input {
+    flex: 1;
+    padding: 7px 10px;
+    border: 1.5px solid #dde3f0;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.15s;
+    background: #f8fafc;
+}
+
+.dojo-widget-input:focus {
+    border-color: #2563eb;
+    background: #fff;
+}
+
+.dojo-widget-add-btn {
+    padding: 7px 12px;
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.15s;
+    flex-shrink: 0;
+}
+
+.dojo-widget-add-btn:hover {
+    background: #1d4ed8;
+}
+
+/* Custom checkbox */
+.dojo-todo-check {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.dojo-todo-check input {
+    display: none;
+}
+
+.dojo-checkmark {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #c0ccdf;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s;
+    position: relative;
+}
+
+.dojo-todo-check input:checked+.dojo-checkmark {
+    background: #2563eb;
+    border-color: #2563eb;
+}
+
+.dojo-todo-check input:checked+.dojo-checkmark::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 5px;
+    width: 5px;
+    height: 9px;
+    border: 2px solid #fff;
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg);
+}
+
+.dojo-todo-text {
+    flex: 1;
+    font-size: 0.87rem;
+    color: #2d3748;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.dojo-todo-due {
+    font-size: 0.72rem;
+    color: #96a3bc;
+    white-space: nowrap;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.dojo-priority-high {
+    color: #c0392b !important;
+    font-weight: 600;
+}
+
+/* ── Calendar widget specifics ───────────────────────────────────────── */
+.dojo-cal-accent {
+    width: 4px;
+    min-height: 36px;
+    border-radius: 4px;
+    background: #2563eb;
+    flex-shrink: 0;
+    margin-top: 2px;
+    align-self: stretch;
+}
+
+.dojo-cal-accent-session {
+    background: #16a34a;
+}
+
+.dojo-cal-badge-session {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: #dcfce7;
+    color: #15803d;
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+.dojo-cal-instructor {
+    font-size: 0.72rem;
+    color: #96a3bc;
+}
+
+.dojo-cal-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.dojo-cal-title {
+    font-size: 0.87rem;
+    font-weight: 600;
+    color: #1a2a4a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dojo-cal-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.dojo-cal-day {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #2563eb;
+}
+
+.dojo-cal-time {
+    font-size: 0.75rem;
+    color: #6b7a99;
+}
+
+.dojo-cal-loc {
+    font-size: 0.72rem;
+    color: #96a3bc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Announcements widget specifics ──────────────────────────────────── */
+.dojo-ann-dot {
+    color: #c0ccdf;
+    font-size: 0.5rem;
+    margin-top: 5px;
+}
+
+.icon-pinned {
+    color: #dc2626;
+    margin-top: 2px;
+    font-size: 0.85rem;
+}
+
+.dojo-ann-row {
+    cursor: pointer;
+}
+
+.dojo-ann-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.dojo-ann-title {
+    font-size: 0.87rem;
+    font-weight: 600;
+    color: #1a2a4a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dojo-ann-summary {
+    font-size: 0.75rem;
+    color: #6b7a99;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+    .dojo-sidebar {
+        width: 280px;
+        min-width: 260px;
+    }
+
+    .dojo-kpi-card {
+        flex: 1 1 120px;
+        max-width: 180px;
+    }
+}
+
+@media (max-width: 860px) {
+    .dojo-layout {
+        flex-direction: column;
+    }
+
+    .dojo-sidebar {
+        width: 100%;
+        min-width: 0;
+        min-height: unset;
+        border-left: none;
+        border-top: 1px solid #e0e6ed;
+    }
+
+    .dojo-kpi-card {
+        flex: 1 1 130px;
+        max-width: none;
+    }
+}
+
+@media (max-width: 500px) {
+    .dojo-kpi-section {
+        padding: 12px 14px 20px;
+    }
+
+    .dojo-kpi-card {
+        flex: 1 1 calc(50% - 7px);
+    }
+}

@@ -1,1 +1,2 @@
-from . import portal, kiosk
+from . import portal
+from . import auth

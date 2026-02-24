@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════ Extend partner form with dojo_members fields ═══════ -->
+    <record id="view_partner_dojo_members_ext" model="ir.ui.view">
+        <field name="name">res.partner.dojo.members.ext</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="disaster_member_belts.res_partner_view_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Smart button: Household -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="%(dojo_members.action_dojo_household)d"
+                        type="action"
+                        class="oe_stat_button" icon="fa-home"
+                        invisible="not dojo_household_id">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Household</span>
+                    </div>
+                </button>
+            </xpath>
+
+            <!-- Insert a new page in the notebook for extended member info -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Household &amp; Consent" name="dojo_household_consent"
+                      invisible="not is_member and not is_instructor">
+                    <group>
+                        <group string="Household">
+                            <field name="dojo_member_number"/>
+                            <field name="dojo_household_id"/>
+                            <field name="dojo_gender"/>
+                            <field name="dojo_minor" readonly="1"/>
+                        </group>
+                        <group string="Consent / Waiver">
+                            <field name="dojo_consent_state" widget="badge"
+                                   decoration-success="dojo_consent_state == 'accepted'"
+                                   decoration-warning="dojo_consent_state == 'pending'"
+                                   decoration-danger="dojo_consent_state == 'revoked'"/>
+                            <field name="dojo_consent_signed_at" readonly="1"/>
+                            <field name="dojo_consent_signed_by_id" readonly="1"/>
+                            <div class="o_field_widget">
+                                <button name="action_accept_consent" type="object"
+                                        string="Mark Accepted"
+                                        class="btn btn-success btn-sm"
+                                        invisible="dojo_consent_state == 'accepted'"/>
+                                <button name="action_revoke_consent" type="object"
+                                        string="Revoke"
+                                        class="btn btn-danger btn-sm"
+                                        invisible="dojo_consent_state == 'revoked'"/>
+                            </div>
+                        </group>
+                    </group>
+                    <group string="Staff Notes" groups="disaster_member_belts.group_dojo_manager">
+                        <field name="dojo_medical_notes" nolabel="1"
+                               placeholder="Medical / allergy notes visible to staff only…"/>
+                        <field name="dojo_internal_notes" nolabel="1"
+                               placeholder="Internal staff notes…"/>
+                    </group>
+                </page>
+            </xpath>
+
+        </field>
+    </record>
+
+    <!-- ═══════ Member action (full list) ═══════ -->
+    <record id="action_dojo_all_members" model="ir.actions.act_window">
+        <field name="name">All Members</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('is_member','=',True)]</field>
+        <field name="context">{'default_is_member': True}</field>
+    </record>
+
+    <!-- ═══════ Active members ═══════ -->
+    <record id="action_dojo_active_members" model="ir.actions.act_window">
+        <field name="name">Active Members</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('is_member','=',True),('member_stage','=','active')]</field>
+        <field name="context">{'default_is_member': True, 'default_member_stage': 'active'}</field>
+    </record>
+
+    <!-- ═══════ Leads / Trials ═══════ -->
+    <record id="action_dojo_leads" model="ir.actions.act_window">
+        <field name="name">Leads &amp; Trials</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('is_member','=',True),('member_stage','in',['lead','trial'])]</field>
+    </record>
+
+    <!-- ═══════ Consent pending ═══════ -->
+    <record id="action_dojo_consent_pending" model="ir.actions.act_window">
+        <field name="name">Consent Pending</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_member','=',True),('dojo_consent_state','=','pending')]</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         Communications — Announcements + Broadcast
+    ============================================================ -->
+    <menuitem id="menu_comms_root"
+              name="Communications"
+              sequence="40"/>
+
+    <menuitem id="menu_announcements_list"
+              name="Announcements"
+              parent="menu_comms_root"
+              action="disaster_member_belts.action_announcement"
+              sequence="10"/>
+
+    <menuitem id="menu_broadcast_send"
+              name="Send Broadcast"
+              parent="menu_comms_root"
+              action="disaster_member_belts.action_broadcast_wizard"
+              sequence="20"/>
+
+    <menuitem id="menu_push_devices"
+              name="Push Devices"
+              parent="menu_comms_root"
+              action="dojo_announcements.action_dojo_push_device"
+              sequence="30"
+              groups="base.group_system"/>
+
+</odoo>

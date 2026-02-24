@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dojo_wallet_user,dojo.wallet user,model_dojo_wallet,base.group_user,1,1,1,0
+access_dojo_wallet_manager,dojo.wallet manager,model_dojo_wallet,base.group_system,1,1,1,1
+access_dojo_wallet_tx_user,dojo.wallet.tx user,model_dojo_wallet_tx,base.group_user,1,0,1,0
+access_dojo_wallet_tx_manager,dojo.wallet.tx manager,model_dojo_wallet_tx,base.group_system,1,1,1,0

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         Ranks — root app tile
+    ============================================================ -->
+    <menuitem id="menu_ranks_root"
+              name="Ranks"
+              sequence="30"/>
+
+    <!-- Belt Tests -->
+    <menuitem id="menu_ranks_belt_tests"
+              name="Belt Tests"
+              parent="menu_ranks_root"
+              action="disaster_member_belts.action_belt_test"
+              sequence="10"/>
+
+    <!-- Belt Rank Thresholds -->
+    <menuitem id="menu_ranks_belt_config"
+              name="Belt Rank Thresholds"
+              parent="menu_ranks_root"
+              action="disaster_member_belts.action_disaster_belt_rank_config"
+              sequence="20"/>
+
+    <!-- Members (for promotion context) -->
+    <menuitem id="menu_ranks_members"
+              name="Members"
+              parent="menu_ranks_root"
+              action="disaster_member_belts.action_member_list"
+              sequence="30"/>
+
+    <!-- Promotion History -->
+    <menuitem id="menu_ranks_promotion_history"
+              name="Promotion History"
+              parent="menu_ranks_root"
+              action="dojo_ranks.action_dojo_rank_history"
+              sequence="40"/>
+
+    <!-- Record Promotion -->
+    <menuitem id="menu_ranks_promote"
+              name="Record Promotion"
+              parent="menu_ranks_root"
+              action="dojo_ranks.action_dojo_promote_member"
+              sequence="45"/>
+
+    <!-- Curriculum Library -->
+    <menuitem id="menu_ranks_curriculum"
+              name="Curriculum Library"
+              parent="menu_ranks_root"
+              action="dojo_ranks.action_dojo_curriculum_content"
+              sequence="50"/>
+
+    <!-- Curriculum Config -->
+    <menuitem id="menu_ranks_config"
+              name="Configuration"
+              parent="menu_ranks_root"
+              sequence="90"
+              groups="base.group_system"/>
+
+    <menuitem id="menu_ranks_curriculum_tags"
+              name="Content Tags"
+              parent="menu_ranks_config"
+              action="dojo_ranks.action_dojo_curriculum_tag"
+              sequence="10"/>
+
+</odoo>

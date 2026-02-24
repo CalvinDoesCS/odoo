@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         res.config.settings — Extend the Twilio SMS section
+         with Dojo voice-call fields.
+         Credentials (SID, token, numbers) are managed entirely
+         by the sms_twilio addon's own settings block.
+    ============================================================ -->
+    <record id="view_res_config_settings_voip" model="ir.ui.view">
+        <field name="name">res.config.settings.dojo.voip</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="sms_twilio.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('content-group')]" position="inside">
+                <div class="o_setting_box" id="dojo_voip_settings">
+                    <div class="o_setting_left_pane">
+                        <field name="dojo_call_enabled"/>
+                    </div>
+                    <div class="o_setting_right_pane">
+                        <label for="dojo_call_enabled" string="Dojo Voice Calls (VoIP)"/>
+                        <div class="text-muted">
+                            Enable outbound voice calls to a parent / guardian
+                            directly from the Attendance Roster.
+                        </div>
+                        <div class="content-group mt-2" invisible="not dojo_call_enabled">
+                            <div class="row mt16">
+                                <label for="dojo_call_twiml_url" class="col-lg-4 o_light_label"/>
+                                <field name="dojo_call_twiml_url" class="col-lg-7"
+                                       placeholder="https://demo.twilio.com/welcome/voice/"/>
+                            </div>
+                            <div class="row mt4">
+                                <label for="dojo_call_timeout" class="col-lg-4 o_light_label"/>
+                                <field name="dojo_call_timeout" class="col-lg-2"/>
+                            </div>
+                            <div class="row mt4">
+                                <label for="dojo_call_status_callback" class="col-lg-4 o_light_label"/>
+                                <field name="dojo_call_status_callback" class="col-lg-7"
+                                       placeholder="https://yourdomain.com/twilio/callback"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         Twilio Call Wizard — Form View
+    ============================================================ -->
+    <record id="view_twilio_call_wizard_form" model="ir.ui.view">
+        <field name="name">disaster.twilio.call.wizard.form</field>
+        <field name="model">disaster.twilio.call.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Call Guardian">
+                <sheet>
+
+                    <div class="alert alert-warning" role="alert"
+                         invisible="call_enabled">
+                        <strong>Voice calls are not enabled.</strong>
+                        Go to <strong>General Settings &gt; SMS &gt; Twilio</strong>
+                        and enable <em>Dojo Voice Calls</em>.
+                        Make sure your Twilio Account SID, Auth Token, and
+                        at least one phone number are configured.
+                    </div>
+
+                    <group string="Who to Call">
+                        <group>
+                            <field name="student_id" readonly="1"
+                                   invisible="not student_id"
+                                   options="{'no_open': True}"/>
+                            <field name="guardian_id"
+                                   options="{'no_create': True}"/>
+                            <field name="call_number"
+                                   placeholder="+15551234567"/>
+                        </group>
+                        <group>
+                            <field name="call_reason"/>
+                            <field name="session_id"
+                                   invisible="call_reason != 'absence'"
+                                   options="{'no_create': True}"/>
+                        </group>
+                    </group>
+
+                    <group string="Notes">
+                        <field name="notes" nolabel="1" colspan="2"/>
+                    </group>
+
+                    <group string="Call Result" invisible="not call_sid">
+                        <field name="call_sid" readonly="1"/>
+                        <field name="call_status" readonly="1"/>
+                    </group>
+
+                    <div class="text-muted small mt-2"
+                         invisible="not call_enabled or not call_from_number">
+                        Calling from: <field name="call_from_number" readonly="1" nolabel="1"/>
+                    </div>
+
+                </sheet>
+                <footer>
+                    <button name="action_place_call"
+                            string="Place Call Now"
+                            type="object"
+                            class="btn-primary oe_highlight"
+                            invisible="not call_enabled"/>
+                    <button string="Close"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         Twilio Call Wizard — Action
+    ============================================================ -->
+    <record id="action_twilio_call_wizard" model="ir.actions.act_window">
+        <field name="name">Call Guardian</field>
+        <field name="res_model">disaster.twilio.call.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- ============================================================
+         Shortcut: open General Settings on the Twilio tab
+    ============================================================ -->
+    <record id="action_open_twilio_settings" model="ir.actions.act_url">
+        <field name="name">Twilio / VoIP Settings</field>
+        <field name="url">/odoo/settings?modules=sms_twilio</field>
+        <field name="target">self</field>
+    </record>
+
+</odoo>

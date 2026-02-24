@@ -159,3 +159,30 @@ class DisasterClassSession(models.Model):
             'target': 'new',
             'context': {'default_session_id': self.id},
         }
+
+    def action_open_attendance_roster(self):
+        """Open the Attendance Roster wizard pre-loaded for this session."""
+        self.ensure_one()
+        # Sync dojo.session.roster first so Take Roster reflects all expected members
+        try:
+            self.action_sync_roster()
+        except Exception:
+            pass  # dojo_attendance may not be installed; roster still loads via other sources
+        # Create the wizard and pre-populate it with enrolled students
+        wizard = self.env['disaster.attendance.roster'].create({
+            'session_id': self.id,
+        })
+        # Load roster lines immediately
+        wizard.action_load_students()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'📋 Attendance Roster – {self.name}',
+            'res_model': 'disaster.attendance.roster',
+            'view_mode': 'form',
+            'res_id': wizard.id,
+            'target': 'new',
+            'context': {
+                'default_session_id': self.id,
+                'dialog_size': 'extra-large',
+            },
+        }

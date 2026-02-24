@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Root menu for Kiosk: visible only in Settings area -->
+    <menuitem
+        id="menu_dojo_kiosk_root"
+        name="Kiosk"
+        sequence="95"
+    />
+
+    <menuitem
+        id="menu_dojo_kiosk_open"
+        name="Open Kiosk"
+        parent="menu_dojo_kiosk_root"
+        action="action_open_kiosk"
+        sequence="10"
+    />
+
+    <menuitem
+        id="menu_dojo_kiosk_settings"
+        name="Kiosk Settings"
+        parent="menu_dojo_kiosk_root"
+        action="action_dojo_kiosk_config"
+        sequence="20"
+    />
+
+</odoo>

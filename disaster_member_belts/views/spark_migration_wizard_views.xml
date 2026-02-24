@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_spark_migration_wizard_form" model="ir.ui.view">
+        <field name="name">disaster.spark.migration.wizard.form</field>
+        <field name="model">disaster.spark.migration.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import from Spark Membership">
+
+                <header>
+                    <button name="action_import"
+                            string="🚀 Run Import"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state == 'done'"/>
+                    <button name="action_reset"
+                            string="↩ Start Over"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="state != 'done'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,done"/>
+                </header>
+
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Spark Membership Migration</h1>
+                    </div>
+
+                    <div class="alert alert-warning" role="alert"
+                         invisible="not dry_run">
+                        <strong>🔍 Dry Run Mode is ON</strong> — the import
+                        will validate your files and show a preview without
+                        saving any data.
+                    </div>
+
+                    <div class="alert alert-info" role="alert"
+                         invisible="state == 'done'">
+                        Export each section from Spark (Reports → Export),
+                        then upload the CSV files below. All tabs are optional
+                        — upload only what you have. Sample files are in
+                        <code>Transfer_Spark_Folder/</code> inside the module.
+                    </div>
+
+                    <!-- Options row -->
+                    <group string="Import Options" invisible="state == 'done'">
+                        <group>
+                            <field name="overwrite_existing"/>
+                            <field name="create_portal_users"/>
+                        </group>
+                        <group>
+                            <field name="dry_run"/>
+                        </group>
+                    </group>
+
+                    <!-- File upload tabs (hidden after import) -->
+                    <notebook invisible="state == 'done'">
+
+                        <page string="👥 Members">
+                            <group>
+                                <field name="members_file"
+                                       widget="binary"
+                                       filename="members_filename"
+                                       string="Upload CSV"/>
+                                <field name="members_filename" invisible="1"/>
+                            </group>
+                            <div class="alert alert-light mt8 o_spark_hint"
+                                 role="alert">
+                                <strong>Required columns (any order):</strong>
+                                <code>email</code>,
+                                <code>first_name</code> + <code>last_name</code>
+                                (or <code>name</code>)<br/>
+                                <strong>Optional:</strong>
+                                <code>phone</code>, <code>belt_rank</code>,
+                                <code>status</code>, <code>total_attendance</code>,
+                                <code>date_of_birth</code><br/>
+                                <em>Sample file: Transfer_Spark_Folder/sample_members.csv</em>
+                            </div>
+                        </page>
+
+                        <page string="🥋 Belt History">
+                            <group>
+                                <field name="belt_history_file"
+                                       widget="binary"
+                                       filename="belt_history_filename"
+                                       string="Upload CSV"/>
+                                <field name="belt_history_filename" invisible="1"/>
+                            </group>
+                            <div class="alert alert-light mt8 o_spark_hint"
+                                 role="alert">
+                                <strong>Required columns:</strong>
+                                <code>email</code>, <code>belt_rank</code><br/>
+                                Updates each member's current belt rank.<br/>
+                                <em>Sample: Transfer_Spark_Folder/sample_belt_history.csv</em>
+                            </div>
+                        </page>
+
+                        <page string="📋 Contracts">
+                            <group>
+                                <field name="contracts_file"
+                                       widget="binary"
+                                       filename="contracts_filename"
+                                       string="Upload CSV"/>
+                                <field name="contracts_filename" invisible="1"/>
+                            </group>
+                            <div class="alert alert-light mt8 o_spark_hint"
+                                 role="alert">
+                                <strong>Required columns:</strong>
+                                <code>email</code>, <code>plan_name</code><br/>
+                                <strong>Optional:</strong>
+                                <code>billing_cycle</code>, <code>start_date</code>,
+                                <code>end_date</code>, <code>status</code>,
+                                <code>price</code><br/>
+                                <em>Sample: Transfer_Spark_Folder/sample_contracts.csv</em>
+                            </div>
+                        </page>
+
+                        <page string="✅ Attendance">
+                            <group>
+                                <field name="attendance_file"
+                                       widget="binary"
+                                       filename="attendance_filename"
+                                       string="Upload CSV"/>
+                                <field name="attendance_filename" invisible="1"/>
+                            </group>
+                            <div class="alert alert-light mt8 o_spark_hint"
+                                 role="alert">
+                                <strong>Required columns:</strong>
+                                <code>email</code>, <code>check_in</code><br/>
+                                <strong>Optional:</strong>
+                                <code>class_name</code>
+                                (links to an existing session if found)<br/>
+                                <em>Sample: Transfer_Spark_Folder/sample_attendance.csv</em>
+                            </div>
+                        </page>
+
+                        <page string="🎯 Leads">
+                            <group>
+                                <field name="leads_file"
+                                       widget="binary"
+                                       filename="leads_filename"
+                                       string="Upload CSV"/>
+                                <field name="leads_filename" invisible="1"/>
+                            </group>
+                            <div class="alert alert-light mt8 o_spark_hint"
+                                 role="alert">
+                                <strong>Required columns:</strong>
+                                <code>email</code>, <code>first_name</code>
+                                + <code>last_name</code> (or <code>name</code>)<br/>
+                                <strong>Optional:</strong>
+                                <code>phone</code>, <code>stage</code>,
+                                <code>source</code>, <code>notes</code><br/>
+                                <em>Sample: Transfer_Spark_Folder/sample_leads.csv</em>
+                            </div>
+                        </page>
+
+                        <page string="💳 Payments">
+                            <group>
+                                <field name="payments_file"
+                                       widget="binary"
+                                       filename="payments_filename"
+                                       string="Upload CSV"/>
+                                <field name="payments_filename" invisible="1"/>
+                            </group>
+                            <div class="alert alert-light mt8 o_spark_hint"
+                                 role="alert">
+                                <strong>Required columns:</strong>
+                                <code>email</code>, <code>amount</code>,
+                                <code>date</code><br/>
+                                <strong>Optional:</strong>
+                                <code>description</code><br/>
+                                Creates a posted invoice in Odoo Accounting.<br/>
+                                <em>Sample: Transfer_Spark_Folder/sample_payments.csv</em>
+                            </div>
+                        </page>
+
+                    </notebook>
+
+                    <!-- Results (shown after import) -->
+                    <group string="Import Results"
+                           invisible="state != 'done'">
+                        <field name="result_summary"
+                               widget="text"
+                               nolabel="1"
+                               readonly="1"
+                               style="font-family: monospace; font-size: 13px;
+                                      background: #f6f8fa; padding: 14px;
+                                      border-radius: 6px; min-height: 220px;
+                                      white-space: pre;"/>
+                    </group>
+
+                </sheet>
+
+            </form>
+        </field>
+    </record>
+
+    <record id="action_spark_migration_wizard" model="ir.actions.act_window">
+        <field name="name">Import from Spark</field>
+        <field name="res_model">disaster.spark.migration.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

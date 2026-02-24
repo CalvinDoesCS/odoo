@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         Attendance Roster Wizard — Form View
+         Opens as a large dialog from the Session form "Take Roster" button.
+         Students are shown as photo cards; teacher clicks Present / Absent.
+    ============================================================ -->
+    <record id="view_attendance_roster_form" model="ir.ui.view">
+        <field name="name">disaster.attendance.roster.form</field>
+        <field name="model">disaster.attendance.roster</field>
+        <field name="arch" type="xml">
+            <form string="Attendance Roster">
+                <header>
+                    <button name="action_load_students"
+                            string="🔄 Load / Reload Students"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="state == 'done'"/>
+                    <button name="action_save_roster"
+                            string="💾 Save Roster &amp; Send Notifications"
+                            type="object"
+                            class="btn-primary oe_highlight"
+                            invisible="state == 'done'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,done"/>
+                </header>
+                <sheet>
+
+                    <!-- ── Summary bar ─────────────────────────────────── -->
+                    <div class="o_roster_summary_bar alert alert-info mb-3" role="alert">
+                        <div class="d-flex flex-wrap gap-3 align-items-center">
+                            <div>
+                                <strong>Session:</strong>
+                                <field name="session_id" readonly="1" nolabel="1"
+                                       options="{'no_open': True}"/>
+                            </div>
+                            <div>
+                                <strong>Date:</strong>
+                                <field name="session_date" widget="datetime"
+                                       readonly="1" nolabel="1"/>
+                            </div>
+                            <div>
+                                <strong>Instructor:</strong>
+                                <field name="instructor_id" readonly="1" nolabel="1"
+                                       options="{'no_open': True}"/>
+                            </div>
+                            <div class="ms-auto d-flex gap-2">
+                                <span class="badge bg-success fs-6 px-3 py-2">
+                                    ✅
+                                    <field name="present_count" nolabel="1" readonly="1"/>
+                                    Present
+                                </span>
+                                <span class="badge bg-danger fs-6 px-3 py-2">
+                                    ❌
+                                    <field name="absent_count" nolabel="1" readonly="1"/>
+                                    Absent
+                                </span>
+                                <span class="badge bg-secondary fs-6 px-3 py-2">
+                                    <field name="total_count" nolabel="1" readonly="1"/>
+                                    Total
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Result message (after save) ─────────────────── -->
+                    <div class="alert alert-success o_roster_result" role="alert"
+                         invisible="not result_message">
+                        <field name="result_message" readonly="1" nolabel="1"/>
+                    </div>
+
+                    <!-- ── Source explanation (shown while taking roll) ─── -->
+                    <div class="alert alert-warning o_roster_source_note mb-3" role="alert"
+                         invisible="not roster_source or state == 'done'">
+                        <strong>ℹ️ Where these students come from:</strong>
+                        <field name="roster_source" readonly="1" nolabel="1"
+                               class="d-inline ms-1"/>
+                        <div class="mt-1 text-muted small">
+                            The <strong>Session Attendance tab</strong> only shows students
+                            who have already been <em>checked in</em>.
+                            This roster shows <em>enrolled students</em> so you can mark
+                            who attended. Saving will create the check-in records.
+                        </div>
+                    </div>
+
+                    <!-- ── Photo Roster Grid (draft state) ─────────────── -->
+                    <field name="line_ids" nolabel="1" invisible="state == 'done'">
+                        <kanban class="o_roster_kanban"
+                                create="false" delete="false"
+                                group_create="false" group_delete="false"
+                                quick_create="false"
+                                col_count="7">
+                            <field name="partner_id"/>
+                            <field name="partner_name"/>
+                            <field name="partner_image_128"/>
+                            <field name="belt_rank"/>
+                            <field name="status"/>
+                            <field name="already_checked_in"/>
+                            <field name="notification_sent"/>
+                            <field name="guardian_name"/>
+                            <templates>
+                                <t t-name="card">
+                                    <div t-attf-class="o_roster_card #{record.status.raw_value == 'present' ? 'o_roster_present' : 'o_roster_absent'}">
+
+                                        <!-- Profile photo -->
+                                        <div class="o_roster_photo_wrap">
+                                            <img t-if="record.partner_image_128.raw_value"
+                                                 t-att-src="'data:image/png;base64,' + record.partner_image_128.raw_value"
+                                                 class="o_roster_photo"
+                                                 alt="Student Photo"/>
+                                            <div t-else=""
+                                                 class="o_roster_photo o_roster_no_photo d-flex align-items-center justify-content-center bg-light rounded-circle">
+                                                <i class="fa fa-user fa-2x text-muted" title="No photo"/>
+                                            </div>
+                                        </div>
+
+                                        <!-- Name -->
+                                        <div class="o_roster_name fw-bold text-truncate mt-1"
+                                             t-att-title="record.partner_name.value">
+                                            <t t-esc="record.partner_name.value"/>
+                                        </div>
+
+                                        <!-- Belt rank pill -->
+                                        <div t-if="record.belt_rank.raw_value"
+                                             t-attf-class="o_belt_badge o_belt_#{record.belt_rank.raw_value} o_roster_belt_pill">
+                                            <t t-esc="record.belt_rank.value"/>
+                                        </div>
+
+                                        <!-- Present / Absent toggle button -->
+                                        <div class="o_roster_buttons mt-1 w-100">
+                                            <button name="action_toggle_status"
+                                                    type="object"
+                                                    t-attf-class="btn btn-sm w-100 o_roster_toggle #{record.status.raw_value == 'present' ? 'btn-success' : 'btn-outline-danger'}">
+                                                <t t-if="record.status.raw_value == 'present'">✅ Present</t>
+                                                <t t-else="">❌ Absent</t>
+                                            </button>
+                                        </div>
+
+                                        <!-- Already checked-in badge -->
+                                        <div t-if="record.already_checked_in.raw_value"
+                                             class="o_roster_badge badge bg-info mt-1">
+                                            ✓ Checked in
+                                        </div>
+
+                                        <!-- Guardian info (appears when absent) -->
+                                        <div t-if="record.status.raw_value == 'absent' and record.guardian_name.raw_value"
+                                             class="o_roster_guardian text-muted small mt-1">
+                                            👤 <t t-esc="record.guardian_name.value"/>
+                                        </div>
+
+                                        <!-- Notification sent badge -->
+                                        <div t-if="record.notification_sent.raw_value"
+                                             class="o_roster_badge badge bg-warning text-dark mt-1">
+                                            📨 Notified
+                                        </div>
+
+                                        <!-- Call Guardian button (absent students only) -->
+                                        <div t-if="record.status.raw_value == 'absent'"
+                                             class="w-100 mt-1">
+                                            <button name="action_call_guardian"
+                                                    type="object"
+                                                    class="btn btn-sm btn-outline-primary w-100 o_roster_call_btn">
+                                                📞 Call
+                                            </button>
+                                        </div>
+
+                                    </div>
+                                </t>
+                            </templates>
+                        </kanban>
+                    </field>
+
+                    <!-- ── Summary List (done state) ───────────────────── -->
+                    <field name="line_ids" readonly="1" nolabel="1"
+                           invisible="state != 'done'">
+                        <list string="Roster Results" create="false" delete="false">
+                            <field name="partner_id" widget="many2one_avatar"
+                                   string="Student"/>
+                            <field name="partner_name" string="Name"/>
+                            <field name="belt_rank" widget="badge"
+                                   decoration-info="True"/>
+                            <field name="status" widget="badge"
+                                   decoration-success="status == 'present'"
+                                   decoration-danger="status == 'absent'"/>
+                            <field name="guardian_name" string="Guardian"/>
+                            <field name="notification_sent" widget="boolean"
+                                   string="Notified" readonly="1"/>
+                        </list>
+                    </field>
+
+                </sheet>
+                <footer>
+                    <button name="action_save_roster_no_notify"
+                            string="💾 Save (No Notifications)"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state == 'done'"/>
+                    <button string="Close"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         Attendance Roster — Action (opened from Session form button)
+    ============================================================ -->
+    <record id="action_attendance_roster" model="ir.actions.act_window">
+        <field name="name">Attendance Roster</field>
+        <field name="res_model">disaster.attendance.roster</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'dialog_size': 'extra-large'}</field>
+    </record>
+
+    <!-- ============================================================
+         Backend list of all attendance roster sessions (History)
+    ============================================================ -->
+    <record id="view_attendance_roster_pivot" model="ir.ui.view">
+        <field name="name">disaster.class.attendance.pivot</field>
+        <field name="model">disaster.class.attendance</field>
+        <field name="arch" type="xml">
+            <pivot string="Attendance Analysis" disable_linking="1">
+                <field name="session_date" type="row" interval="week"/>
+                <field name="class_type" type="col"/>
+                <field name="belt_rank_at_checkin" type="row"/>
+            </pivot>
+        </field>
+    </record>
+
+</odoo>

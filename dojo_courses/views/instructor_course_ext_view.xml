@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         Extend Instructor kanban – add Courses Led count badge
+    ============================================================ -->
+    <record id="view_instructor_kanban_course_ext" model="ir.ui.view">
+        <field name="name">res.partner.instructor.kanban.course.ext</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="disaster_member_belts.view_instructor_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//span[hasclass('badge') and hasclass('text-bg-primary')]" position="after">
+                <span class="badge text-bg-success">
+                    <i class="fa fa-book me-1" title="Courses"/>
+                    <field name="led_course_count"/> courses
+                </span>
+            </xpath>
+            <xpath expr="//field[@name='assigned_member_count']" position="after">
+                <field name="led_course_count"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         Extend Instructor list – add Courses Led column
+    ============================================================ -->
+    <record id="view_instructor_list_course_ext" model="ir.ui.view">
+        <field name="name">res.partner.instructor.list.course.ext</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="disaster_member_belts.view_instructor_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='assigned_member_count']" position="after">
+                <field name="led_course_count" string="Courses"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         Extend Instructor form – add Courses smart button
+    ============================================================ -->
+    <record id="view_partner_instructor_course_ext" model="ir.ui.view">
+        <field name="name">res.partner.instructor.form.course.ext</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="disaster_member_belts.view_partner_instructor_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_view_assigned_students']" position="after">
+                <button name="action_view_led_courses" type="object"
+                        class="oe_stat_button" icon="fa-book"
+                        invisible="not is_instructor">
+                    <field name="led_course_count" widget="statinfo" string="Courses"/>
+                </button>
+                <button name="action_view_enrolled_courses" type="object"
+                        class="oe_stat_button" icon="fa-graduation-cap"
+                        invisible="not is_member">
+                    <field name="enrolled_course_count" widget="statinfo" string="Courses"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
