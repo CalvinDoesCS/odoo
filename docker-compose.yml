@@ -1,6 +1,6 @@
 services:
   web:
-    image: odoo:19.0
+    image: odoo:latest
     depends_on:
       - db
     ports:
@@ -8,13 +8,13 @@ services:
     volumes:
       - odoo-web-data:/var/lib/odoo
       - ./config:/etc/odoo
-      - ./addons:/mnt/custom-addons
+      - .:/mnt/custom-addons
     environment:
       - PASSWORD_FILE=/run/secrets/postgresql_password
     secrets:
       - postgresql_password
   db:
-    image: postgres:16
+    image: postgres:latest
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_PASSWORD_FILE=/run/secrets/postgresql_password

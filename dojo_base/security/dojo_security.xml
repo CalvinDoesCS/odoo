@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_dojo_admin" model="res.groups">
+        <field name="name">Dojo Admin</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="group_dojo_instructor" model="res.groups">
+        <field name="name">Dojo Instructor</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="group_dojo_parent_student" model="res.groups">
+        <field name="name">Dojo Parent/Student</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_portal'))]"/>
+    </record>
+
+    <record id="rule_dojo_member_instructor_company" model="ir.rule">
+        <field name="name">Dojo Member Instructor Company</field>
+        <field name="model_id" ref="model_dojo_member"/>
+        <field name="groups" eval="[(4, ref('dojo_base.group_dojo_instructor'))]"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="rule_dojo_household_instructor_company" model="ir.rule">
+        <field name="name">Dojo Household Instructor Company</field>
+        <field name="model_id" ref="model_dojo_household"/>
+        <field name="groups" eval="[(4, ref('dojo_base.group_dojo_instructor'))]"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="rule_dojo_guardian_instructor_company" model="ir.rule">
+        <field name="name">Dojo Guardian Instructor Company</field>
+        <field name="model_id" ref="model_dojo_guardian_link"/>
+        <field name="groups" eval="[(4, ref('dojo_base.group_dojo_instructor'))]"/>
+        <field name="domain_force">['|', ('household_id.company_id', '=', False), ('household_id.company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="rule_dojo_instructor_profile_instructor_company" model="ir.rule">
+        <field name="name">Instructor Profile Company</field>
+        <field name="model_id" ref="model_dojo_instructor_profile"/>
+        <field name="groups" eval="[(4, ref('dojo_base.group_dojo_instructor'))]"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="rule_dojo_member_parent_self_or_household" model="ir.rule">
+        <field name="name">Dojo Member Parent Self or Household</field>
+        <field name="model_id" ref="model_dojo_member"/>
+        <field name="groups" eval="[(4, ref('dojo_base.group_dojo_parent_student'))]"/>
+        <field name="domain_force">['|', ('partner_id', '=', user.partner_id.id), ('household_id.primary_guardian_partner_id', '=', user.partner_id.id)]</field>
+    </record>
+
+    <record id="rule_dojo_household_parent_owner" model="ir.rule">
+        <field name="name">Dojo Household Parent Owner</field>
+        <field name="model_id" ref="model_dojo_household"/>
+        <field name="groups" eval="[(4, ref('dojo_base.group_dojo_parent_student'))]"/>
+        <field name="domain_force">[('primary_guardian_partner_id', '=', user.partner_id.id)]</field>
+    </record>
+
+    <record id="rule_dojo_guardian_parent_owner" model="ir.rule">
+        <field name="name">Dojo Guardian Parent Owner</field>
+        <field name="model_id" ref="model_dojo_guardian_link"/>
+        <field name="groups" eval="[(4, ref('dojo_base.group_dojo_parent_student'))]"/>
+        <field name="domain_force">[('household_id.primary_guardian_partner_id', '=', user.partner_id.id)]</field>
+    </record>
+</odoo>

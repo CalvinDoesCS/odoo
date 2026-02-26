@@ -1,0 +1,18 @@
+{
+    "name": "Dojo Base",
+    "summary": "Core dojo models and security",
+    "version": "19.0.1.0.0",
+    "category": "Services",
+    "license": "LGPL-3",
+    "author": "Dojo",
+    "depends": ["base", "mail", "portal", "hr"],
+    "data": [
+        "security/dojo_security.xml",
+        "security/ir.model.access.csv",
+        "views/dojo_household_views.xml",
+        "views/dojo_member_views.xml",
+        "views/dojo_instructor_profile_views.xml",
+    ],
+    "application": False,
+    "installable": True,
+}

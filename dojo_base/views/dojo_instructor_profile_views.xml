@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dojo_instructor_profile_list" model="ir.ui.view">
+        <field name="name">dojo.instructor.profile.list</field>
+        <field name="model">dojo.instructor.profile</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="user_id"/>
+                <field name="employee_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dojo_instructor_profile_form" model="ir.ui.view">
+        <field name="name">dojo.instructor.profile.form</field>
+        <field name="model">dojo.instructor.profile</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="user_id"/>
+                        <field name="employee_id"/>
+                        <field name="partner_id"/>
+                        <field name="company_id" groups="base.group_multi_company"/>
+                    </group>
+                    <group>
+                        <field name="bio"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

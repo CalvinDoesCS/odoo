@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_dojo_subscription_plans" model="ir.actions.act_window">
+        <field name="name">Subscription Plans</field>
+        <field name="res_model">dojo.subscription.plan</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_dojo_member_subscriptions" model="ir.actions.act_window">
+        <field name="name">Member Subscriptions</field>
+        <field name="res_model">dojo.member.subscription</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem
+        id="menu_dojo_subscriptions_root"
+        name="Subscriptions"
+        sequence="40"
+        web_icon="dojo_subscriptions,static/description/icon.png"
+    />
+    <menuitem
+        id="menu_dojo_member_subscriptions"
+        name="Member Subscriptions"
+        parent="menu_dojo_subscriptions_root"
+        action="action_dojo_member_subscriptions"
+        sequence="10"
+    />
+    <menuitem
+        id="menu_dojo_subscription_plans"
+        name="Subscription Plans"
+        parent="menu_dojo_subscriptions_root"
+        action="action_dojo_subscription_plans"
+        sequence="20"
+    />
+
+    <record id="view_dojo_subscription_plan_list" model="ir.ui.view">
+        <field name="name">dojo.subscription.plan.list</field>
+        <field name="model">dojo.subscription.plan</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="price"/>
+                <field name="billing_period"/>
+                <field name="unlimited_sessions"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dojo_subscription_plan_form" model="ir.ui.view">
+        <field name="name">dojo.subscription.plan.form</field>
+        <field name="model">dojo.subscription.plan</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="price"/>
+                        <field name="currency_id"/>
+                        <field name="billing_period"/>
+                        <field name="unlimited_sessions"/>
+                        <field name="sessions_per_period" invisible="unlimited_sessions"/>
+                        <field name="active"/>
+                    </group>
+                    <group>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_dojo_member_subscription_list" model="ir.ui.view">
+        <field name="name">dojo.member.subscription.list</field>
+        <field name="model">dojo.member.subscription</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="member_id"/>
+                <field name="plan_id"/>
+                <field name="start_date"/>
+                <field name="next_billing_date"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dojo_member_subscription_form" model="ir.ui.view">
+        <field name="name">dojo.member.subscription.form</field>
+        <field name="model">dojo.member.subscription</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="member_id"/>
+                        <field name="plan_id"/>
+                        <field name="start_date"/>
+                        <field name="end_date"/>
+                        <field name="next_billing_date"/>
+                        <field name="state"/>
+                        <field name="last_invoice_id"/>
+                        <field name="billing_reference"/>
+                    </group>
+                    <group>
+                        <field name="note"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

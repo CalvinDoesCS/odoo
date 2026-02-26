@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dojo_attendance_user,dojo.attendance.log user,model_dojo_attendance_log,base.group_user,1,0,0,0
+access_dojo_attendance_admin,dojo.attendance.log admin,model_dojo_attendance_log,dojo_base.group_dojo_admin,1,1,1,1
+access_dojo_attendance_instructor,dojo.attendance.log instructor,model_dojo_attendance_log,dojo_base.group_dojo_instructor,1,1,1,0
+access_dojo_attendance_parent,dojo.attendance.log parent,model_dojo_attendance_log,dojo_base.group_dojo_parent_student,1,0,0,0

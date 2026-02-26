@@ -1,0 +1,13 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dojo_class_template_user,dojo.class.template user,model_dojo_class_template,base.group_user,1,0,0,0
+access_dojo_class_template_admin,dojo.class.template admin,model_dojo_class_template,dojo_base.group_dojo_admin,1,1,1,1
+access_dojo_class_template_instructor,dojo.class.template instructor,model_dojo_class_template,dojo_base.group_dojo_instructor,1,0,0,0
+access_dojo_class_template_parent,dojo.class.template parent,model_dojo_class_template,dojo_base.group_dojo_parent_student,1,0,0,0
+access_dojo_class_session_user,dojo.class.session user,model_dojo_class_session,base.group_user,1,0,0,0
+access_dojo_class_session_admin,dojo.class.session admin,model_dojo_class_session,dojo_base.group_dojo_admin,1,1,1,1
+access_dojo_class_session_instructor,dojo.class.session instructor,model_dojo_class_session,dojo_base.group_dojo_instructor,1,1,1,0
+access_dojo_class_session_parent,dojo.class.session parent,model_dojo_class_session,dojo_base.group_dojo_parent_student,1,0,0,0
+access_dojo_class_enrollment_user,dojo.class.enrollment user,model_dojo_class_enrollment,base.group_user,1,0,0,0
+access_dojo_class_enrollment_admin,dojo.class.enrollment admin,model_dojo_class_enrollment,dojo_base.group_dojo_admin,1,1,1,1
+access_dojo_class_enrollment_instructor,dojo.class.enrollment instructor,model_dojo_class_enrollment,dojo_base.group_dojo_instructor,1,1,1,0
+access_dojo_class_enrollment_parent,dojo.class.enrollment parent,model_dojo_class_enrollment,dojo_base.group_dojo_parent_student,1,1,1,0

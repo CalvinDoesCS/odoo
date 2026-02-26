@@ -1,0 +1,62 @@
+from odoo import api, fields, models
+from odoo.exceptions import ValidationError
+
+
+class DojoClassSession(models.Model):
+    _name = "dojo.class.session"
+    _description = "Dojo Class Session"
+    _order = "start_datetime desc"
+
+    name = fields.Char(compute="_compute_name", store=True)
+    template_id = fields.Many2one("dojo.class.template", required=True, index=True)
+    company_id = fields.Many2one(
+        "res.company", default=lambda self: self.env.company, index=True
+    )
+    instructor_profile_id = fields.Many2one("dojo.instructor.profile", index=True)
+    start_datetime = fields.Datetime(required=True, index=True)
+    end_datetime = fields.Datetime(required=True, index=True)
+    capacity = fields.Integer(default=20)
+    state = fields.Selection(
+        [
+            ("draft", "Draft"),
+            ("open", "Open"),
+            ("done", "Done"),
+            ("cancelled", "Cancelled"),
+        ],
+        default="draft",
+        required=True,
+    )
+    enrollment_ids = fields.One2many(
+        "dojo.class.enrollment", "session_id", string="Enrollments"
+    )
+    seats_taken = fields.Integer(compute="_compute_seats_taken")
+
+    @api.depends("template_id", "start_datetime")
+    def _compute_name(self):
+        for session in self:
+            if session.template_id and session.start_datetime:
+                session.name = "%s - %s" % (
+                    session.template_id.name,
+                    fields.Datetime.to_string(session.start_datetime),
+                )
+            else:
+                session.name = "New Session"
+
+    @api.depends("enrollment_ids.status")
+    def _compute_seats_taken(self):
+        for session in self:
+            session.seats_taken = len(
+                session.enrollment_ids.filtered(lambda enrollment: enrollment.status == "registered")
+            )
+
+    @api.constrains("start_datetime", "end_datetime")
+    def _check_datetime_order(self):
+        for session in self:
+            if session.end_datetime <= session.start_datetime:
+                raise ValidationError("End time must be after start time.")
+
+    @api.constrains("capacity")
+    def _check_capacity(self):
+        for session in self:
+            if session.capacity < 0:
+                raise ValidationError("Capacity cannot be negative.")

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_dojo_class_templates" model="ir.actions.act_window">
+        <field name="name">Class Templates</field>
+        <field name="res_model">dojo.class.template</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_dojo_class_sessions" model="ir.actions.act_window">
+        <field name="name">Class Sessions</field>
+        <field name="res_model">dojo.class.session</field>
+        <field name="view_mode">list,form,calendar</field>
+    </record>
+
+    <record id="action_dojo_class_enrollments" model="ir.actions.act_window">
+        <field name="name">Enrollments</field>
+        <field name="res_model">dojo.class.enrollment</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem
+        id="menu_dojo_classes_root"
+        name="Classes"
+        sequence="20"
+        web_icon="dojo_classes,static/description/icon.png"
+    />
+    <menuitem id="menu_dojo_class_sessions" name="Sessions" parent="menu_dojo_classes_root" action="action_dojo_class_sessions" sequence="10"/>
+    <menuitem id="menu_dojo_class_templates" name="Templates" parent="menu_dojo_classes_root" action="action_dojo_class_templates" sequence="20"/>
+    <menuitem id="menu_dojo_class_enrollments" name="Enrollments" parent="menu_dojo_classes_root" action="action_dojo_class_enrollments" sequence="30"/>
+
+    <record id="view_dojo_class_template_list" model="ir.ui.view">
+        <field name="name">dojo.class.template.list</field>
+        <field name="model">dojo.class.template</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="level"/>
+                <field name="duration_minutes"/>
+                <field name="max_capacity"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dojo_class_template_form" model="ir.ui.view">
+        <field name="name">dojo.class.template.form</field>
+        <field name="model">dojo.class.template</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="level"/>
+                        <field name="duration_minutes"/>
+                        <field name="max_capacity"/>
+                        <field name="instructor_profile_ids" widget="many2many_tags"/>
+                        <field name="active"/>
+                    </group>
+                    <group>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_dojo_class_session_list" model="ir.ui.view">
+        <field name="name">dojo.class.session.list</field>
+        <field name="model">dojo.class.session</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="template_id"/>
+                <field name="instructor_profile_id"/>
+                <field name="start_datetime"/>
+                <field name="end_datetime"/>
+                <field name="capacity"/>
+                <field name="seats_taken"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dojo_class_session_form" model="ir.ui.view">
+        <field name="name">dojo.class.session.form</field>
+        <field name="model">dojo.class.session</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="template_id"/>
+                        <field name="instructor_profile_id"/>
+                        <field name="start_datetime"/>
+                        <field name="end_datetime"/>
+                        <field name="capacity"/>
+                        <field name="seats_taken" readonly="1"/>
+                        <field name="state"/>
+                    </group>
+                    <notebook>
+                        <page string="Enrollments">
+                            <field name="enrollment_ids">
+                                <list editable="bottom">
+                                    <field name="member_id"/>
+                                    <field name="status"/>
+                                    <field name="attendance_state"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_dojo_class_session_calendar" model="ir.ui.view">
+        <field name="name">dojo.class.session.calendar</field>
+        <field name="model">dojo.class.session</field>
+        <field name="arch" type="xml">
+            <calendar date_start="start_datetime" date_stop="end_datetime" color="instructor_profile_id" string="Class Sessions">
+                <field name="name"/>
+                <field name="template_id"/>
+            </calendar>
+        </field>
+    </record>
+
+    <record id="view_dojo_class_enrollment_list" model="ir.ui.view">
+        <field name="name">dojo.class.enrollment.list</field>
+        <field name="model">dojo.class.enrollment</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="session_id"/>
+                <field name="member_id"/>
+                <field name="status"/>
+                <field name="attendance_state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dojo_class_enrollment_form" model="ir.ui.view">
+        <field name="name">dojo.class.enrollment.form</field>
+        <field name="model">dojo.class.enrollment</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="session_id"/>
+                        <field name="member_id"/>
+                        <field name="status"/>
+                        <field name="attendance_state"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

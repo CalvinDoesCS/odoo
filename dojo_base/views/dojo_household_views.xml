@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dojo_household_list" model="ir.ui.view">
+        <field name="name">dojo.household.list</field>
+        <field name="model">dojo.household</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="primary_guardian_partner_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dojo_household_form" model="ir.ui.view">
+        <field name="name">dojo.household.form</field>
+        <field name="model">dojo.household</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="primary_guardian_partner_id"/>
+                        <field name="company_id" groups="base.group_multi_company"/>
+                    </group>
+                    <notebook>
+                        <page string="Members">
+                            <field name="member_ids"/>
+                        </page>
+                        <page string="Guardian Links">
+                            <field name="guardian_link_ids"/>
+                        </page>
+                        <page string="Notes">
+                            <field name="note"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

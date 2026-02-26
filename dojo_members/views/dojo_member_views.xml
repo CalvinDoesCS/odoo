@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_dojo_members" model="ir.actions.act_window">
+        <field name="name">Members</field>
+        <field name="res_model">dojo.member</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_dojo_households" model="ir.actions.act_window">
+        <field name="name">Households</field>
+        <field name="res_model">dojo.household</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_dojo_guardian_links" model="ir.actions.act_window">
+        <field name="name">Guardian Links</field>
+        <field name="res_model">dojo.guardian.link</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_dojo_emergency_contacts" model="ir.actions.act_window">
+        <field name="name">Emergency Contacts</field>
+        <field name="res_model">dojo.emergency.contact</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem
+        id="menu_dojo_members_root"
+        name="Members"
+        sequence="10"
+        web_icon="dojo_members,static/description/icon.png"
+    />
+    <menuitem
+        id="menu_dojo_members"
+        name="Members"
+        parent="menu_dojo_members_root"
+        action="action_dojo_members"
+        sequence="10"
+    />
+    <menuitem
+        id="menu_dojo_households"
+        name="Households"
+        parent="menu_dojo_members_root"
+        action="action_dojo_households"
+        sequence="20"
+    />
+    <menuitem
+        id="menu_dojo_guardian_links"
+        name="Guardian Links"
+        parent="menu_dojo_members_root"
+        action="action_dojo_guardian_links"
+        sequence="30"
+    />
+    <menuitem
+        id="menu_dojo_emergency_contacts"
+        name="Emergency Contacts"
+        parent="menu_dojo_members_root"
+        action="action_dojo_emergency_contacts"
+        sequence="40"
+    />
+
+    <record id="view_dojo_member_form_inherit_emergency" model="ir.ui.view">
+        <field name="name">dojo.member.form.emergency</field>
+        <field name="model">dojo.member</field>
+        <field name="inherit_id" ref="dojo_base.view_dojo_member_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Emergency Contacts">
+                    <field name="emergency_contact_ids" context="{'default_member_id': id}">
+                        <list editable="bottom">
+                            <field name="name"/>
+                            <field name="relationship"/>
+                            <field name="phone"/>
+                            <field name="email"/>
+                            <field name="is_primary"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_dojo_emergency_contact_list" model="ir.ui.view">
+        <field name="name">dojo.emergency.contact.list</field>
+        <field name="model">dojo.emergency.contact</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="member_id"/>
+                <field name="name"/>
+                <field name="relationship"/>
+                <field name="phone"/>
+                <field name="email"/>
+                <field name="is_primary"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dojo_emergency_contact_form" model="ir.ui.view">
+        <field name="name">dojo.emergency.contact.form</field>
+        <field name="model">dojo.emergency.contact</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="member_id"/>
+                        <field name="name"/>
+                        <field name="relationship"/>
+                        <field name="phone"/>
+                        <field name="email"/>
+                        <field name="is_primary"/>
+                    </group>
+                    <group>
+                        <field name="note"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>
