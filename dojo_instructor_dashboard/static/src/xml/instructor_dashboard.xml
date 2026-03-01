@@ -139,6 +139,7 @@
                                     <th class="text-center">Cap.</th>
                                     <th class="text-center">Enrolled</th>
                                     <th>Status</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -158,6 +159,15 @@
                                             <span t-attf-class="o_di_badge {{ stateBadgeClass(s.state) }}">
                                                 <t t-esc="stateLabel(s.state)"/>
                                             </span>
+                                        </td>
+                                        <td>
+                                            <t t-if="s.state !== 'cancelled' and s.state !== 'draft'">
+                                                <button class="o_di_attend_btn"
+                                                        t-on-click="() => this.openQuickAttendance(s.id)">
+                                                    <i class="fa fa-check-square-o me-1"/>
+                                                    Mark Attendance
+                                                </button>
+                                            </t>
                                         </td>
                                     </tr>
                                 </t>

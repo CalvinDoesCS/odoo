@@ -178,7 +178,7 @@
                                         </td>
                                         <td>
                                             <button class="o_di_view_btn"
-                                                    t-on-click="() => openInstructorRecord(inst.id)">
+                                                    t-on-click="() => this.openInstructorRecord(inst.id)">
                                                 View
                                             </button>
                                         </td>

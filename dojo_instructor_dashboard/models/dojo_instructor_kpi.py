@@ -1,5 +1,6 @@
+import pytz
+from datetime import date, datetime, timedelta
 from odoo import api, fields, models
-from datetime import date, timedelta
 
 
 class DojoMemberDashboard(models.Model):
@@ -63,9 +64,7 @@ class DojoInstructorProfile(models.Model):
 
     @api.depends('session_ids.start_datetime')
     def _compute_session_today_ids(self):
-        today = date.today()
-        today_start = fields.Datetime.to_datetime(str(today) + ' 00:00:00')
-        today_end = fields.Datetime.to_datetime(str(today) + ' 23:59:59')
+        _, today_start, today_end = self._today_utc_range()
         for profile in self:
             profile.session_today_ids = self.env['dojo.class.session'].search([
                 ('instructor_profile_id', '=', profile.id),
@@ -75,13 +74,17 @@ class DojoInstructorProfile(models.Model):
 
     @api.depends('session_ids.start_datetime')
     def _compute_upcoming_session_ids(self):
-        today = date.today()
-        tomorrow_start = fields.Datetime.to_datetime(
-            str(today + timedelta(days=1)) + ' 00:00:00'
-        )
-        two_weeks_end = fields.Datetime.to_datetime(
-            str(today + timedelta(days=14)) + ' 23:59:59'
-        )
+        tz_name = self.env.context.get('tz') or self.env.user.tz or 'UTC'
+        user_tz = pytz.timezone(tz_name)
+        today = fields.Date.context_today(self)
+        tomorrow = today + timedelta(days=1)
+        two_weeks = today + timedelta(days=14)
+        tomorrow_start = user_tz.localize(
+            datetime(tomorrow.year, tomorrow.month, tomorrow.day, 0, 0, 0)
+        ).astimezone(pytz.utc).replace(tzinfo=None)
+        two_weeks_end = user_tz.localize(
+            datetime(two_weeks.year, two_weeks.month, two_weeks.day, 23, 59, 59)
+        ).astimezone(pytz.utc).replace(tzinfo=None)
         for profile in self:
             profile.upcoming_session_ids = self.env['dojo.class.session'].search([
                 ('instructor_profile_id', '=', profile.id),
@@ -99,6 +102,23 @@ class DojoInstructorProfile(models.Model):
                 ])
             else:
                 profile.task_ids = self.env['project.task']
+
+    def _today_utc_range(self):
+        """Return (today_date, today_start_utc, today_end_utc) where the date
+        boundaries are expressed in UTC but aligned to midnight/23:59:59 in the
+        *user's* local timezone.  This prevents off-by-one-day errors when the
+        server (UTC) and the user (e.g. America/New_York) are on different calendar
+        dates."""
+        tz_name = self.env.context.get('tz') or self.env.user.tz or 'UTC'
+        user_tz = pytz.timezone(tz_name)
+        today = fields.Date.context_today(self)  # date in user's tz
+        today_start = user_tz.localize(
+            datetime(today.year, today.month, today.day, 0, 0, 0)
+        ).astimezone(pytz.utc).replace(tzinfo=None)
+        today_end = user_tz.localize(
+            datetime(today.year, today.month, today.day, 23, 59, 59)
+        ).astimezone(pytz.utc).replace(tzinfo=None)
+        return today, today_start, today_end
 
     # ── Today's sessions ──────────────────────────────────────────────────
     sessions_today_count = fields.Integer(
@@ -166,12 +186,8 @@ class DojoInstructorProfile(models.Model):
         Enrollment = self.env['dojo.class.enrollment']
         AttendanceLog = self.env['dojo.attendance.log']
 
-        today = date.today()
-        today_start = fields.Datetime.to_datetime(str(today) + ' 00:00:00')
-        today_end = fields.Datetime.to_datetime(str(today) + ' 23:59:59')
-        thirty_days_ago = fields.Datetime.to_datetime(
-            str(today - timedelta(days=30)) + ' 00:00:00'
-        )
+        _, today_start, today_end = self._today_utc_range()
+        thirty_days_ago = today_start - timedelta(days=30)
 
         for profile in self:
             # Today's sessions
@@ -240,15 +256,9 @@ class DojoInstructorProfile(models.Model):
         Enrollment = self.env['dojo.class.enrollment']
         AttendanceLog = self.env['dojo.attendance.log']
 
-        today = date.today()
-        today_start = fields.Datetime.to_datetime(str(today) + ' 00:00:00')
-        today_end = fields.Datetime.to_datetime(str(today) + ' 23:59:59')
-        thirty_days_ago = fields.Datetime.to_datetime(
-            str(today - timedelta(days=30)) + ' 00:00:00'
-        )
-        sixty_days_ago = fields.Datetime.to_datetime(
-            str(today - timedelta(days=60)) + ' 00:00:00'
-        )
+        _, today_start, today_end = self._today_utc_range()
+        thirty_days_ago = today_start - timedelta(days=30)
+        sixty_days_ago = today_start - timedelta(days=60)
 
         # ── Global KPIs ───────────────────────────────────────────────────
         all_profiles = self.search([])
@@ -294,14 +304,48 @@ class DojoInstructorProfile(models.Model):
             'total_dropped_60d': total_dropped_60d,
         }
 
-        # ── Per-instructor KPIs ───────────────────────────────────────────
+        # ── Per-instructor KPIs ───────────────────────────────────────────        # Build students_count per instructor directly to avoid stale
+        # cached values from the @api.depends('user_id') computed field.
+        active_sessions_all = Session.search([
+            ('state', 'in', ['open', 'done']),
+        ])
+        if active_sessions_all:
+            enrollments_all = Enrollment.search([
+                ('session_id', 'in', active_sessions_all.ids),
+                ('status', '=', 'registered'),
+            ])
+        else:
+            enrollments_all = self.env['dojo.class.enrollment']
+        # Map profile_id -> set of distinct member ids
+        students_map = {}
+        for e in enrollments_all:
+            pid = e.session_id.instructor_profile_id.id
+            if pid:
+                students_map.setdefault(pid, set()).add(e.member_id.id)
+        # Compute sessions_today per instructor directly to avoid stale
+        # cached values from the @api.depends('user_id') computed field.
+        today_session_map = {}
+        today_session_recs = Session.search([
+            ('start_datetime', '>=', today_start),
+            ('start_datetime', '<=', today_end),
+        ])
+        for s in today_session_recs:
+            pid = s.instructor_profile_id.id
+            if not pid:
+                # Fallback: if the session's template has exactly one instructor, attribute to them
+                tmpl_instructors = s.template_id.instructor_profile_ids
+                if len(tmpl_instructors) == 1:
+                    pid = tmpl_instructors.id
+            if pid:
+                today_session_map[pid] = today_session_map.get(pid, 0) + 1
+
         instructors = []
         for p in all_profiles:
             instructors.append({
                 'id': p.id,
                 'name': p.name,
-                'sessions_today': p.sessions_today_count,
-                'students_count': p.students_total_count,
+                'sessions_today': today_session_map.get(p.id, 0),
+                'students_count': len(students_map.get(p.id, set())),
                 'fill_rate': round(p.avg_fill_rate, 1),
                 'attendance_rate': round(p.attendance_rate, 1),
             })

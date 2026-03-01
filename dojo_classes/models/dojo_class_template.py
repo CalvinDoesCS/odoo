@@ -121,7 +121,10 @@ class DojoClassTemplate(models.Model):
                     {
                         "template_id": self.id,
                         "company_id": self.company_id.id,
-                        "instructor_profile_id": self.recurrence_instructor_id.id or False,
+                        "instructor_profile_id": (
+                            self.recurrence_instructor_id.id
+                            or (self.instructor_profile_ids.id if len(self.instructor_profile_ids) == 1 else False)
+                        ),
                         "start_datetime": start_dt,
                         "end_datetime": end_dt,
                         "capacity": self.max_capacity,

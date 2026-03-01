@@ -156,6 +156,30 @@ class InstructorDashboard extends Component {
     openMyStudents()     { this.action.doAction("dojo_instructor_dashboard.action_my_students"); }
     openCalendar()       { this.action.doAction("dojo_instructor_dashboard.action_my_sessions_calendar"); }
     openTodos()          { this.action.doAction("dojo_instructor_dashboard.action_my_todos"); }
+
+    async openQuickAttendance(sessionId) {
+        // Pre-create the wizard server-side via orm.call so default_get fires
+        // with default_session_id in context and persists all enrolled students
+        // as real DB line records. The dialog only sends WRITE commands after
+        // that — member_id is always set.
+        const wizardId = await this.orm.call(
+            "dojo.attendance.quick.wizard",
+            "create",
+            [{}],
+            { context: { default_session_id: sessionId } },
+        );
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Mark Attendance",
+            res_model: "dojo.attendance.quick.wizard",
+            res_id: wizardId,
+            view_mode: "form",
+            views: [[false, "form"]],
+            target: "new",
+        }, {
+            onClose: () => this._loadData(),
+        });
+    }
 }
 
 registry.category("actions").add("dojo_instructor_dashboard", InstructorDashboard);

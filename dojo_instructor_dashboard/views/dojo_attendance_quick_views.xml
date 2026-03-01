@@ -11,7 +11,8 @@
                     <field name="session_id" readonly="1"/>
                 </group>
                 <field name="line_ids" nolabel="1">
-                    <list editable="bottom" string="Attendance">
+                    <list editable="bottom" string="Attendance"
+                          create="0" delete="0">
                         <field name="member_id" readonly="1"/>
                         <field name="status" widget="radio" options="{'horizontal': true}"/>
                         <field name="note" placeholder="Optional note…"/>
@@ -33,28 +34,8 @@
         <field name="res_model">dojo.attendance.quick.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
-        <field name="context">{'default_session_id': active_id}</field>
     </record>
 
-    <!-- ── Inject "Mark Attendance" button into dojo.class.session form ─ -->
-    <record id="view_dojo_class_session_form_attendance_btn" model="ir.ui.view">
-        <field name="name">dojo.class.session.form.attendance.button</field>
-        <field name="model">dojo.class.session</field>
-        <field name="inherit_id" ref="dojo_classes.view_dojo_class_session_form"/>
-        <field name="arch" type="xml">
-            <!-- Session form has no button_box yet; add it with the button inside -->
-            <xpath expr="//sheet" position="before">
-                <div class="oe_button_box" name="button_box">
-                    <button name="%(dojo_instructor_dashboard.action_dojo_attendance_quick_wizard)d"
-                            type="action"
-                            class="oe_stat_button"
-                            icon="fa-check-square-o"
-                            string="Mark Attendance"
-                            groups="dojo_base.group_dojo_admin,dojo_base.group_dojo_instructor"
-                            invisible="state in ('draft', 'cancelled')"/>
-                </div>
-            </xpath>
-        </field>
-    </record>
+
 
 </odoo>
