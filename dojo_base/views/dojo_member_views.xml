@@ -8,6 +8,7 @@
                 <field name="name"/>
                 <field name="email"/>
                 <field name="role"/>
+                <field name="membership_state"/>
                 <field name="household_id"/>
                 <field name="has_portal_login"/>
             </list>
@@ -19,17 +20,63 @@
         <field name="model">dojo.member</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <button name="action_create_household"
+                        string="Create Household"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="household_id != False"
+                        groups="dojo_base.group_dojo_admin"/>
+                    <button name="action_grant_portal_access"
+                        string="Grant Portal Access"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="has_portal_login == True"
+                        groups="dojo_base.group_dojo_admin"/>
+                    <button name="action_set_trial" string="Set Trial"
+                        type="object" class="btn-secondary"
+                        invisible="membership_state not in ['lead']"/>
+                    <button name="action_set_active" string="Activate"
+                        type="object" class="btn-primary"
+                        invisible="membership_state not in ['lead', 'trial', 'paused']"/>
+                    <button name="action_set_paused" string="Pause"
+                        type="object" class="btn-secondary"
+                        invisible="membership_state not in ['active']"/>
+                    <button name="action_set_cancelled" string="Cancel Membership"
+                        type="object" class="btn-secondary"
+                        invisible="membership_state in ['cancelled']"/>
+                    <field name="membership_state" widget="statusbar"
+                        statusbar_visible="lead,trial,active,paused,cancelled"/>
+                </header>
                 <sheet>
+                    <div class="oe_button_box" name="button_box"/>
+                    <widget name="web_ribbon" title="Cancelled"
+                        bg_color="text-bg-danger"
+                        invisible="membership_state != 'cancelled'"/>
+                    <widget name="web_ribbon" title="Paused"
+                        bg_color="text-bg-warning"
+                        invisible="membership_state != 'paused'"/>
+                    <div class="oe_title d-flex align-items-center gap-3">
+                        <field name="image_1920" widget="image" class="oe_avatar"
+                            options="{'preview_image': 'image_128'}"/>
+                        <div>
+                            <label for="name"/>
+                            <h1><field name="name" placeholder="Full Name"/></h1>
+                        </div>
+                    </div>
                     <group>
-                        <field name="partner_id" readonly="1"/>
-                        <field name="name"/>
-                        <field name="email"/>
-                        <field name="phone"/>
-                        <field name="role"/>
-                        <field name="date_of_birth"/>
-                        <field name="household_id"/>
-                        <field name="has_portal_login" readonly="1"/>
-                        <field name="company_id" groups="base.group_multi_company"/>
+                        <group>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="email"/>
+                            <field name="phone"/>
+                            <field name="role"/>
+                            <field name="date_of_birth"/>
+                        </group>
+                        <group>
+                            <field name="household_id"/>
+                            <field name="has_portal_login" readonly="1"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
                     </group>
                     <group>
                         <field name="emergency_note"/>
@@ -43,6 +90,7 @@
                         </page>
                     </notebook>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>

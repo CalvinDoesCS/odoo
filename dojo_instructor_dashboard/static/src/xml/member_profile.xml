@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="dojo_instructor_dashboard.MemberProfile">
+<div class="o_mp_root" t-ref="root">
+
+    <!-- ══════════════════════════════════════════════════════════════
+         LOADING
+    ══════════════════════════════════════════════════════════════ -->
+    <t t-if="state.loading">
+        <div class="d-flex justify-content-center align-items-center" style="min-height:320px">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading…</span>
+            </div>
+        </div>
+    </t>
+
+    <!-- Not found -->
+    <t t-elif="!state.member">
+        <div class="p-4">
+            <button class="o_mp_back_btn_plain mb-3" t-on-click="goBack">
+                <i class="fa fa-arrow-left me-1"/> Back
+            </button>
+            <div class="alert alert-warning">
+                <i class="fa fa-exclamation-triangle me-2"/>
+                Member not found or you do not have permission to view this profile.
+            </div>
+        </div>
+    </t>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         PROFILE
+    ══════════════════════════════════════════════════════════════ -->
+    <t t-else="">
+
+        <!-- ── Hero ──────────────────────────────────────────────── -->
+        <div class="o_mp_hero">
+            <div class="o_mp_hero_inner">
+
+                <button class="o_mp_back_btn" t-on-click="goBack">
+                    <i class="fa fa-arrow-left me-1"/> Back
+                </button>
+
+                <div class="o_mp_hero_body">
+                    <!-- Avatar -->
+                    <div class="o_mp_avatar_wrap">
+                        <img t-att-src="imageUrl"
+                             class="o_mp_avatar"
+                             alt="Profile picture"
+                             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+                        <div class="o_mp_avatar_fallback" style="display:none">
+                            <i class="fa fa-user"/>
+                        </div>
+                    </div>
+
+                    <!-- Identity -->
+                    <div class="o_mp_hero_info">
+                        <h1 class="o_mp_hero_name" t-esc="state.member.name"/>
+                        <div class="o_mp_hero_badges">
+                            <span t-attf-class="o_mp_state_badge {{ stateClass(state.member.membership_state) }}">
+                                <t t-esc="stateLabel(state.member.membership_state)"/>
+                            </span>
+                            <span class="o_mp_role_badge">
+                                <t t-esc="roleLabel(state.member.role)"/>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div><!-- /.o_mp_hero -->
+
+        <!-- ── Content ───────────────────────────────────────────── -->
+        <div class="o_mp_content">
+
+            <!-- Row 1: Info card + Household card -->
+            <div class="o_mp_two_col">
+
+                <!-- Contact & Info -->
+                <div class="o_di_card">
+                    <div class="o_di_card_header">
+                        <div class="o_di_card_title">
+                            <span class="o_di_card_dot" style="background:#0d6efd"/>
+                            Contact &amp; Info
+                        </div>
+                    </div>
+                    <div class="o_di_card_body o_mp_info_body">
+                        <div class="o_mp_info_row">
+                            <span class="o_mp_info_label">
+                                <i class="fa fa-envelope-o"/> Email
+                            </span>
+                            <span class="o_mp_info_value">
+                                <t t-if="state.member.email">
+                                    <a t-att-href="'mailto:' + state.member.email"
+                                       t-esc="state.member.email"/>
+                                </t>
+                                <t t-else="">
+                                    <span class="text-muted">—</span>
+                                </t>
+                            </span>
+                        </div>
+                        <div class="o_mp_info_row">
+                            <span class="o_mp_info_label">
+                                <i class="fa fa-phone"/> Phone
+                            </span>
+                            <span class="o_mp_info_value">
+                                <t t-esc="state.member.phone || '—'"/>
+                            </span>
+                        </div>
+                        <div class="o_mp_info_row" t-if="state.member.date_of_birth">
+                            <span class="o_mp_info_label">
+                                <i class="fa fa-birthday-cake"/> Date of Birth
+                            </span>
+                            <span class="o_mp_info_value"
+                                  t-esc="fmtDate(state.member.date_of_birth)"/>
+                        </div>
+
+                        <!-- Emergency / Medical Note -->
+                        <t t-if="state.member.emergency_note">
+                            <div class="o_mp_emergency">
+                                <div class="o_mp_emergency_title">
+                                    <i class="fa fa-exclamation-triangle me-1"/>
+                                    Emergency / Medical Note
+                                </div>
+                                <div class="o_mp_emergency_text"
+                                     t-esc="state.member.emergency_note"/>
+                            </div>
+                        </t>
+                    </div>
+                </div><!-- /.o_di_card info -->
+
+                <!-- Household -->
+                <div class="o_di_card">
+                    <div class="o_di_card_header">
+                        <div class="o_di_card_title">
+                            <span class="o_di_card_dot" style="background:#198754"/>
+                            Household
+                        </div>
+                    </div>
+                    <div class="o_di_card_body">
+                        <t t-if="!state.member.household">
+                            <div class="o_di_empty">
+                                <i class="fa fa-home fa-2x mb-2"/>
+                                <div>Not part of a household</div>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <div class="o_mp_hh_header">
+                                <i class="fa fa-home me-2 text-muted"/>
+                                <strong t-esc="state.member.household.name"/>
+                            </div>
+                            <t t-if="state.member.household.primary_guardian">
+                                <div class="o_mp_hh_guardian">
+                                    <i class="fa fa-star me-1 text-warning"/>
+                                    Primary Guardian:
+                                    <strong t-esc="state.member.household.primary_guardian"/>
+                                </div>
+                            </t>
+                            <table class="o_di_table" style="margin-top:10px">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Role</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="state.member.household.members"
+                                       t-as="hm" t-key="hm.id">
+                                        <tr>
+                                            <td t-esc="hm.name"/>
+                                            <td>
+                                                <span class="o_di_badge o_di_badge_secondary">
+                                                    <t t-esc="roleLabel(hm.role)"/>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </t>
+                    </div>
+                </div><!-- /.o_di_card household -->
+
+            </div><!-- /.o_mp_two_col -->
+
+            <!-- Row 2: Course Roster (full width) -->
+            <div class="o_di_card">
+                <div class="o_di_card_header">
+                    <div class="o_di_card_title">
+                        <span class="o_di_card_dot" style="background:#6f42c1"/>
+                        Course Roster
+                        <small class="text-muted fw-normal ms-1">standing enrollments</small>
+                    </div>
+                </div>
+                <div class="o_di_card_body">
+                    <t t-if="state.member.course_templates.length === 0">
+                        <div class="o_di_empty">
+                            <i class="fa fa-book fa-2x mb-2"/>
+                            <div>Not on any course rosters</div>
+                        </div>
+                    </t>
+                    <t t-else="">
+                        <table class="o_di_table">
+                            <thead>
+                                <tr>
+                                    <th>Course</th>
+                                    <th>Level</th>
+                                    <th>Instructors</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="state.member.course_templates"
+                                   t-as="ct" t-key="ct.id">
+                                    <tr>
+                                        <td class="fw-semibold" t-esc="ct.name"/>
+                                        <td>
+                                            <span class="o_di_badge o_di_badge_primary"
+                                                  t-esc="ct.level"/>
+                                        </td>
+                                        <td class="text-muted" t-esc="ct.instructors"/>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </t>
+                </div>
+            </div><!-- /.course roster card -->
+
+            <!-- Row 3: Upcoming Sessions (full width) -->
+            <div class="o_di_card">
+                <div class="o_di_card_header">
+                    <div class="o_di_card_title">
+                        <span class="o_di_card_dot" style="background:#fd7e14"/>
+                        Upcoming Sessions
+                        <small class="text-muted fw-normal ms-1">registered &amp; waitlisted</small>
+                    </div>
+                </div>
+                <div class="o_di_card_body">
+                    <t t-if="state.member.upcoming_enrollments.length === 0">
+                        <div class="o_di_empty">
+                            <i class="fa fa-calendar-o fa-2x mb-2"/>
+                            <div>No upcoming session enrollments</div>
+                        </div>
+                    </t>
+                    <t t-else="">
+                        <table class="o_di_table">
+                            <thead>
+                                <tr>
+                                    <th>Class</th>
+                                    <th>Date &amp; Time</th>
+                                    <th>Instructor</th>
+                                    <th>Enrollment</th>
+                                    <th>Attendance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="state.member.upcoming_enrollments"
+                                   t-as="e" t-key="e.id">
+                                    <tr>
+                                        <td class="fw-semibold"
+                                            t-esc="e.template_name"/>
+                                        <td t-esc="fmtDt(e.start_datetime)"/>
+                                        <td class="text-muted" t-esc="e.instructor"/>
+                                        <td>
+                                            <span class="o_di_badge o_di_badge_secondary">
+                                                <t t-esc="enrollmentLabel(e.status)"/>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span t-attf-class="o_di_badge {{ attendanceClass(e.attendance_state) }}">
+                                                <t t-esc="attendanceLabel(e.attendance_state)"/>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </t>
+                </div>
+            </div><!-- /.upcoming sessions card -->
+
+        </div><!-- /.o_mp_content -->
+    </t>
+
+</div>
+</t>
+
+</templates>

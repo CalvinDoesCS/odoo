@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!--
+        Injects a "View Profile" stat button into the dojo.member form view.
+        Visible to both admins and instructors.
+    -->
+    <record id="view_dojo_member_profile_button" model="ir.ui.view">
+        <field name="name">dojo.member.profile.button</field>
+        <field name="model">dojo.member</field>
+        <field name="inherit_id" ref="dojo_base.view_dojo_member_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button type="action"
+                        name="%(dojo_instructor_dashboard.action_dojo_member_profile)d"
+                        class="oe_stat_button"
+                        icon="fa-id-card"
+                        groups="dojo_base.group_dojo_admin,dojo_base.group_dojo_instructor">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">View Profile</span>
+                    </div>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

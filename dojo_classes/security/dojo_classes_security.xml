@@ -39,6 +39,6 @@
         <field name="name">Class Enrollment Parent Self or Household</field>
         <field name="model_id" ref="model_dojo_class_enrollment"/>
         <field name="groups" eval="[(4, ref('dojo_base.group_dojo_parent_student'))]"/>
-        <field name="domain_force">['|', ('member_id.partner_id', '=', user.partner_id.id), ('member_id.household_id.primary_guardian_partner_id', '=', user.partner_id.id)]</field>
+        <field name="domain_force">['|', ('member_id.partner_id', '=', user.partner_id.id), ('member_id.household_id.primary_guardian_id.partner_id', '=', user.partner_id.id)]</field>
     </record>
 </odoo>

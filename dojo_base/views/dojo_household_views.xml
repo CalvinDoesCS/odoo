@@ -6,7 +6,7 @@
         <field name="arch" type="xml">
             <list>
                 <field name="name"/>
-                <field name="primary_guardian_partner_id"/>
+                <field name="primary_guardian_id"/>
                 <field name="company_id" groups="base.group_multi_company"/>
             </list>
         </field>
@@ -20,7 +20,10 @@
                 <sheet>
                     <group>
                         <field name="name"/>
-                        <field name="primary_guardian_partner_id"/>
+                        <field name="primary_guardian_id"
+                               domain="[('role', 'in', ['parent', 'both']), ('household_id', '=', id)]"
+                               options="{'no_create': True}"
+                               help="Pick a member of this household with role Parent or Both."/>
                         <field name="company_id" groups="base.group_multi_company"/>
                     </group>
                     <notebook>

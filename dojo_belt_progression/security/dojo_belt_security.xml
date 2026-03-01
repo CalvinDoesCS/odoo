@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Belt Manager group — can create/edit ranks, tests, and award certifications -->
+    <record id="group_dojo_belt_manager" model="res.groups">
+        <field name="name">Belt Manager</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <!-- Record rules: company-scoped -->
+    <record id="rule_dojo_belt_rank_company" model="ir.rule">
+        <field name="name">Belt Rank: own company</field>
+        <field name="model_id" ref="model_dojo_belt_rank"/>
+        <field name="domain_force">[('company_id', '=', company_id)]</field>
+    </record>
+
+    <record id="rule_dojo_member_rank_company" model="ir.rule">
+        <field name="name">Member Rank: own company</field>
+        <field name="model_id" ref="model_dojo_member_rank"/>
+        <field name="domain_force">[('company_id', '=', company_id)]</field>
+    </record>
+
+    <record id="rule_dojo_belt_test_company" model="ir.rule">
+        <field name="name">Belt Test: own company</field>
+        <field name="model_id" ref="model_dojo_belt_test"/>
+        <field name="domain_force">[('company_id', '=', company_id)]</field>
+    </record>
+
+    <record id="rule_dojo_belt_test_registration_company" model="ir.rule">
+        <field name="name">Belt Test Registration: own company</field>
+        <field name="model_id" ref="model_dojo_belt_test_registration"/>
+        <field name="domain_force">[('company_id', '=', company_id)]</field>
+    </record>
+</odoo>

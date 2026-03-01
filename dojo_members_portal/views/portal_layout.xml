@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+         PORTAL HOME – inject dojo tiles into /my
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <template id="portal_my_home_dojo" name="Portal My Home: Dojo entries"
+              inherit_id="portal.portal_my_home" customize_show="False" priority="30">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
+            <!-- Resolve member role once for conditional tile visibility -->
+            <t t-set="_dojo_member" t-value="request.env['dojo.member'].sudo().search([('partner_id', '=', request.env.user.partner_id.id)], limit=1)"/>
+            <t t-set="_dojo_is_parent" t-value="_dojo_member and _dojo_member.role in ('parent', 'both')"/>
+
+            <!-- Dojo Portal tile — rendered directly to avoid d-none count-gating -->
+            <div class="o_portal_index_card col-md-6 order-2">
+                <a href="/my/dojo" title="Dojo Portal" class="d-flex gap-2 gap-md-3 py-3 pe-2 px-md-3 h-100 rounded text-decoration-none bg-100">
+                    <div class="o_portal_icon d-block align-self-start">
+                        <img src="/dojo_members_portal/static/src/img/dojo_icon.svg"/>
+                    </div>
+                    <div>
+                        <div class="mt-0 mb-1 fs-5 fw-normal lh-1">
+                            <span>Dojo Portal</span>
+                        </div>
+                        <div class="opacity-75">Schedule, enrollments and attendance</div>
+                    </div>
+                </a>
+            </div>
+            <!-- Invoices: parents / guardians only -->
+            <t t-if="_dojo_is_parent">
+                <div class="o_portal_index_card col-md-6 order-2">
+                    <a href="/my/dojo/invoices" title="Dojo Invoices" class="d-flex gap-2 gap-md-3 py-3 pe-2 px-md-3 h-100 rounded text-decoration-none bg-100">
+                        <div class="o_portal_icon d-block align-self-start">
+                            <img src="/account/static/src/img/bill.svg"/>
+                        </div>
+                        <div>
+                            <div class="mt-0 mb-1 fs-5 fw-normal lh-1">
+                                <span>Dojo Invoices</span>
+                            </div>
+                            <div class="opacity-75">View subscription invoices</div>
+                        </div>
+                    </a>
+                </div>
+            </t>
+            <div class="o_portal_index_card col-md-6 order-2">
+                <a href="/my/dojo/household" title="My Household" class="d-flex gap-2 gap-md-3 py-3 pe-2 px-md-3 h-100 rounded text-decoration-none bg-100">
+                    <div class="o_portal_icon d-block align-self-start">
+                        <img src="/portal/static/src/img/portal-addresses.svg"/>
+                    </div>
+                    <div>
+                        <div class="mt-0 mb-1 fs-5 fw-normal lh-1">
+                            <span>My Household</span>
+                        </div>
+                        <div class="opacity-75">View your dojo household members</div>
+                    </div>
+                </a>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━         DOJO HOME  /my/dojo
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <template id="portal_dojo_home" name="Dojo Portal">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="False"/>
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">Dojo Portal</t>
+            </t>
+            <!-- ── Banner Image ─────────────────────────────────────────────────── -->
+            <div class="dojo-portal-banner mt-3"/>
+            <!-- ── Belt Rank ─────────────────────────────────────────────── -->
+            <div class="card mb-4 mt-3">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <t t-if="current_rank">
+                            <div t-attf-style="width:56px;height:56px;border-radius:50%;background:#{current_rank.color or '#cccccc'};border:3px solid rgba(0,0,0,.15);flex-shrink:0;"/>
+                            <div>
+                                <h5 class="mb-0 fw-bold" t-out="current_rank.name"/>
+                                <small class="text-muted">Current Belt</small>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <div style="width:56px;height:56px;border-radius:50%;background:#e9ecef;border:3px solid rgba(0,0,0,.1);flex-shrink:0;"/>
+                            <div>
+                                <h5 class="mb-0 text-muted">No Belt Rank Yet</h5>
+                                <small class="text-muted">Speak to your instructor to get started</small>
+                            </div>
+                        </t>
+                    </div>
+                    <t t-if="current_rank">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small class="text-muted" t-out="current_rank.name"/>
+                            <small class="text-muted">
+                                <t t-if="next_rank" t-out="next_rank.name"/>
+                                <t t-else="">Top Rank ✓</t>
+                            </small>
+                        </div>
+                        <div class="progress mb-2" style="height:10px;">
+                            <div class="progress-bar bg-warning"
+                                 role="progressbar"
+                                 t-att-style="'width:' + str(rank_pct) + '%'"
+                                 t-att-aria-valuenow="rank_pct"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100"/>
+                        </div>
+                        <small t-if="not next_rank" class="text-success fw-semibold">Highest rank achieved!</small>
+                    </t>
+                </div>
+            </div>
+
+            <!-- ── KPI Cards ─────────────────────────────────────────────── -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-4">
+                    <div class="card text-center h-100">
+                        <div class="card-body py-3">
+                            <h3 class="mb-0 fw-bold text-primary" t-out="attendance_count"/>
+                            <small class="text-muted">Sessions Attended</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4">
+                    <div class="card text-center h-100">
+                        <div class="card-body py-3">
+                            <h3 class="mb-0 fw-bold text-success" t-out="upcoming_count"/>
+                            <small class="text-muted">Upcoming Enrollments</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Household saved flash ──────────────────────────────────── -->
+            <t t-if="household_saved">
+                <div class="alert alert-success alert-dismissible mb-3" role="alert">
+                    <i class="fa fa-check-circle me-1"/> Household information saved.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"/>
+                </div>
+            </t>
+
+            <!-- ── JS activities mount (schedule / enrollments / attendance / household) ── -->
+            <div id="dojo_activities_mount"
+                 t-att-data-tab="initial_tab or 'schedule'"
+                 t-att-data-is-parent="'true' if is_parent else 'false'"
+                 t-att-data-members="members_json"
+                 class="dojo-portal-root mt-3"/>
+        </t>
+    </template>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+         LANGUAGE FIX  – ensure frontend_languages is never None in portal pages
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <template id="dojo_portal_lang_fix" inherit_id="portal.language_selector" priority="1">
+        <xpath expr="//t[@t-set='language_selector_visible']" position="before">
+            <!-- Guard: without website module, frontend_languages is None which
+                 causes len(None) crash. Replace with empty dict so the selector
+                 simply hides (visible = len({}) > 1 = False). -->
+            <t t-if="not frontend_languages" t-set="frontend_languages" t-value="{}"/>
+        </xpath>
+    </template>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+         DOJO PORTAL  /my/dojo/schedule  /my/dojo/enrollments  /my/dojo/attendance
+         All three handled by the vanilla-JS DojoPortal component
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <template id="portal_dojo_activities" name="Dojo Portal">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="False"/>
+            <!-- Resolve title in outer scope before passing into t-call -->
+            <t t-if="initial_tab == 'schedule'"><t t-set="page_title">Class Schedule</t></t>
+            <t t-elif="initial_tab == 'enrollments'"><t t-set="page_title">My Enrollments</t></t>
+            <t t-elif="initial_tab == 'attendance'"><t t-set="page_title">Attendance History</t></t>
+            <t t-else=""><t t-set="page_title">Dojo Portal</t></t>
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title" t-value="page_title"/>
+            </t>
+            <!-- JS mount point; data-tab drives which tab opens first -->
+            <div id="dojo_activities_mount"
+                 t-att-data-tab="initial_tab or 'schedule'"
+                 class="dojo-portal-root mt-3"/>
+        </t>
+    </template>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+         MY INVOICES  /my/dojo/invoices
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <template id="portal_my_dojo_invoices" name="My Invoices">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="False"/>
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">Subscription Invoices</t>
+            </t>
+
+            <t t-if="not invoices">
+                <div class="alert alert-info">No invoices found for your household.</div>
+            </t>
+            <t t-else="">
+                <div class="table-responsive mt-3">
+                    <table class="table table-hover o_portal_my_doc_table">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Date</th>
+                                <th>Due Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th class="text-center">PDF</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="invoices" t-as="inv">
+                                <tr>
+                                    <td><span t-field="inv.name"/></td>
+                                    <td>
+                                        <span t-field="inv.invoice_date"
+                                              t-options='{"widget": "date"}'/>
+                                    </td>
+                                    <td>
+                                        <span t-if="inv.invoice_date_due"
+                                              t-field="inv.invoice_date_due"
+                                              t-options='{"widget": "date"}'/>
+                                        <span t-else="">—</span>
+                                    </td>
+                                    <td>
+                                        <span t-field="inv.amount_total"
+                                              t-options='{"widget": "monetary", "display_currency": inv.currency_id}'/>
+                                    </td>
+                                    <td>
+                                        <span t-att-class="'badge ' + ('bg-secondary' if inv.state == 'draft' else 'bg-success' if inv.state == 'posted' else 'bg-danger' if inv.state == 'cancel' else 'bg-secondary')"
+                                              t-out="'Draft' if inv.state == 'draft' else 'Posted' if inv.state == 'posted' else 'Cancelled' if inv.state == 'cancel' else inv.state"/>
+                                    </td>
+                                    <td class="text-center">
+                                        <a t-attf-href="/my/dojo/invoices/#{inv.id}/pdf"
+                                           class="btn btn-sm btn-outline-primary"
+                                           title="Download PDF">
+                                            <i class="fa fa-download"/> PDF
+                                        </a>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+         MY HOUSEHOLD  /my/dojo/household
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <template id="portal_my_household" name="My Household">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="False"/>
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">My Household</t>
+            </t>
+
+            <t t-if="success">
+                <div class="alert alert-success" role="alert">
+                    <strong>Saved!</strong> Your household information has been updated.
+                </div>
+            </t>
+            <t t-if="error.get('new_contact')">
+                <div class="alert alert-danger" role="alert">
+                    <t t-out="error['new_contact']"/>
+                </div>
+            </t>
+
+            <!-- ── EDITABLE VIEW (parents / guardians) ──────────────────────────── -->
+            <t t-if="can_edit">
+                <form method="POST" action="/my/dojo/household" class="mt-3">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                    <!-- Household name -->
+                    <t t-if="household">
+                        <div class="card mb-4">
+                            <div class="card-header"><strong>Household</strong></div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="household_name" class="form-label">Household Name</label>
+                                    <input type="text" class="form-control" id="household_name"
+                                           name="household_name"
+                                           t-att-value="household.name or ''"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+
+                    <!-- Emergency contacts per member -->
+                    <t t-foreach="household_members" t-as="hm">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <strong>Emergency Contacts for <t t-out="hm.name"/></strong>
+                            </div>
+                            <div class="card-body">
+                                <t t-if="hm.emergency_contact_ids">
+                                    <table class="table table-sm mb-3">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th><th>Relationship</th>
+                                                <th>Phone</th><th>Email</th><th>Primary</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="hm.emergency_contact_ids" t-as="ec">
+                                                <tr>
+                                                    <td><t t-out="ec.name"/></td>
+                                                    <td><t t-out="ec.relationship"/></td>
+                                                    <td><t t-out="ec.phone"/></td>
+                                                    <td><t t-out="ec.email or '—'"/></td>
+                                                    <td>
+                                                        <span t-if="ec.is_primary" class="badge bg-success">Primary</span>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </t>
+                                <t t-else="">
+                                    <p class="text-muted">No emergency contacts on file.</p>
+                                </t>
+                            </div>
+                        </div>
+                    </t>
+
+                    <!-- Add new emergency contact -->
+                    <div class="card mb-4">
+                        <div class="card-header"><strong>Add Emergency Contact</strong></div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">For Member</label>
+                                    <select name="new_contact_member_id" class="form-select">
+                                        <t t-foreach="household_members" t-as="hm">
+                                            <option t-att-value="hm.id" t-out="hm.name"/>
+                                        </t>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Contact Name *</label>
+                                    <input type="text" class="form-control" name="new_contact_name"
+                                           placeholder="Full name"/>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Relationship</label>
+                                    <input type="text" class="form-control" name="new_contact_relationship"
+                                           placeholder="e.g. Mother, Uncle"/>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Phone *</label>
+                                    <input type="tel" class="form-control" name="new_contact_phone"
+                                           placeholder="+1 555 000 0000"/>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" name="new_contact_email"
+                                           placeholder="optional@email.com"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <a href="/my/dojo" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </t>
+
+            <!-- ── READ-ONLY VIEW (students) ───────────────────────────────────── -->
+            <t t-else="">
+                <div class="mt-3">
+                    <t t-if="household">
+                        <div class="card mb-4">
+                            <div class="card-header"><strong>Household</strong></div>
+                            <div class="card-body">
+                                <p class="mb-0"><strong>Name:</strong> <t t-out="household.name or '—'"/></p>
+                            </div>
+                        </div>
+                    </t>
+
+                    <t t-foreach="household_members" t-as="hm">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <strong>Emergency Contacts for <t t-out="hm.name"/></strong>
+                            </div>
+                            <div class="card-body">
+                                <t t-if="hm.emergency_contact_ids">
+                                    <table class="table table-sm mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th><th>Relationship</th>
+                                                <th>Phone</th><th>Email</th><th>Primary</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="hm.emergency_contact_ids" t-as="ec">
+                                                <tr>
+                                                    <td><t t-out="ec.name"/></td>
+                                                    <td><t t-out="ec.relationship"/></td>
+                                                    <td><t t-out="ec.phone"/></td>
+                                                    <td><t t-out="ec.email or '—'"/></td>
+                                                    <td>
+                                                        <span t-if="ec.is_primary" class="badge bg-success">Primary</span>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </t>
+                                <t t-else="">
+                                    <p class="text-muted mb-0">No emergency contacts on file.</p>
+                                </t>
+                            </div>
+                        </div>
+                    </t>
+
+                    <div class="alert alert-info mt-2" role="alert">
+                        <i class="fa fa-info-circle"/> To update household information or emergency contacts,
+                        please contact the dojo admin.
+                    </div>
+                    <a href="/my/dojo" class="btn btn-secondary btn-sm">Back to Dojo Home</a>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+         FALLBACK – user has no dojo.member record
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <template id="portal_no_member" name="No Dojo Member">
+        <t t-call="portal.portal_layout">
+            <div class="alert alert-warning mt-4" role="alert">
+                <h4 class="alert-heading">No Member Profile Found</h4>
+                <p>
+                    Your account is not linked to a dojo member profile yet.
+                    Please contact the dojo admin to get this set up.
+                </p>
+                <a href="/my" class="btn btn-primary">Back to My Account</a>
+            </div>
+        </t>
+    </template>
+
+</odoo>

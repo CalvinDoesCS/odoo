@@ -1,0 +1,91 @@
+/* =====================================================================
+   Dojo Activities OWL Portal Component – styles
+   ===================================================================== */
+/* ── Portal banner ─────────────────────────────────────────── */
+.dojo-portal-banner {
+    width: 100%;
+    height: clamp(70px, 15vw, 130px);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    background: url('/dojo_members_portal/static/src/img/dojo_banner.svg') center / cover no-repeat;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+/* ── Activity cards ───────────────────────────────────────────────── */
+.dojo-activity-card {
+    cursor: pointer;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    overflow: hidden;       /* clip the top accent bar */
+}
+
+.dojo-activity-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12) !important;
+}
+
+.dojo-activity-card:active {
+    transform: translateY(-1px);
+}
+
+/* ── Top accent stripe (4 px coloured bar at card top) ───────────── */
+.dojo-card-accent {
+    height: 4px;
+    width: 100%;
+}
+
+/* Level colours */
+.dojo-level-beginner     { background: #198754; }
+.dojo-level-intermediate { background: #ffc107; }
+.dojo-level-advanced     { background: #dc3545; }
+.dojo-level-all          { background: #6c757d; }
+
+/* Enrollment status colours */
+.dojo-status-registered  { background: #198754; }
+.dojo-status-waitlist    { background: #ffc107; }
+.dojo-status-cancelled   { background: #6c757d; }
+
+/* Attendance log colours */
+.dojo-log-present        { background: #198754; }
+.dojo-log-late           { background: #ffc107; }
+.dojo-log-absent         { background: #dc3545; }
+.dojo-log-excused        { background: #6c757d; }
+
+/* ── Detail overlay – slide-in panel from the right ─────────────── */
+.dojo-overlay-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 1055;          /* above Bootstrap modals (1050) */
+    display: flex;
+    justify-content: flex-end;
+    animation: dojo-backdrop-in 0.2s ease;
+}
+
+.dojo-overlay-panel {
+    background: #fff;
+    width: 400px;
+    max-width: 92vw;
+    height: 100%;
+    padding: 1.5rem 1.5rem 2rem 1.5rem;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: -6px 0 32px rgba(0, 0, 0, 0.18);
+    animation: dojo-panel-in 0.2s ease;
+}
+
+@keyframes dojo-backdrop-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes dojo-panel-in {
+    from { transform: translateX(40px); opacity: 0; }
+    to   { transform: translateX(0);     opacity: 1; }
+}
+
+/* Prevent body scroll while overlay is open */
+body.dojo-overlay-open {
+    overflow: hidden;
+}

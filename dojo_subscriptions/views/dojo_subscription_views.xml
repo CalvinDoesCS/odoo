@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Remove legacy view that added billing_partner_id (field now removed) -->
+    <delete model="ir.ui.view" search="[('name', '=', 'dojo.household.form.billing')]"/>
+
     <record id="action_dojo_subscription_plans" model="ir.actions.act_window">
         <field name="name">Subscription Plans</field>
         <field name="res_model">dojo.subscription.plan</field>
@@ -33,6 +36,8 @@
         sequence="20"
     />
 
+
+
     <record id="view_dojo_subscription_plan_list" model="ir.ui.view">
         <field name="name">dojo.subscription.plan.list</field>
         <field name="model">dojo.subscription.plan</field>
@@ -41,6 +46,7 @@
                 <field name="name"/>
                 <field name="code"/>
                 <field name="price"/>
+                <field name="initial_fee"/>
                 <field name="billing_period"/>
                 <field name="unlimited_sessions"/>
                 <field name="active"/>
@@ -58,11 +64,30 @@
                         <field name="name"/>
                         <field name="code"/>
                         <field name="price"/>
+                        <field name="initial_fee"/>
                         <field name="currency_id"/>
                         <field name="billing_period"/>
                         <field name="unlimited_sessions"/>
                         <field name="sessions_per_period" invisible="unlimited_sessions"/>
                         <field name="active"/>
+                    </group>
+                    <group string="Course &amp; Session Restrictions">
+                        <field name="allowed_template_ids"
+                               widget="many2many_tags"
+                               placeholder="Leave empty to allow all courses…"/>
+                        <field name="max_sessions_per_week"
+                               string="Max Sessions / Week"
+                               help="0 = unlimited"/>
+                        <div class="alert alert-info small py-1 px-2"
+                             invisible="not allowed_template_ids and not max_sessions_per_week"
+                             colspan="2" role="alert">
+                            <b>Enrollment rules enforced on save:</b>
+                            <ul class="mb-0 mt-1">
+                                <li invisible="not allowed_template_ids">Members may only enrol in sessions for the listed courses.</li>
+                                <li invisible="not max_sessions_per_week">Members may attend at most <b><field name="max_sessions_per_week" nolabel="1"/></b> session(s) per calendar week.</li>
+                                <li invisible="unlimited_sessions">Members may attend at most <b><field name="sessions_per_period" nolabel="1"/></b> session(s) per billing period.</li>
+                            </ul>
+                        </div>
                     </group>
                     <group>
                         <field name="description"/>
@@ -92,6 +117,18 @@
         <field name="arch" type="xml">
             <form>
                 <sheet>
+                    <div name="button_box" class="oe_button_box">
+                        <button name="action_view_invoices"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-file-text-o"
+                                invisible="invoice_count == 0">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="invoice_count"/></span>
+                                <span class="o_stat_text">Invoices</span>
+                            </div>
+                        </button>
+                    </div>
                     <group>
                         <field name="member_id"/>
                         <field name="plan_id"/>
@@ -107,6 +144,90 @@
                     </group>
                 </sheet>
             </form>
+        </field>
+    </record>
+
+    <!-- ── Stripe Issuing button + payment method fields on Household form ── -->
+    <record id="view_dojo_household_form_billing_inherit" model="ir.ui.view">
+        <field name="name">dojo.household.form.billing.inherit</field>
+        <field name="model">dojo.household</field>
+        <field name="inherit_id" ref="dojo_base.view_dojo_household_form"/>
+        <field name="arch" type="xml">
+            <!-- Issue Card stat button -->
+            <xpath expr="//sheet" position="before">
+                <div name="button_box" class="oe_button_box">
+                    <button name="action_issue_card_button"
+                            type="object"
+                            class="oe_stat_button"
+                            icon="fa-credit-card"
+                            invisible="stripe_card_id">
+                        <div class="o_stat_info">
+                            <span class="o_stat_text">Issue Stripe Card</span>
+                        </div>
+                    </button>
+                    <button type="object"
+                            class="oe_stat_button"
+                            icon="fa-check-circle"
+                            invisible="not stripe_card_id">
+                        <div class="o_stat_info">
+                            <span class="o_stat_value">&#8226;&#8226;&#8226;&#8226;&#160;<field name="payment_card_last4" nolabel="1"/></span>
+                            <span class="o_stat_text">Virtual Card</span>
+                        </div>
+                    </button>
+                </div>
+            </xpath>
+            <!-- Payment method section -->
+            <xpath expr="//sheet/group[last()]" position="after">
+                <group string="Payment Method" name="payment_method_group">
+                    <group>
+                        <field name="payment_card_brand" placeholder="e.g. Mastercard" readonly="stripe_card_id"/>
+                        <field name="payment_card_last4" placeholder="4242" readonly="stripe_card_id"/>
+                        <field name="payment_card_expiry" placeholder="MM/YY" readonly="stripe_card_id"/>
+                        <field name="payment_card_status" readonly="1" invisible="not stripe_card_id"/>
+                    </group>
+                    <group>
+                        <field name="stripe_customer_id" groups="dojo_base.group_dojo_admin"/>
+                        <field name="stripe_card_id" groups="dojo_base.group_dojo_admin"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+    <!-- ── Subscription smart button + tab injected into Member form ──── -->
+    <record id="view_dojo_member_form_subscription_inherit" model="ir.ui.view">
+        <field name="name">dojo.member.form.subscription.inherit</field>
+        <field name="model">dojo.member</field>
+        <field name="inherit_id" ref="dojo_base.view_dojo_member_form"/>
+        <field name="arch" type="xml">
+            <!-- Smart button -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_member_subscriptions"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-credit-card">
+                    <div class="o_stat_info">
+                        <span class="o_stat_value"><field name="subscription_count"/></span>
+                        <span class="o_stat_text">Subscriptions</span>
+                    </div>
+                </button>
+            </xpath>
+            <!-- Subscriptions tab -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Subscriptions" name="subscriptions">
+                    <group>
+                        <field name="active_subscription_id" readonly="1"
+                               options="{'no_open': False}"/>
+                    </group>
+                    <field name="subscription_ids" readonly="1">
+                        <list>
+                            <field name="plan_id"/>
+                            <field name="start_date"/>
+                            <field name="next_billing_date"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
         </field>
     </record>
 </odoo>

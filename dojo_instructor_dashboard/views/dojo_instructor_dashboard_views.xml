@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!--   ACTIONS — INSTRUCTOR (filtered to current user / uid)           -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+
+    <record id="action_my_sessions_today" model="ir.actions.act_window">
+        <field name="name">Today's Classes</field>
+        <field name="res_model">dojo.class.session</field>
+        <field name="view_mode">list,form,calendar</field>
+        <field name="domain">[
+            ('start_datetime', '&gt;=', context_today().strftime('%Y-%m-%d 00:00:00')),
+            ('start_datetime', '&lt;=', context_today().strftime('%Y-%m-%d 23:59:59')),
+            ('instructor_profile_id.user_id', '=', uid)
+        ]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No sessions scheduled for today.</p>
+        </field>
+    </record>
+
+    <record id="action_my_sessions_calendar" model="ir.actions.act_window">
+        <field name="name">My Class Calendar</field>
+        <field name="res_model">dojo.class.session</field>
+        <field name="view_mode">calendar,list,form</field>
+        <field name="domain">[('instructor_profile_id.user_id', '=', uid)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No sessions found.</p>
+        </field>
+    </record>
+
+    <record id="action_my_students" model="ir.actions.act_window">
+        <field name="name">My Students</field>
+        <field name="res_model">dojo.member</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[
+            ('enrollment_ids.session_id.instructor_profile_id.user_id', '=', uid),
+            ('enrollment_ids.status', '=', 'registered')
+        ]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No students found for your sessions.</p>
+        </field>
+    </record>
+
+    <record id="action_my_todos" model="ir.actions.act_window">
+        <field name="name">My Todos</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('user_ids', 'in', [uid])]</field>
+        <field name="context">{
+            'default_user_ids': [uid],
+            'search_default_my_tasks': 1
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No tasks assigned to you yet.</p>
+        </field>
+    </record>
+
+    <record id="action_my_instructor_kpis" model="ir.actions.act_window">
+        <field name="name">My KPIs</field>
+        <field name="res_model">dojo.instructor.profile</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_dojo_instructor_profile_kpi_form"/>
+        <field name="domain">[('user_id', '=', uid)]</field>
+        <field name="context">{'create': False}</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!--   ACTIONS — ADMIN (unfiltered, all records)                       -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+
+    <record id="action_all_sessions_today" model="ir.actions.act_window">
+        <field name="name">Today's Sessions</field>
+        <field name="res_model">dojo.class.session</field>
+        <field name="view_mode">list,form,calendar</field>
+        <field name="domain">[
+            ('start_datetime', '&gt;=', context_today().strftime('%Y-%m-%d 00:00:00')),
+            ('start_datetime', '&lt;=', context_today().strftime('%Y-%m-%d 23:59:59'))
+        ]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No sessions scheduled for today.</p>
+        </field>
+    </record>
+
+    <record id="action_all_sessions_calendar" model="ir.actions.act_window">
+        <field name="name">Class Calendar</field>
+        <field name="res_model">dojo.class.session</field>
+        <field name="view_mode">calendar,list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No sessions found.</p>
+        </field>
+    </record>
+
+    <record id="action_all_students" model="ir.actions.act_window">
+        <field name="name">All Students</field>
+        <field name="res_model">dojo.member</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('role', 'in', ['student', 'both'])]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No students found.</p>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!--   STUDENT LIST VIEW (medical flag highlight)                      -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_dojo_member_my_students_list" model="ir.ui.view">
+        <field name="name">dojo.member.my.students.list</field>
+        <field name="model">dojo.member</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <list string="Students" decoration-danger="emergency_note != False and emergency_note != ''">
+                <field name="name"/>
+                <field name="role"/>
+                <field name="date_of_birth" optional="show"/>
+                <field name="emergency_note" optional="show" string="Medical / Emergency"/>
+                <field name="household_id" optional="show"/>
+                <field name="current_belt_stub" optional="show" string="Belt Rank"/>
+                <field name="has_portal_login" optional="show" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!--   KPI VIEWS                                                        -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Instructor personal KPI form (used by action_my_instructor_kpis) -->
+    <record id="view_dojo_instructor_profile_kpi_form" model="ir.ui.view">
+        <field name="name">dojo.instructor.profile.kpi.form</field>
+        <field name="model">dojo.instructor.profile</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <form string="My KPIs" create="false" edit="false" delete="false">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group string="Today">
+                        <field name="sessions_today_count" readonly="1"/>
+                        <field name="students_total_count" readonly="1"/>
+                    </group>
+                    <group string="Last 30 Days">
+                        <field name="avg_fill_rate" readonly="1" widget="percentage"/>
+                        <field name="attendance_rate" readonly="1" widget="percentage"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Admin KPI list view — all instructors with KPI columns -->
+    <record id="view_instructor_kpi_list" model="ir.ui.view">
+        <field name="name">dojo.instructor.profile.kpi.list</field>
+        <field name="model">dojo.instructor.profile</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <list string="Instructor KPIs" create="false" delete="false">
+                <field name="name"/>
+                <field name="sessions_today_count" string="Today"/>
+                <field name="students_total_count" string="Students"/>
+                <field name="avg_fill_rate" string="Fill Rate %" widget="percentage"/>
+                <field name="attendance_rate" string="Attendance %" widget="percentage"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_all_instructor_kpis" model="ir.actions.act_window">
+        <field name="name">Instructor KPIs</field>
+        <field name="res_model">dojo.instructor.profile</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_instructor_kpi_list"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No instructor profiles found.</p>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!--   INSTRUCTOR DASHBOARD — rich form with stat widgets              -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_instructor_dashboard_form" model="ir.ui.view">
+        <field name="name">dojo.instructor.profile.dashboard.form</field>
+        <field name="model">dojo.instructor.profile</field>
+        <field name="priority">30</field>
+        <field name="arch" type="xml">
+            <form string="My Dashboard" create="false" delete="false">
+
+                <!-- ── Stat tiles ─────────────────────────────────────── -->
+                <div class="oe_button_box" name="button_box">
+                    <button type="action"
+                            name="%(dojo_instructor_dashboard.action_my_sessions_today)d"
+                            class="oe_stat_button" icon="fa-calendar-check-o">
+                        <div class="o_stat_info">
+                            <span class="o_stat_value"><field name="sessions_today_count" readonly="1"/></span>
+                            <span class="o_stat_text">Today's Classes</span>
+                        </div>
+                    </button>
+                    <button type="action"
+                            name="%(dojo_instructor_dashboard.action_my_students)d"
+                            class="oe_stat_button" icon="fa-users">
+                        <div class="o_stat_info">
+                            <span class="o_stat_value"><field name="students_total_count" readonly="1"/></span>
+                            <span class="o_stat_text">My Students</span>
+                        </div>
+                    </button>
+                    <button type="action"
+                            name="%(dojo_instructor_dashboard.action_my_sessions_calendar)d"
+                            class="oe_stat_button" icon="fa-calendar">
+                        <div class="o_stat_info">
+                            <span class="o_stat_text">Full Calendar</span>
+                        </div>
+                    </button>
+                </div>
+
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <!-- ── Performance ────────────────────────────────── -->
+                    <group string="Performance — Last 30 Days">
+                        <group>
+                            <field name="avg_fill_rate" readonly="1" widget="percentage" string="Avg Class Fill Rate"/>
+                        </group>
+                        <group>
+                            <field name="attendance_rate" readonly="1" widget="percentage" string="Attendance Rate"/>
+                        </group>
+                    </group>
+
+                    <!-- ── Today's Classes ────────────────────────────── -->
+                    <separator string="Today's Classes"/>
+                    <field name="session_today_ids" readonly="1" nolabel="1">
+                        <list>
+                            <field name="template_id"    string="Class"/>
+                            <field name="start_datetime" string="Start"/>
+                            <field name="end_datetime"   string="End"/>
+                            <field name="capacity"       string="Capacity"/>
+                            <field name="seats_taken"    string="Enrolled"/>
+                            <field name="state"          string="Status"/>
+                        </list>
+                    </field>
+
+                    <!-- ── Upcoming Classes (next 14 days) ───────────── -->
+                    <separator string="Upcoming Classes — Next 14 Days"/>
+                    <field name="upcoming_session_ids" readonly="1" nolabel="1">
+                        <list>
+                            <field name="template_id"    string="Class"/>
+                            <field name="start_datetime" string="Date &amp; Time"/>
+                            <field name="capacity"       string="Capacity"/>
+                            <field name="seats_taken"    string="Enrolled"/>
+                            <field name="state"          string="Status"/>
+                        </list>
+                    </field>
+
+                    <!-- ── My Todos ───────────────────────────────────── -->
+                    <separator string="My Todos"/>
+                    <field name="task_ids" readonly="1" nolabel="1">
+                        <list>
+                            <field name="name"          string="Task"/>
+                            <field name="project_id"    string="Project"  optional="show"/>
+                            <field name="date_deadline" string="Due"      optional="show"/>
+                            <field name="priority"      widget="priority"/>
+                            <field name="stage_id"      string="Stage"/>
+                        </list>
+                    </field>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action that opens the instructor's OWN profile as a dashboard -->
+    <record id="action_instructor_dashboard" model="ir.actions.act_window">
+        <field name="name">My Dashboard</field>
+        <field name="res_model">dojo.instructor.profile</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_instructor_dashboard_form"/>
+        <field name="domain">[('user_id', '=', uid)]</field>
+        <field name="context">{'create': False}</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!--   MENUS                                                            -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Member Profile OWL client action -->
+    <record id="action_dojo_member_profile" model="ir.actions.client">
+        <field name="name">Member Profile</field>
+        <field name="tag">dojo_member_profile</field>
+    </record>
+
+    <!-- OWL client action for the instructor dashboard -->
+    <record id="action_instructor_dashboard_client" model="ir.actions.client">
+        <field name="name">My Dashboard</field>
+        <field name="tag">dojo_instructor_dashboard</field>
+    </record>
+
+    <!-- ── Instructor: single top-level entry, no submenus ────────────── -->
+    <menuitem id="menu_dojo_instructor_dashboard_root"
+              name="My Dashboard"
+              sequence="3"
+              action="action_instructor_dashboard_client"
+              groups="dojo_base.group_dojo_instructor"/>
+
+    <!-- Admin OWL client action -->
+    <record id="action_admin_dashboard_client" model="ir.actions.client">
+        <field name="name">Admin Dashboard</field>
+        <field name="tag">dojo_admin_dashboard</field>
+    </record>
+
+    <!-- ── Admin: single top-level entry, no submenus ───────────── -->
+    <menuitem id="menu_dojo_admin_dashboard_root"
+              name="Admin Dashboard"
+              sequence="2"
+              action="action_admin_dashboard_client"
+              groups="dojo_base.group_dojo_admin"/>
+
+</odoo>

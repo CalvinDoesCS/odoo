@@ -1,6 +1,9 @@
 # Twilio SDK – SMS, Voice, VoIP integration
 twilio
 
+# Stripe – Issuing virtual cards + Google Wallet push provisioning
+stripe
+
 # Data Analysis for HRMS Dashboard
 pandas
 numpy

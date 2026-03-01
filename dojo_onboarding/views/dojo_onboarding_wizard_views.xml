@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ── Onboarding Wizard Form View ──────────────────────────────────── -->
+    <record id="view_dojo_onboarding_wizard_form" model="ir.ui.view">
+        <field name="name">dojo.onboarding.wizard.form</field>
+        <field name="model">dojo.onboarding.wizard</field>
+        <field name="arch" type="xml">
+            <form string="New Member Onboarding">
+
+                <!-- Progress header -->
+                <div class="alert alert-info py-2 mb-3" role="status">
+                    <!-- 6-step path: creating a new household -->
+                    <span invisible="step != 'member_info' or not create_new_household">
+                        <b>Step 1/6:</b> Member Info  ›  Household  ›  Guardian Setup  ›  Enrollment  ›  Subscription  ›  Portal Access
+                    </span>
+                    <span invisible="step != 'household' or not create_new_household">
+                        ✓ Member Info  ›  <b>Step 2/6: Household</b>  ›  Guardian Setup  ›  Enrollment  ›  Subscription  ›  Portal Access
+                    </span>
+                    <span invisible="step != 'guardian_setup'">
+                        ✓ Member Info  ›  ✓ Household  ›  <b>Step 3/6: Guardian Setup</b>  ›  Enrollment  ›  Subscription  ›  Portal Access
+                    </span>
+                    <span invisible="step != 'enrollment' or not create_new_household">
+                        ✓ Member Info  ›  ✓ Household  ›  ✓ Guardian Setup  ›  <b>Step 4/6: Enrollment</b>  ›  Subscription  ›  Portal Access
+                    </span>
+                    <span invisible="step != 'subscription' or not create_new_household">
+                        ✓ Member Info  ›  ✓ Household  ›  ✓ Guardian Setup  ›  ✓ Enrollment  ›  <b>Step 5/6: Subscription</b>  ›  Portal Access
+                    </span>
+                    <span invisible="step != 'portal_access' or not create_new_household">
+                        ✓ Member Info  ›  ✓ Household  ›  ✓ Guardian Setup  ›  ✓ Enrollment  ›  ✓ Subscription  ›  <b>Step 6/6: Portal Access</b>
+                    </span>
+                    <!-- 5-step path: joining an existing household -->
+                    <span invisible="step != 'member_info' or create_new_household">
+                        <b>Step 1/5:</b> Member Info  ›  Household  ›  Enrollment  ›  Subscription  ›  Portal Access
+                    </span>
+                    <span invisible="step != 'household' or create_new_household">
+                        ✓ Member Info  ›  <b>Step 2/5: Household</b>  ›  Enrollment  ›  Subscription  ›  Portal Access
+                    </span>
+                    <span invisible="step != 'enrollment' or create_new_household">
+                        ✓ Member Info  ›  ✓ Household  ›  <b>Step 3/5: Enrollment</b>  ›  Subscription  ›  Portal Access
+                    </span>
+                    <span invisible="step != 'subscription' or create_new_household">
+                        ✓ Member Info  ›  ✓ Household  ›  ✓ Enrollment  ›  <b>Step 4/5: Subscription</b>  ›  Portal Access
+                    </span>
+                    <span invisible="step != 'portal_access' or create_new_household">
+                        ✓ Member Info  ›  ✓ Household  ›  ✓ Enrollment  ›  ✓ Subscription  ›  <b>Step 5/5: Portal Access</b>
+                    </span>
+                </div>
+
+                <field name="step" invisible="1"/>
+
+                <!-- ── Step 1: Member Info ──────────────────────────────── -->
+                <group string="Member Information" invisible="step != 'member_info'">
+                    <group>
+                        <field name="name" placeholder="Full name"/>
+                        <field name="email" placeholder="email@example.com"/>
+                        <field name="phone" required="step == 'member_info'"/>
+                        <div class="text-muted small" style="grid-column: span 2; padding-left: 4px;">
+                            Phone number is required.
+                        </div>
+                    </group>
+                    <group>
+                        <field name="role"/>
+                        <field name="date_of_birth"/>
+                    </group>
+                    <group colspan="2">
+                        <field name="emergency_note"
+                               placeholder="Allergies, medical conditions, emergency notes…"
+                               widget="text"/>
+                    </group>
+                </group>
+
+                <!-- ── Step 2: Household ────────────────────────────────── -->
+                <group string="Household Assignment" invisible="step != 'household'">
+                    <group>
+                        <field name="create_new_household"/>
+                    </group>
+
+                    <!-- Existing household path -->
+                    <group invisible="create_new_household">
+                        <field name="household_id"
+                               placeholder="Search for an existing household"
+                               required="not create_new_household and step == 'household'"/>
+                    </group>
+                    <group string="Guardian Link (optional)"
+                           invisible="create_new_household or role == 'parent'">
+                        <field name="guardian_member_id"
+                               domain="[('role', 'in', ['parent', 'both'])]"/>
+                    </group>
+                    <group invisible="create_new_household or not guardian_member_id">
+                        <field name="guardian_relation"/>
+                    </group>
+
+                    <!-- New household hint -->
+                    <div class="alert alert-info small py-1 px-2"
+                         invisible="not create_new_household" role="alert">
+                        <i class="fa fa-arrow-right me-1"></i>
+                        Click <b>Next</b> to enter the guardian's details and set up the household.
+                    </div>
+                </group>
+
+                <!-- ── Step 3 (new household only): Guardian Setup ───────── -->
+                <group string="Guardian Details" invisible="step != 'guardian_setup'">
+                    <group>
+                        <field name="new_guardian_name"
+                               placeholder="Full name"
+                               required="step == 'guardian_setup'"/>
+                        <field name="new_guardian_email" placeholder="email@example.com"/>
+                        <field name="new_guardian_phone" required="step == 'guardian_setup'"/>
+                    </group>
+                    <div class="text-muted small ps-1" colspan="2">
+                        Phone number is required for the guardian.
+                    </div>
+                    <group>
+                        <field name="new_guardian_role"/>
+                        <field name="new_household_name"
+                               placeholder="Auto-generated from guardian name if left blank"/>
+                    </group>
+                    <group>
+                        <field name="guardian_relation"
+                               required="step == 'guardian_setup'"/>
+                    </group>
+                    <div class="alert alert-info small py-1 px-2 mt-2" colspan="2" role="alert">
+                        <i class="fa fa-credit-card me-1"></i>
+                        A <b>Stripe virtual card</b> will be issued to this household automatically
+                        when setup is complete. It will be used to charge subscription invoices.
+                    </div>
+                </group>
+
+                <!-- ── Step 3: Class Enrollment ─────────────────────────── -->
+                <group string="Class Enrollment (optional)" invisible="step != 'enrollment'">
+                    <field name="session_ids" nolabel="1" widget="many2many_tags"
+                           domain="[('state', '=', 'open')]"
+                           placeholder="Select open sessions to enrol this member in…"/>
+                </group>
+
+                <!-- ── Step 4: Subscription ─────────────────────────────── -->
+                <group string="Subscription Plan (optional)" invisible="step != 'subscription'">
+                    <group>
+                        <field name="plan_id" placeholder="Leave blank to skip"/>
+                        <field name="subscription_start_date" invisible="not plan_id"/>
+                    </group>                    <group string="Billing" invisible="not plan_id">
+                        <div class="alert alert-warning small py-1 px-2" invisible="not plan_id" role="alert">
+                            <b>Initial fee:</b> If this plan has a setup fee, it will be charged
+                            on the subscription start date. The recurring fee begins from the same date.
+                        </div>
+                        <div class="alert alert-info small py-1 px-2" invisible="not plan_id" role="alert">
+                            Subscription invoices are charged to the household's Stripe virtual card.
+                            The card is issued automatically when a new household is set up.
+                        </div>
+                    </group>
+                </group>
+
+                <!-- ── Step 5: Portal Access ─────────────────────────────── -->
+                <group string="Portal Access" invisible="step != 'portal_access'">
+                    <group>
+                        <field name="create_portal_login"/>
+                        <field name="send_welcome_email" invisible="not create_portal_login"/>
+                    </group>
+                    <div class="alert alert-info" invisible="not create_portal_login" role="alert">
+                        A <b>res.users</b> account will be created using the member's email
+                        as the login. The member will receive a password-reset email if
+                        "Send Welcome Email" is checked.
+                    </div>
+                    <div class="alert alert-warning" invisible="create_portal_login" role="alert">
+                        No portal login will be created. The member profile will exist
+                        but the member cannot log in until a user account is linked manually.
+                    </div>
+                </group>
+
+                <!-- ── Footer navigation ────────────────────────────────── -->
+                <footer>
+                    <button name="action_next" type="object" string="Next →"
+                            class="btn btn-primary"
+                            invisible="step == 'portal_access'"/>
+                    <button name="action_confirm" type="object"
+                            string="Confirm &amp; Create Member"
+                            class="btn btn-primary"
+                            invisible="step != 'portal_access'"/>
+                    <button name="action_back" type="object" string="← Previous"
+                            class="btn btn-secondary"
+                            invisible="step == 'member_info'"/>
+                    <button special="cancel" string="Cancel" class="btn btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── Wizard Launch Action ──────────────────────────────────────────── -->
+    <record id="action_dojo_onboarding_wizard" model="ir.actions.act_window">
+        <field name="name">New Member Onboarding</field>
+        <field name="res_model">dojo.onboarding.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{"dialog_size": "large"}</field>
+    </record>
+
+</odoo>

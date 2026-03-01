@@ -1,6 +1,7 @@
 services:
   web:
-    image: odoo:latest
+    build: .
+    image: odoo-dojo:latest
     depends_on:
       - db
     ports:

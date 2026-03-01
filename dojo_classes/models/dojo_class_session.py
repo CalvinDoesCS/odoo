@@ -30,6 +30,15 @@ class DojoClassSession(models.Model):
         "dojo.class.enrollment", "session_id", string="Enrollments"
     )
     seats_taken = fields.Integer(compute="_compute_seats_taken")
+    generated_from_recurrence = fields.Boolean(
+        string="Auto-generated", default=False, readonly=True, index=True
+    )
+    recurrence_template_id = fields.Many2one(
+        "dojo.class.template",
+        string="Recurrence Template",
+        index=True,
+        help="The template whose recurrence rule generated this session.",
+    )
 
     @api.depends("template_id", "start_datetime")
     def _compute_name(self):

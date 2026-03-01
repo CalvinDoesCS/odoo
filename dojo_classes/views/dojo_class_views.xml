@@ -48,19 +48,62 @@
         <field name="model">dojo.class.template</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <button name="action_generate_sessions" string="Generate Sessions (60 days)"
+                        type="object" class="btn-primary"
+                        invisible="not recurrence_active"/>
+                </header>
                 <sheet>
                     <group>
-                        <field name="name"/>
-                        <field name="code"/>
-                        <field name="level"/>
-                        <field name="duration_minutes"/>
-                        <field name="max_capacity"/>
-                        <field name="instructor_profile_ids" widget="many2many_tags"/>
-                        <field name="active"/>
+                        <group string="General">
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="level"/>
+                            <field name="duration_minutes"/>
+                            <field name="max_capacity"/>
+                            <field name="instructor_profile_ids" widget="many2many_tags"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="Description">
+                            <field name="description" nolabel="1"/>
+                        </group>
                     </group>
-                    <group>
-                        <field name="description"/>
-                    </group>
+                    <notebook>
+                        <page string="Recurrence">
+                            <group>
+                                <group string="Schedule">
+                                    <field name="recurrence_active"/>
+                                    <field name="recurrence_start_date"
+                                        invisible="not recurrence_active"/>
+                                    <field name="recurrence_end_date"
+                                        invisible="not recurrence_active"/>
+                                    <field name="recurrence_time"
+                                        invisible="not recurrence_active"
+                                        widget="float_time"/>
+                                    <field name="recurrence_instructor_id"
+                                        invisible="not recurrence_active"/>
+                                </group>
+                                <group string="Weekdays" invisible="not recurrence_active">
+                                    <field name="rec_mon"/>
+                                    <field name="rec_tue"/>
+                                    <field name="rec_wed"/>
+                                    <field name="rec_thu"/>
+                                    <field name="rec_fri"/>
+                                    <field name="rec_sat"/>
+                                    <field name="rec_sun"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Course Members">
+                            <field name="course_member_ids" widget="many2many">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="role"/>
+                                    <field name="membership_state"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>
@@ -79,6 +122,7 @@
                 <field name="capacity"/>
                 <field name="seats_taken"/>
                 <field name="state"/>
+                <field name="generated_from_recurrence" optional="show"/>
             </list>
         </field>
     </record>
@@ -102,7 +146,8 @@
                         <page string="Enrollments">
                             <field name="enrollment_ids">
                                 <list editable="bottom">
-                                    <field name="member_id"/>
+                                    <field name="member_id"
+                                        options="{'no_quick_create': True, 'no_create_edit': True}"/>
                                     <field name="status"/>
                                     <field name="attendance_state"/>
                                 </list>

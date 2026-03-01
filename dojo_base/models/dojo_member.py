@@ -1,4 +1,5 @@
-from odoo import api, fields, models
+from odoo import api, fields, models, _
+from odoo.exceptions import UserError
 
 
 class DojoMember(models.Model):
@@ -31,8 +32,36 @@ class DojoMember(models.Model):
     dependent_link_ids = fields.One2many(
         "dojo.guardian.link", "student_member_id", string="Dependents"
     )
-    user_ids = fields.One2many("res.users", "partner_id", string="Linked Users")
-    has_portal_login = fields.Boolean(compute="_compute_has_portal_login")
+    user_ids = fields.One2many(
+        "res.users", "partner_id", string="Linked Users",
+        related="partner_id.user_ids",
+    )
+    has_portal_login = fields.Boolean(compute="_compute_has_portal_login", store=True)
+    membership_state = fields.Selection(
+        [
+            ("lead", "Lead"),
+            ("trial", "Trial"),
+            ("active", "Active"),
+            ("paused", "Paused"),
+            ("cancelled", "Cancelled"),
+        ],
+        default="lead",
+        required=True,
+        tracking=True,
+        string="Membership State",
+    )
+
+    def action_set_trial(self):
+        self.membership_state = "trial"
+
+    def action_set_active(self):
+        self.membership_state = "active"
+
+    def action_set_paused(self):
+        self.membership_state = "paused"
+
+    def action_set_cancelled(self):
+        self.membership_state = "cancelled"
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -48,9 +77,74 @@ class DojoMember(models.Model):
                 vals["partner_id"] = partner.id
         return super().create(vals_list)
 
+    @api.depends("partner_id.user_ids.group_ids")
     def _compute_has_portal_login(self):
         portal_group = self.env.ref("base.group_portal")
         for member in self:
             member.has_portal_login = any(
-                portal_group in user.group_ids for user in member.user_ids
+                portal_group in user.group_ids for user in member.partner_id.user_ids
             )
+
+    def action_create_household(self):
+        """Create a household for this solo member if they don't already have one."""
+        self.ensure_one()
+        if self.household_id:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'message': _('%s is already in household "%s".') % (self.name, self.household_id.name),
+                    'type': 'warning',
+                    'sticky': False,
+                },
+            }
+        household = self.env['dojo.household'].create({
+            'name': _("%s's Household") % self.name,
+            'company_id': self.company_id.id,
+        })
+        self.household_id = household
+        if self.role in ('parent', 'both'):
+            household.primary_guardian_id = self
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'message': _('Household "%s" created and linked.') % household.name,
+                'type': 'success',
+                'sticky': False,
+            },
+        }
+
+    def action_grant_portal_access(self):
+        """Create or update the member's user account and ensure it belongs to
+        the dojo_base.group_dojo_parent_student group, which implies portal access
+        and grants the correct dojo-specific ACLs and record-rules."""
+        self.ensure_one()
+        partner = self.partner_id
+        if not partner.email:
+            raise UserError(_(
+                "The member must have an email address before portal access can be granted."
+            ))
+        group_parent = self.env.ref("dojo_base.group_dojo_parent_student")
+        user = self.env["res.users"].sudo().search(
+            [("partner_id", "=", partner.id)], limit=1
+        )
+        if user:
+            if group_parent not in user.groups_id:
+                user.sudo().write({"groups_id": [(4, group_parent.id)]})
+        else:
+            user = self.env["res.users"].sudo().create({
+                "partner_id": partner.id,
+                "login": partner.email,
+                "name": partner.name,
+                "groups_id": [(6, 0, [group_parent.id])],
+            })
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "message": _("%s now has portal access.") % partner.name,
+                "type": "success",
+                "sticky": False,
+            },
+        }

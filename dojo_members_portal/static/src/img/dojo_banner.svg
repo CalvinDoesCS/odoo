@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 220" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="dojoBg" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0a0a1a"/>
+      <stop offset="55%" stop-color="#1a1a3e"/>
+      <stop offset="100%" stop-color="#0a0a1a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="220" fill="url(#dojoBg)"/>
+
+  <!-- Concentric circle decoration (right side) -->
+  <circle cx="980" cy="110" r="150" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="50"/>
+  <circle cx="980" cy="110" r="100" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="25"/>
+  <circle cx="980" cy="110" r="55"  fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="12"/>
+
+  <!-- Karate figure – high side kick pose (silhouette) -->
+  <g transform="translate(980, 110)" fill="rgba(255,255,255,0.15)">
+    <!-- head -->
+    <circle cx="0" cy="-70" r="16"/>
+    <!-- torso -->
+    <polygon points="-13,-53  13,-53  16,8  -16,8"/>
+    <!-- left arm raised overhead -->
+    <polygon points="-13,-42 -5,-48  -52,-95  -62,-85"/>
+    <!-- right arm guard position -->
+    <polygon points=" 13,-42  5,-48   40,-15   28,-8"/>
+    <!-- standing left leg -->
+    <polygon points="-4,8  -16,8  -22,80  -6,80"/>
+    <!-- kicking right leg extended horizontally -->
+    <polygon points="4,8  16,8  82,45   72,58"/>
+  </g>
+
+  <!-- Gold belt stripe at bottom -->
+  <rect x="0" y="196" width="1200" height="8"  fill="#e8b800" opacity="0.90"/>
+  <rect x="0" y="206" width="1200" height="3"  fill="#e8b800" opacity="0.45"/>
+  <rect x="0" y="211" width="1200" height="1"  fill="#e8b800" opacity="0.20"/>
+
+  <!-- Vertical gold accent bar (left edge) -->
+  <rect x="0" y="0" width="6" height="220" fill="#e8b800" opacity="0.70"/>
+
+  <!-- "DOJO" wordmark -->
+  <text x="60" y="115"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="74"
+        font-weight="bold"
+        fill="rgba(255,255,255,0.93)"
+        letter-spacing="6">DOJO</text>
+
+  <!-- Sub-label -->
+  <text x="65" y="152"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="17"
+        fill="rgba(255,255,255,0.45)"
+        letter-spacing="14">MEMBER PORTAL</text>
+
+  <!-- Gold underline accent under sub-label -->
+  <rect x="65" y="162" width="200" height="2" fill="#e8b800" opacity="0.70"/>
+</svg>

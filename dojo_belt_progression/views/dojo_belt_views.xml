@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ========== Belt Ranks ========== -->
+    <record id="view_dojo_belt_rank_list" model="ir.ui.view">
+        <field name="name">dojo.belt.rank.list</field>
+        <field name="model">dojo.belt.rank</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="color"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dojo_belt_rank_form" model="ir.ui.view">
+        <field name="name">dojo.belt.rank.form</field>
+        <field name="model">dojo.belt.rank</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="sequence"/>
+                        <field name="color"/>
+                        <field name="active"/>
+                        <field name="company_id" groups="base.group_multi_company"/>
+                    </group>
+                    <group string="Description">
+                        <field name="description" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ========== Member Rank History ========== -->
+    <record id="view_dojo_member_rank_list" model="ir.ui.view">
+        <field name="name">dojo.member.rank.list</field>
+        <field name="model">dojo.member.rank</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="member_id"/>
+                <field name="rank_id"/>
+                <field name="date_awarded"/>
+                <field name="awarded_by"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dojo_member_rank_form" model="ir.ui.view">
+        <field name="name">dojo.member.rank.form</field>
+        <field name="model">dojo.member.rank</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="member_id"/>
+                        <field name="rank_id"/>
+                        <field name="date_awarded"/>
+                        <field name="awarded_by"/>
+                        <field name="test_registration_id" readonly="1"/>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ========== Belt Tests ========== -->
+    <record id="view_dojo_belt_test_list" model="ir.ui.view">
+        <field name="name">dojo.belt.test.list</field>
+        <field name="model">dojo.belt.test</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="test_date"/>
+                <field name="location"/>
+                <field name="instructor_profile_id"/>
+                <field name="max_participants"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dojo_belt_test_form" model="ir.ui.view">
+        <field name="name">dojo.belt.test.form</field>
+        <field name="model">dojo.belt.test</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_start" string="Start" type="object"
+                        class="btn-primary" invisible="state != 'scheduled'"/>
+                    <button name="action_complete" string="Complete" type="object"
+                        class="btn-primary" invisible="state != 'in_progress'"/>
+                    <button name="action_cancel" string="Cancel" type="object"
+                        class="btn-secondary" invisible="state in ['completed', 'cancelled']"/>
+                    <field name="state" widget="statusbar"
+                        statusbar_visible="scheduled,in_progress,completed"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Test Details">
+                            <field name="name"/>
+                            <field name="test_date"/>
+                            <field name="location"/>
+                            <field name="instructor_profile_id"/>
+                            <field name="max_participants"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                    <notebook>
+                        <page string="Registrations">
+                            <button name="action_award_rank"
+                                string="Award Ranks to Passing Members"
+                                type="object" class="btn-success mb-2"
+                                invisible="state != 'completed'"/>
+                            <field name="registration_ids">
+                                <list editable="bottom">
+                                    <field name="member_id"/>
+                                    <field name="target_rank_id"/>
+                                    <field name="result"/>
+                                    <field name="notes"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ========== Actions ========== -->
+    <record id="action_dojo_belt_ranks" model="ir.actions.act_window">
+        <field name="name">Belt Ranks</field>
+        <field name="res_model">dojo.belt.rank</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_dojo_member_ranks" model="ir.actions.act_window">
+        <field name="name">Rank History</field>
+        <field name="res_model">dojo.member.rank</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_dojo_belt_tests" model="ir.actions.act_window">
+        <field name="name">Belt Tests</field>
+        <field name="res_model">dojo.belt.test</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ========== Menus ========== -->
+    <menuitem
+        id="menu_dojo_belt_root"
+        name="Belt Progression"
+        sequence="40"
+    />
+    <menuitem
+        id="menu_dojo_belt_tests"
+        name="Belt Tests"
+        parent="menu_dojo_belt_root"
+        action="action_dojo_belt_tests"
+        sequence="10"
+    />
+    <menuitem
+        id="menu_dojo_member_ranks"
+        name="Rank History"
+        parent="menu_dojo_belt_root"
+        action="action_dojo_member_ranks"
+        sequence="20"
+    />
+    <menuitem
+        id="menu_dojo_belt_ranks"
+        name="Belt Ranks Config"
+        parent="menu_dojo_belt_root"
+        action="action_dojo_belt_ranks"
+        sequence="30"
+    />
+
+    <!-- ========== Extend dojo.member form — belt tab ========== -->
+    <record id="view_dojo_member_form_belt_inherit" model="ir.ui.view">
+        <field name="name">dojo.member.form.belt.inherit</field>
+        <field name="model">dojo.member</field>
+        <field name="inherit_id" ref="dojo_base.view_dojo_member_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Belt Progression">
+                    <group>
+                        <field name="current_rank_id" readonly="1"/>
+                    </group>
+                    <field name="rank_history_ids">
+                        <list>
+                            <field name="rank_id"/>
+                            <field name="date_awarded"/>
+                            <field name="awarded_by"/>
+                            <field name="notes"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ========== Extend instructor dashboard student list — replace stub ========== -->
+    <record id="view_dojo_member_list_belt_inherit" model="ir.ui.view">
+        <field name="name">dojo.member.list.belt.inherit</field>
+        <field name="model">dojo.member</field>
+        <field name="inherit_id" ref="dojo_instructor_dashboard.view_dojo_member_my_students_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='current_belt_stub']" position="replace">
+                <field name="current_rank_id" optional="show" string="Belt Rank"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

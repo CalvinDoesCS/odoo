@@ -1,8 +1,9 @@
-FROM odoo:19.0
+FROM odoo:latest
 
-# Install extra dependencies if needed
+# Install extra dependencies into the system Python (must run as root)
+USER root
 COPY requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt || true
+RUN pip install --no-cache-dir --break-system-packages -r /tmp/requirements.txt
 
 # Copy all custom addons to /mnt/custom-addons
 COPY . /mnt/custom-addons

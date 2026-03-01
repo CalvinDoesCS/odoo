@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ── Quick Attendance Wizard Form ─────────────────────────────────── -->
+    <record id="view_dojo_attendance_quick_wizard_form" model="ir.ui.view">
+        <field name="name">dojo.attendance.quick.wizard.form</field>
+        <field name="model">dojo.attendance.quick.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Mark Attendance">
+                <group>
+                    <field name="session_id" readonly="1"/>
+                </group>
+                <field name="line_ids" nolabel="1">
+                    <list editable="bottom" string="Attendance">
+                        <field name="member_id" readonly="1"/>
+                        <field name="status" widget="radio" options="{'horizontal': true}"/>
+                        <field name="note" placeholder="Optional note…"/>
+                        <field name="enrollment_id" column_invisible="1"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_confirm" type="object" string="Save Attendance"
+                            class="btn btn-primary"/>
+                    <button special="cancel" string="Cancel" class="btn btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── Action to open the wizard pre-loaded with session context ─── -->
+    <record id="action_dojo_attendance_quick_wizard" model="ir.actions.act_window">
+        <field name="name">Mark Attendance</field>
+        <field name="res_model">dojo.attendance.quick.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_session_id': active_id}</field>
+    </record>
+
+    <!-- ── Inject "Mark Attendance" button into dojo.class.session form ─ -->
+    <record id="view_dojo_class_session_form_attendance_btn" model="ir.ui.view">
+        <field name="name">dojo.class.session.form.attendance.button</field>
+        <field name="model">dojo.class.session</field>
+        <field name="inherit_id" ref="dojo_classes.view_dojo_class_session_form"/>
+        <field name="arch" type="xml">
+            <!-- Session form has no button_box yet; add it with the button inside -->
+            <xpath expr="//sheet" position="before">
+                <div class="oe_button_box" name="button_box">
+                    <button name="%(dojo_instructor_dashboard.action_dojo_attendance_quick_wizard)d"
+                            type="action"
+                            class="oe_stat_button"
+                            icon="fa-check-square-o"
+                            string="Mark Attendance"
+                            groups="dojo_base.group_dojo_admin,dojo_base.group_dojo_instructor"
+                            invisible="state in ('draft', 'cancelled')"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

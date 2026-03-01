@@ -47,20 +47,20 @@
         <field name="name">Dojo Member Parent Self or Household</field>
         <field name="model_id" ref="model_dojo_member"/>
         <field name="groups" eval="[(4, ref('dojo_base.group_dojo_parent_student'))]"/>
-        <field name="domain_force">['|', ('partner_id', '=', user.partner_id.id), ('household_id.primary_guardian_partner_id', '=', user.partner_id.id)]</field>
+        <field name="domain_force">['|', ('partner_id', '=', user.partner_id.id), ('household_id.primary_guardian_id.partner_id', '=', user.partner_id.id)]</field>
     </record>
 
     <record id="rule_dojo_household_parent_owner" model="ir.rule">
         <field name="name">Dojo Household Parent Owner</field>
         <field name="model_id" ref="model_dojo_household"/>
         <field name="groups" eval="[(4, ref('dojo_base.group_dojo_parent_student'))]"/>
-        <field name="domain_force">[('primary_guardian_partner_id', '=', user.partner_id.id)]</field>
+        <field name="domain_force">[('primary_guardian_id.partner_id', '=', user.partner_id.id)]</field>
     </record>
 
     <record id="rule_dojo_guardian_parent_owner" model="ir.rule">
         <field name="name">Dojo Guardian Parent Owner</field>
         <field name="model_id" ref="model_dojo_guardian_link"/>
         <field name="groups" eval="[(4, ref('dojo_base.group_dojo_parent_student'))]"/>
-        <field name="domain_force">[('household_id.primary_guardian_partner_id', '=', user.partner_id.id)]</field>
+        <field name="domain_force">[('household_id.primary_guardian_id.partner_id', '=', user.partner_id.id)]</field>
     </record>
 </odoo>

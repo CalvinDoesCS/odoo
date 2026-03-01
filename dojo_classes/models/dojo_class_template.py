@@ -1,4 +1,7 @@
-from odoo import fields, models
+from datetime import datetime, timedelta
+
+from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class DojoClassTemplate(models.Model):
@@ -27,3 +30,163 @@ class DojoClassTemplate(models.Model):
         "dojo.instructor.profile", string="Instructors"
     )
     description = fields.Text()
+    # Course-level member roster (enrolled in ALL sessions generated from this template)
+    course_member_ids = fields.Many2many(
+        "dojo.member",
+        "dojo_class_template_member_rel",
+        "template_id",
+        "member_id",
+        string="Course Members",
+    )
+    # Recurrence settings
+    recurrence_active = fields.Boolean(string="Enable Recurrence", default=False)
+    rec_mon = fields.Boolean(string="Mon")
+    rec_tue = fields.Boolean(string="Tue")
+    rec_wed = fields.Boolean(string="Wed")
+    rec_thu = fields.Boolean(string="Thu")
+    rec_fri = fields.Boolean(string="Fri")
+    rec_sat = fields.Boolean(string="Sat")
+    rec_sun = fields.Boolean(string="Sun")
+    recurrence_time = fields.Float(
+        string="Class Time",
+        help="Time of day in 24 h decimal (e.g. 18.5 = 18:30)",
+    )
+    recurrence_start_date = fields.Date(string="Recurrence Start")
+    recurrence_end_date = fields.Date(string="Recurrence End")
+    recurrence_instructor_id = fields.Many2one(
+        "dojo.instructor.profile", string="Recurring Instructor"
+    )
+
+    # ------------------------------------------------------------------ #
+    #  Helpers                                                             #
+    # ------------------------------------------------------------------ #
+    @api.model
+    def _weekday_flags(self):
+        """Return list of (isoweekday 1=Mon, field_name) pairs."""
+        return [
+            (0, "rec_mon"),
+            (1, "rec_tue"),
+            (2, "rec_wed"),
+            (3, "rec_thu"),
+            (4, "rec_fri"),
+            (5, "rec_sat"),
+            (6, "rec_sun"),
+        ]
+
+    def _generate_sessions_for_template(self, horizon_days=60):
+        """Create sessions for all active recurrence days within the horizon.
+        Skips dates that already have a generated session for this template.
+        """
+        self.ensure_one()
+        if not self.recurrence_active:
+            return
+        today = fields.Date.today()
+        start = max(self.recurrence_start_date or today, today)
+        end_limit = today + timedelta(days=horizon_days)
+        end = min(self.recurrence_end_date or end_limit, end_limit)
+        if start > end:
+            return
+
+        active_weekdays = {
+            iso_day
+            for iso_day, fname in self._weekday_flags()
+            if getattr(self, fname)
+        }
+        if not active_weekdays:
+            return
+
+        # Pre-fetch already-generated datetimes to avoid duplicates
+        existing = self.env["dojo.class.session"].search(
+            [
+                ("template_id", "=", self.id),
+                ("generated_from_recurrence", "=", True),
+                ("start_datetime", ">=", datetime.combine(start, datetime.min.time())),
+                ("start_datetime", "<=", datetime.combine(end, datetime.max.time())),
+            ]
+        )
+        existing_dates = {s.start_datetime.date() for s in existing}
+
+        hour = int(self.recurrence_time)
+        minute = int(round((self.recurrence_time - hour) * 60))
+        duration = timedelta(minutes=self.duration_minutes or 60)
+
+        current = start
+        Session = self.env["dojo.class.session"]
+        Enrollment = self.env["dojo.class.enrollment"]
+        while current <= end:
+            if current.weekday() in active_weekdays and current not in existing_dates:
+                start_dt = datetime(current.year, current.month, current.day, hour, minute)
+                end_dt = start_dt + duration
+                session = Session.create(
+                    {
+                        "template_id": self.id,
+                        "company_id": self.company_id.id,
+                        "instructor_profile_id": self.recurrence_instructor_id.id or False,
+                        "start_datetime": start_dt,
+                        "end_datetime": end_dt,
+                        "capacity": self.max_capacity,
+                        "state": "open",
+                        "generated_from_recurrence": True,
+                        "recurrence_template_id": self.id,
+                    }
+                )
+                # Enroll course members automatically
+                for member in self.course_member_ids:
+                    Enrollment.create(
+                        {
+                            "session_id": session.id,
+                            "member_id": member.id,
+                            "status": "registered",
+                        }
+                    )
+            current += timedelta(days=1)
+
+    def action_generate_sessions(self):
+        """Manual trigger from the form view button."""
+        for tmpl in self:
+            tmpl._generate_sessions_for_template(horizon_days=60)
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Sessions Generated",
+                "message": "Recurring sessions have been created for the next 60 days.",
+                "sticky": False,
+            },
+        }
+
+    def write(self, vals):
+        """When members are removed from course_member_ids, cancel their future registered
+        enrollments for sessions generated from this template."""
+        removed_per_template = {}
+        if 'course_member_ids' in vals:
+            for tmpl in self:
+                removed_per_template[tmpl.id] = set(tmpl.course_member_ids.ids)
+
+        res = super().write(vals)
+
+        if removed_per_template:
+            now = fields.Datetime.now()
+            for tmpl in self:
+                if tmpl.id not in removed_per_template:
+                    continue
+                old_ids = removed_per_template[tmpl.id]
+                new_ids = set(tmpl.course_member_ids.ids)
+                removed_ids = list(old_ids - new_ids)
+                if removed_ids:
+                    enrollments = self.env['dojo.class.enrollment'].search([
+                        ('session_id.template_id', '=', tmpl.id),
+                        ('member_id', 'in', removed_ids),
+                        ('status', '=', 'registered'),
+                        ('session_id.start_datetime', '>=', now),
+                    ])
+                    if enrollments:
+                        enrollments.write({'status': 'cancelled'})
+        return res
+
+    @api.model
+    def _cron_generate_recurring_sessions(self):
+        """Daily cron — process all active recurring templates."""
+        templates = self.search([("recurrence_active", "=", True)])
+        for tmpl in templates:
+            tmpl._generate_sessions_for_template(horizon_days=60)

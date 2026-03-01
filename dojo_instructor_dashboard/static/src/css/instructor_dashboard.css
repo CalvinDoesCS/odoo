@@ -1,0 +1,665 @@
+/* ═══════════════════════════════════════════════════════════════
+   DOJO INSTRUCTOR DASHBOARD
+═══════════════════════════════════════════════════════════════ */
+
+html .o_web_client > .o_action_manager {
+    overflow-y: scroll !important;
+}
+
+.o_di_root {
+    background: #f4f6f9;
+    min-height: 100%;
+    font-family: inherit;
+}
+
+/* ── Hero Banner ──────────────────────────────────────────────── */
+.o_di_banner {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    padding: 28px 32px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+.o_di_banner::after {
+    content: "";
+    position: absolute;
+    right: -60px;
+    top: -60px;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+    pointer-events: none;
+}
+.o_di_banner_inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1400px;
+}
+.o_di_banner_left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+.o_di_banner_avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: rgba(255,255,255,0.85);
+    flex-shrink: 0;
+}
+.o_di_greeting {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 2px;
+}
+.o_di_name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.o_di_date {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.55);
+    margin-top: 3px;
+}
+.o_di_banner_right {
+    font-size: 3.5rem;
+    color: rgba(255,255,255,0.08);
+}
+
+/* ── KPI Tile Row ─────────────────────────────────────────────── */
+.o_di_kpi_row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+}
+@media (max-width: 1100px) { .o_di_kpi_row { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px)  { .o_di_kpi_row { grid-template-columns: 1fr; } }
+
+.o_di_kpi_card {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 24px 28px;
+    color: #fff;
+    cursor: default;
+    transition: filter 0.15s ease;
+    position: relative;
+    overflow: hidden;
+}
+.o_di_kpi_card::after {
+    content: "";
+    position: absolute;
+    right: -20px;
+    bottom: -20px;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    pointer-events: none;
+}
+.o_di_kpi_card[t-on-click] { cursor: pointer; }
+.o_di_kpi_card[t-on-click]:hover { filter: brightness(1.08); }
+
+.o_di_kpi_blue   { background: linear-gradient(135deg, #0d6efd, #0a58ca); }
+.o_di_kpi_green  { background: linear-gradient(135deg, #198754, #146c43); }
+.o_di_kpi_orange { background: linear-gradient(135deg, #fd7e14, #dc6502); }
+.o_di_kpi_purple { background: linear-gradient(135deg, #6f42c1, #59359a); }
+
+.o_di_kpi_icon {
+    font-size: 2.2rem;
+    opacity: 0.85;
+    flex-shrink: 0;
+}
+.o_di_kpi_value {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+}
+.o_di_kpi_label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-top: 3px;
+    opacity: 0.9;
+}
+.o_di_kpi_sub {
+    font-size: 0.72rem;
+    opacity: 0.65;
+    margin-top: 1px;
+}
+
+/* ── Quick Actions Row ────────────────────────────────────────── */
+.o_di_actions_row {
+    display: flex;
+    gap: 12px;
+    padding: 20px 24px;
+    background: #fff;
+    border-bottom: 1px solid #e9ecef;
+    flex-wrap: wrap;
+}
+.o_di_action_btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.1s ease;
+    color: #fff;
+}
+.o_di_action_btn:hover { opacity: 0.88; transform: translateY(-1px); }
+.o_di_action_btn:active { transform: translateY(0); }
+.o_di_action_blue   { background: #0d6efd; }
+.o_di_action_green  { background: #198754; }
+.o_di_action_teal   { background: #0d9488; }
+.o_di_action_orange { background: #fd7e14; }
+
+/* ── Content Grid ─────────────────────────────────────────────── */
+.o_di_content_grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 24px;
+}
+@media (max-width: 900px) { .o_di_content_grid { grid-template-columns: 1fr; } }
+
+.o_di_card_full {
+    grid-column: 1 / -1;
+}
+
+/* ── Card ─────────────────────────────────────────────────────── */
+.o_di_card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.o_di_card_header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f0f2f5;
+}
+.o_di_card_title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1a1a2e;
+}
+.o_di_card_dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+.o_di_view_btn {
+    font-size: 0.78rem;
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    background: transparent;
+    color: #6c757d;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+.o_di_view_btn:hover {
+    background: #f8f9fa;
+    color: #343a40;
+}
+.o_di_card_body {
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 380px;
+}
+
+/* ── Empty state ──────────────────────────────────────────────── */
+.o_di_empty {
+    text-align: center;
+    padding: 36px 20px;
+    color: #adb5bd;
+    font-size: 0.875rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* ── Table ────────────────────────────────────────────────────── */
+.o_di_table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+.o_di_table thead th {
+    padding: 9px 16px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9099a3;
+    font-weight: 600;
+    background: #f8f9fa;
+    border-bottom: 1px solid #f0f2f5;
+    white-space: nowrap;
+}
+.o_di_table tbody tr {
+    border-bottom: 1px solid #f4f6f9;
+    transition: background 0.1s ease;
+}
+.o_di_table tbody tr:last-child { border-bottom: none; }
+.o_di_table tbody tr:hover { background: #f8f9fd; }
+.o_di_table td {
+    padding: 10px 16px;
+    color: #2c3748;
+}
+
+/* ── Badges ───────────────────────────────────────────────────── */
+.o_di_badge {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.o_di_badge_primary   { background: #cfe2ff; color: #084298; }
+.o_di_badge_success   { background: #d1e7dd; color: #0a3622; }
+.o_di_badge_danger    { background: #f8d7da; color: #842029; }
+.o_di_badge_secondary { background: #e9ecef; color: #495057; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   DOJO ADMIN DASHBOARD — extends the instructor dashboard base
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Admin Hero Banner ────────────────────────────────────────── */
+.o_ad_banner {
+    background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 55%, #2d1b69 100%);
+    padding: 26px 32px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+.o_ad_banner::before {
+    content: "";
+    position: absolute;
+    left: -80px; top: -80px;
+    width: 260px; height: 260px;
+    border-radius: 50%;
+    background: rgba(109,66,193,0.15);
+    pointer-events: none;
+}
+.o_ad_banner::after {
+    content: "";
+    position: absolute;
+    right: -60px; bottom: -60px;
+    width: 220px; height: 220px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.03);
+    pointer-events: none;
+}
+.o_ad_banner_inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1600px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.o_ad_banner_left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+.o_ad_banner_icon {
+    width: 60px; height: 60px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.7rem;
+    color: rgba(255,255,255,0.85);
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.12);
+}
+.o_ad_banner_label {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 2px;
+}
+.o_ad_banner_title {
+    font-size: 1.55rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.o_ad_banner_actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.o_ad_hdr_btn {
+    font-size: 0.8rem;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.88);
+    cursor: pointer;
+    transition: background 0.15s ease;
+    white-space: nowrap;
+}
+.o_ad_hdr_btn:hover { background: rgba(255,255,255,0.16); }
+.o_ad_hdr_btn_refresh { padding: 7px 11px; }
+
+/* ── Admin KPI row overrides ─────────────────────────────────── */
+.o_ad_kpi_row {
+    grid-template-columns: repeat(6, 1fr);
+}
+@media (max-width: 1300px) { .o_ad_kpi_row { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 700px)  { .o_ad_kpi_row { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 450px)  { .o_ad_kpi_row { grid-template-columns: 1fr; } }
+
+.o_ad_kpi_indigo {
+    background: linear-gradient(135deg, #6610f2, #7c3aed);
+}
+.o_ad_kpi_red {
+    background: linear-gradient(135deg, #c0392b, #e74c3c);
+}
+
+/* ── Content grid override for admin ─────────────────────────── */
+.o_ad_content_grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px 24px;
+}
+
+/* ── Progress bar widget ─────────────────────────────────────── */
+.o_ad_bar_wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.o_ad_bar_bg {
+    flex: 1;
+    height: 6px;
+    border-radius: 4px;
+    background: #e9ecef;
+    overflow: hidden;
+    min-width: 60px;
+}
+.o_ad_bar_fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+.o_ad_bar_label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    min-width: 34px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* Rate colour variants */
+.o_ad_rate_good  .o_ad_bar_fill  { background: #28a745; }
+.o_ad_rate_ok    .o_ad_bar_fill  { background: #fd7e14; }
+.o_ad_rate_bad   .o_ad_bar_fill  { background: #dc3545; }
+.o_ad_rate_neutral .o_ad_bar_fill { background: #adb5bd; }
+.o_ad_rate_good  { color: #1a6e2e; }
+.o_ad_rate_ok    { color: #974900; }
+.o_ad_rate_bad   { color: #842029; }
+.o_ad_rate_neutral { color: #6c757d; }
+
+/* ── Extra badges ────────────────────────────────────────────── */
+.o_ad_badge_info    { background: #cff4fc; color: #0c5460; }
+.o_ad_badge_warning { background: #fff3cd; color: #664d03; }
+
+/* ── KPI card cursor overrides ───────────────────────────────── */
+.o_di_kpi_card:hover { filter: brightness(1.06); }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   DOJO MEMBER PROFILE
+═══════════════════════════════════════════════════════════════ */
+
+.o_mp_root {
+    background: #f4f6f9;
+    min-height: 100%;
+    font-family: inherit;
+}
+
+/* ── Hero ──────────────────────────────────────────────────────── */
+.o_mp_hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    padding: 28px 32px 32px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+.o_mp_hero::after {
+    content: "";
+    position: absolute;
+    right: -60px;
+    top: -60px;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+    pointer-events: none;
+}
+.o_mp_hero_inner {
+    max-width: 1400px;
+    position: relative;
+    z-index: 1;
+}
+.o_mp_back_btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.85);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    margin-bottom: 20px;
+}
+.o_mp_back_btn:hover { background: rgba(255,255,255,0.18); }
+
+.o_mp_back_btn_plain {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid #dee2e6;
+    color: #495057;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+.o_mp_back_btn_plain:hover { background: #f8f9fa; }
+
+.o_mp_hero_body {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+/* Avatar */
+.o_mp_avatar_wrap {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 3px solid rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.1);
+}
+.o_mp_avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.o_mp_avatar_fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    color: rgba(255,255,255,0.6);
+}
+
+/* Identity */
+.o_mp_hero_name {
+    font-size: 1.7rem;
+    font-weight: 700;
+    margin: 0 0 8px;
+    line-height: 1.2;
+    color: #fff;
+}
+.o_mp_hero_badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* State badge */
+.o_mp_state_badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.o_mp_state_lead      { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); }
+.o_mp_state_trial     { background: rgba(13,202,240,0.25);  color: #cff4fc; }
+.o_mp_state_active    { background: rgba(25,135,84,0.3);    color: #a3d9b8; }
+.o_mp_state_paused    { background: rgba(255,193,7,0.25);   color: #ffe083; }
+.o_mp_state_cancelled { background: rgba(220,53,69,0.3);    color: #ffb3bb; }
+
+/* Role badge */
+.o_mp_role_badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.8);
+}
+
+/* ── Content Area ──────────────────────────────────────────────── */
+.o_mp_content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 24px;
+}
+
+/* Two-column row for Info + Household */
+.o_mp_two_col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+@media (max-width: 900px) {
+    .o_mp_two_col { grid-template-columns: 1fr; }
+}
+
+/* ── Info card body ────────────────────────────────────────────── */
+.o_mp_info_body {
+    padding: 6px 0;
+    max-height: none !important;
+}
+.o_mp_info_row {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 10px 20px;
+    border-bottom: 1px solid #f4f6f9;
+}
+.o_mp_info_row:last-child { border-bottom: none; }
+.o_mp_info_label {
+    min-width: 130px;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9099a3;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.o_mp_info_value {
+    font-size: 0.9rem;
+    color: #2c3748;
+}
+.o_mp_info_value a {
+    color: #0d6efd;
+    text-decoration: none;
+}
+.o_mp_info_value a:hover { text-decoration: underline; }
+
+/* Emergency note */
+.o_mp_emergency {
+    margin: 8px 16px 10px;
+    border-radius: 8px;
+    background: #fff5f5;
+    border: 1px solid #ffc5c8;
+    padding: 12px 16px;
+}
+.o_mp_emergency_title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #842029;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+}
+.o_mp_emergency_text {
+    font-size: 0.875rem;
+    color: #6e1c22;
+    white-space: pre-wrap;
+}
+
+/* ── Household card extras ─────────────────────────────────────── */
+.o_mp_hh_header {
+    padding: 12px 20px 6px;
+    font-size: 1rem;
+    color: #2c3748;
+    display: flex;
+    align-items: center;
+}
+.o_mp_hh_guardian {
+    padding: 4px 20px 10px;
+    font-size: 0.875rem;
+    color: #495057;
+}

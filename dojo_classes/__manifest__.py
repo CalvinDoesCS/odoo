@@ -9,6 +9,7 @@
     "data": [
         "security/ir.model.access.csv",
         "security/dojo_classes_security.xml",
+        "data/dojo_class_recurrence_cron.xml",
         "views/dojo_class_views.xml",
     ],
     "application": True,
