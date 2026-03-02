@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Extend the standard calendar.event form view with dojo class info
+        Smart buttons + a dedicated "Dojo Class" notebook tab
+    -->
+    <record id="view_calendar_event_form_dojo_inherit" model="ir.ui.view">
+        <field name="name">calendar.event.form.dojo.inherit</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="calendar.view_calendar_event_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Smart buttons — append to the existing button_box -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+
+                <!-- Open Session Roster — shows enrolled count -->
+                <button
+                    name="action_open_session_roster"
+                    type="object"
+                    class="oe_stat_button"
+                    icon="fa-users"
+                    invisible="not x_session_id"
+                    help="View the roster of enrolled students for this session"
+                >
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_value">
+                            <field name="x_roster_count"/>/<field name="x_capacity"/>
+                        </span>
+                        <span class="o_stat_text">Roster</span>
+                    </div>
+                </button>
+
+                <!-- Mark Attendance Complete — action state (pending) -->
+                <button
+                    name="action_mark_attendance_complete"
+                    type="object"
+                    class="oe_stat_button"
+                    icon="fa-clock-o"
+                    invisible="not x_session_id or x_attendance_complete == True"
+                    help="Click to mark attendance as recorded for this session"
+                >
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Mark</span>
+                        <span class="o_stat_text">Attendance</span>
+                    </div>
+                </button>
+
+                <!-- Attendance already complete — display state -->
+                <button
+                    class="oe_stat_button"
+                    icon="fa-check-circle"
+                    invisible="not x_session_id or x_attendance_complete == False"
+                >
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Attendance</span>
+                        <span class="o_stat_text">Complete</span>
+                    </div>
+                </button>
+
+            </xpath>
+
+            <!-- Dojo Class tab — append to the notebook -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Dojo Class" name="dojo_class" invisible="not x_session_id">
+                    <group>
+                        <group string="Session">
+                            <field name="x_session_id" readonly="1"/>
+                            <field name="x_instructor_id" readonly="1"/>
+                            <field name="x_site_id" readonly="1"/>
+                        </group>
+                        <group string="Attendance">
+                            <field name="x_capacity"/>
+                            <field name="x_roster_count" readonly="1"/>
+                            <field name="x_attendance_complete"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

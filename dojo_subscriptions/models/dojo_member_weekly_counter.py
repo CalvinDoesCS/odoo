@@ -33,7 +33,9 @@ class DojoMemberWeeklyCounter(models.Model):
     )
 
     @api.depends("active_subscription_id", "active_subscription_id.plan_id",
-                 "active_subscription_id.plan_id.max_sessions_per_week")
+                 "active_subscription_id.plan_id.max_sessions_per_week",
+                 "active_subscription_id.plan_type",
+                 "active_subscription_id.program_id")
     def _compute_sessions_allowed_per_week(self):
         for member in self:
             sub = member.active_subscription_id

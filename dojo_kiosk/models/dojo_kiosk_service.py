@@ -1,15 +1,62 @@
 """
-Kiosk service methods — all business logic for the kiosk SPA lives here.
+Kiosk service methods -- all business logic for the kiosk SPA lives here.
 Methods are designed to be called from the kiosk HTTP controller via sudo().
 """
 from datetime import datetime, timedelta
 
 from odoo import api, fields, models
+from odoo.exceptions import AccessError
+
+# Module-level rate limit state: {key: {"attempts": int, "locked_until": datetime|None}}
+_PIN_ATTEMPTS: dict = {}
+_MAX_PIN_ATTEMPTS = 5
+_LOCKOUT_MINUTES = 15
 
 
 class DojoKioskService(models.AbstractModel):
     _name = "dojo.kiosk.service"
     _description = "Dojo Kiosk Service"
+
+    # -------------------------------------------------------------------------
+    # Token + bootstrap
+    # -------------------------------------------------------------------------
+
+    @api.model
+    def validate_token(self, token):
+        """Return the dojo.kiosk.config for a given token, or raise AccessError."""
+        if not token:
+            raise AccessError("Missing kiosk token.")
+        config = self.env["dojo.kiosk.config"].search(
+            [("kiosk_token", "=", token), ("active", "=", True)], limit=1
+        )
+        if not config:
+            raise AccessError("Invalid or inactive kiosk token.")
+        return config
+
+    @api.model
+    def get_config_bootstrap(self, token):
+        """Return device config and today's sessions for the initial app load."""
+        config = self.validate_token(token)
+        sessions = self.get_todays_sessions()
+        announcements = [
+            {"id": a.id, "title": a.title or "", "body": a.body or ""}
+            for a in config.announcement_ids.filtered("active")
+        ]
+        return {
+            "config_id": config.id,
+            "name": config.name,
+            "theme_mode": config.theme_mode or "dark",
+            "announcements": announcements,
+            "sessions": sessions,
+        }
+
+    @api.model
+    def get_announcements(self, token):
+        config = self.validate_token(token)
+        return [
+            {"id": a.id, "title": a.title or "", "body": a.body or ""}
+            for a in config.announcement_ids.filtered("active")
+        ]
 
     # -------------------------------------------------------------------------
     # Session helpers
@@ -466,16 +513,66 @@ class DojoKioskService(models.AbstractModel):
     # -------------------------------------------------------------------------
 
     @api.model
-    def verify_pin(self, pin, config_id=None):
+    def verify_pin(self, pin, token=None, config_id=None):
         """
-        Verify the 6-digit instructor PIN.
-        If config_id is provided (per-tablet URL), only that config's PIN is accepted.
-        Otherwise any active config for the current company matches.
+        Verify the 6-digit instructor PIN with rate limiting.
+        Locks out after _MAX_PIN_ATTEMPTS failures for _LOCKOUT_MINUTES minutes.
+        token takes priority over legacy config_id.
         """
+        if token:
+            try:
+                config_record = self.validate_token(token)
+                cfg_id = config_record.id
+            except AccessError:
+                return {"success": False, "error": "invalid_token"}
+        elif config_id:
+            cfg_id = int(config_id)
+        else:
+            cfg_id = None
+
+        key = cfg_id or "global"
+        state = _PIN_ATTEMPTS.setdefault(key, {"attempts": 0, "locked_until": None})
+        now = datetime.utcnow()
+        if state["locked_until"] and now < state["locked_until"]:
+            remaining = int((state["locked_until"] - now).total_seconds() / 60) + 1
+            return {"success": False, "error": "locked", "retry_in_minutes": remaining}
+
         domain = [("active", "=", True), ("pin_code", "=", pin)]
-        if config_id:
-            domain.append(("id", "=", int(config_id)))
+        if cfg_id:
+            domain.append(("id", "=", cfg_id))
         else:
             domain.append(("company_id", "in", [self.env.company.id, False]))
-        config = self.env["dojo.kiosk.config"].search(domain, limit=1)
-        return {"success": bool(config)}
+        found = self.env["dojo.kiosk.config"].search(domain, limit=1)
+
+        if found:
+            _PIN_ATTEMPTS[key] = {"attempts": 0, "locked_until": None}
+            return {"success": True}
+        else:
+            state["attempts"] += 1
+            if state["attempts"] >= _MAX_PIN_ATTEMPTS:
+                state["locked_until"] = now + timedelta(minutes=_LOCKOUT_MINUTES)
+                state["attempts"] = 0
+                return {"success": False, "error": "locked", "retry_in_minutes": _LOCKOUT_MINUTES}
+            remaining_tries = _MAX_PIN_ATTEMPTS - state["attempts"]
+            return {"success": False, "error": "wrong_pin", "remaining_tries": remaining_tries}
+
+    # -------------------------------------------------------------------------
+    # Check-out
+    # -------------------------------------------------------------------------
+
+    @api.model
+    def checkout_member(self, member_id, session_id):
+        """Record departure time on the attendance log."""
+        log = self.env["dojo.attendance.log"].search([
+            ("session_id", "=", session_id),
+            ("member_id", "=", member_id),
+        ], limit=1)
+        if not log:
+            return {"success": False, "error": "No attendance record found."}
+        if log.status not in ("present", "late"):
+            return {"success": False, "error": "Member is not marked present or late."}
+        log.checkout_datetime = fields.Datetime.now()
+        return {
+            "success": True,
+            "checkout_datetime": fields.Datetime.to_string(log.checkout_datetime),
+        }

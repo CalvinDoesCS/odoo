@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dojo_send_message_wizard_admin,dojo.send.message.wizard (admin),model_dojo_send_message_wizard,dojo_base.group_dojo_admin,1,1,1,1
+access_dojo_send_message_wizard_instructor,dojo.send.message.wizard (instructor),model_dojo_send_message_wizard,dojo_base.group_dojo_instructor,1,1,1,1

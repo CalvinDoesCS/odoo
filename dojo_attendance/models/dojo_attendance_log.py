@@ -22,6 +22,7 @@ class DojoAttendanceLog(models.Model):
         required=True,
     )
     checkin_datetime = fields.Datetime(default=fields.Datetime.now, required=True)
+    checkout_datetime = fields.Datetime(string="Checkout Time")
     note = fields.Text()
     company_id = fields.Many2one(
         "res.company", related="session_id.company_id", store=True, readonly=True

@@ -12,5 +12,5 @@ class DojoClassTemplate(models.Model):
         'plan_id',
         string='Subscription Plans',
         readonly=True,
-        help='Subscription plans that grant access to this course. Managed on each plan.',
+        help='Course-Based plans that include this class. Managed on each plan.',
     )

@@ -13,6 +13,12 @@ class DojoBeltTest(models.Model):
     instructor_profile_id = fields.Many2one(
         "dojo.instructor.profile", string="Lead Instructor"
     )
+    program_id = fields.Many2one(
+        "dojo.program",
+        string="Program",
+        help="Program this belt test is for. Used to link rank awards to the correct program.",
+        index=True,
+    )
     max_participants = fields.Integer(default=20)
     state = fields.Selection(
         [

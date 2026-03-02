@@ -127,19 +127,47 @@
                     </div>
                 </group>
 
-                <!-- ── Step 3: Class Enrollment ─────────────────────────── -->
-                <group string="Class Enrollment (optional)" invisible="step != 'enrollment'">
-                    <field name="session_ids" nolabel="1" widget="many2many_tags"
-                           domain="[('state', '=', 'open')]"
-                           placeholder="Select open sessions to enrol this member in…"/>
+                <!-- ── Step 4: Program Enrollment ───────────────────────── -->
+                <group string="Program Enrollment" invisible="step != 'enrollment'">
+                    <group>
+                        <field name="program_id"
+                               placeholder="Select a program…"
+                               required="step == 'enrollment'"/>
+                    </group>
+                    <div class="alert alert-info small py-1 px-2" invisible="not program_id"
+                         colspan="2" role="alert">
+                        <i class="fa fa-info-circle me-1"/>
+                        Optionally select specific upcoming sessions below.
+                        You can always add sessions later from the member's profile.
+                    </div>
+                    <group colspan="2" invisible="not program_id">
+                        <field name="session_ids" nolabel="1" widget="many2many_tags"
+                               domain="[('state', '=', 'open')]"
+                               placeholder="Select open sessions (optional)…"/>
+                    </group>
+                    <div class="alert alert-warning small py-1 px-2" invisible="program_id"
+                         colspan="2" role="alert">
+                        <i class="fa fa-exclamation-circle me-1"/>
+                        A program is required to continue.
+                    </div>
                 </group>
 
-                <!-- ── Step 4: Subscription ─────────────────────────────── -->
-                <group string="Subscription Plan (optional)" invisible="step != 'subscription'">
+                <!-- ── Step 5: Subscription ──────────────────────────────── -->
+                <group string="Subscription Plan" invisible="step != 'subscription'">
                     <group>
-                        <field name="plan_id" placeholder="Leave blank to skip"/>
+                        <field name="plan_id"
+                               domain="['|', '&amp;', ('plan_type', '=', 'program'), ('program_id', '=', program_id), ('plan_type', '=', 'course')]"
+                               placeholder="Select a subscription plan…"
+                               required="step == 'subscription'"/>
                         <field name="subscription_start_date" invisible="not plan_id"/>
-                    </group>                    <group string="Billing" invisible="not plan_id">
+                    </group>
+                    <div class="alert alert-warning small py-1 px-2" invisible="plan_id"
+                         colspan="2" role="alert">
+                        <i class="fa fa-exclamation-circle me-1"/>
+                        A subscription plan is required to continue.
+                        Only plans compatible with the selected program are shown.
+                    </div>
+                    <group string="Billing" invisible="not plan_id">
                         <div class="alert alert-warning small py-1 px-2" invisible="not plan_id" role="alert">
                             <b>Initial fee:</b> If this plan has a setup fee, it will be charged
                             on the subscription start date. The recurring fee begins from the same date.
@@ -153,19 +181,43 @@
 
                 <!-- ── Step 5: Portal Access ─────────────────────────────── -->
                 <group string="Portal Access" invisible="step != 'portal_access'">
-                    <group>
+
+                    <!-- New member account -->
+                    <group string="New Member Account">
                         <field name="create_portal_login"/>
                         <field name="send_welcome_email" invisible="not create_portal_login"/>
                     </group>
                     <div class="alert alert-info" invisible="not create_portal_login" role="alert">
-                        A <b>res.users</b> account will be created using the member's email
-                        as the login. The member will receive a password-reset email if
-                        "Send Welcome Email" is checked.
+                        A portal account will be created for <b><field name="name" readonly="1" nolabel="1"/></b>
+                        using their email as the login.
+                        They will receive a password-reset email if "Send Welcome Email" is checked.
                     </div>
                     <div class="alert alert-warning" invisible="create_portal_login" role="alert">
-                        No portal login will be created. The member profile will exist
-                        but the member cannot log in until a user account is linked manually.
+                        No portal login will be created for the new member. They cannot log in until
+                        a user account is linked manually from their member profile.
                     </div>
+
+                    <!-- Guardian account (only shown when creating a new household) -->
+                    <group string="Guardian Account" invisible="not create_new_household">
+                        <field name="create_guardian_portal_login"/>
+                        <field name="send_guardian_welcome_email"
+                               invisible="not create_guardian_portal_login"/>
+                    </group>
+                    <div class="alert alert-info"
+                         invisible="not create_new_household or not create_guardian_portal_login"
+                         role="alert">
+                        A portal account will also be created for the guardian
+                        <b><field name="new_guardian_name" readonly="1" nolabel="1"/></b>
+                        using their email as the login. Guardians can view household info,
+                        track their children's attendance, and manage billing online.
+                    </div>
+                    <div class="alert alert-warning"
+                         invisible="not create_new_household or create_guardian_portal_login"
+                         role="alert">
+                        No portal login will be created for the guardian. You can grant access
+                        later from the guardian's member profile.
+                    </div>
+
                 </group>
 
                 <!-- ── Footer navigation ────────────────────────────────── -->

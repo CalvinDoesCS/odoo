@@ -14,6 +14,13 @@ class DojoClassTemplate(models.Model):
     company_id = fields.Many2one(
         "res.company", default=lambda self: self.env.company, index=True
     )
+    program_id = fields.Many2one(
+        "dojo.program",
+        string="Program",
+        index=True,
+        ondelete="restrict",
+        help="The curriculum / program this class template belongs to.",
+    )
     level = fields.Selection(
         [
             ("beginner", "Beginner"),

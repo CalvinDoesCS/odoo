@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
     <record id="action_dojo_class_templates" model="ir.actions.act_window">
         <field name="name">Class Templates</field>
         <field name="res_model">dojo.class.template</field>
@@ -11,6 +12,12 @@
         <field name="res_model">dojo.class.session</field>
         <field name="view_mode">list,form,calendar</field>
     </record>
+    
+    <record id="action_dojo_programs" model="ir.actions.act_window">
+        <field name="name">Programs</field>
+        <field name="res_model">dojo.program</field>
+        <field name="view_mode">list,form</field>
+    </record>
 
     <record id="action_dojo_class_enrollments" model="ir.actions.act_window">
         <field name="name">Enrollments</field>
@@ -18,15 +25,77 @@
         <field name="view_mode">list,form</field>
     </record>
 
-    <menuitem
-        id="menu_dojo_classes_root"
+    <menuitem id="menu_dojo_classes_root"
         name="Classes"
         sequence="20"
         web_icon="dojo_classes,static/description/icon.png"
     />
+    <menuitem id="menu_dojo_programs" name="Programs" parent="menu_dojo_classes_root" action="action_dojo_programs" sequence="5"/>
     <menuitem id="menu_dojo_class_sessions" name="Sessions" parent="menu_dojo_classes_root" action="action_dojo_class_sessions" sequence="10"/>
     <menuitem id="menu_dojo_class_templates" name="Templates" parent="menu_dojo_classes_root" action="action_dojo_class_templates" sequence="20"/>
     <menuitem id="menu_dojo_class_enrollments" name="Enrollments" parent="menu_dojo_classes_root" action="action_dojo_class_enrollments" sequence="30"/>
+
+    <!-- ========== Programs ========== -->
+    <record id="view_dojo_program_list" model="ir.ui.view">
+        <field name="name">dojo.program.list</field>
+        <field name="model">dojo.program</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="template_count" string="Templates"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dojo_program_form" model="ir.ui.view">
+        <field name="name">dojo.program.form</field>
+        <field name="model">dojo.program</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div name="button_box" class="oe_button_box">
+                        <button name="action_view_templates"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-list">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="template_count"/></span>
+                                <span class="o_stat_text">Templates</span>
+                            </div>
+                        </button>
+                    </div>
+                    <group>
+                        <group string="General">
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="sequence"/>
+                            <field name="color"/>
+                            <field name="active"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Description">
+                            <field name="description" nolabel="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Class Templates" name="templates">
+                            <field name="template_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="code"/>
+                                    <field name="level"/>
+                                    <field name="duration_minutes"/>
+                                    <field name="active"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
 
     <record id="view_dojo_class_template_list" model="ir.ui.view">
         <field name="name">dojo.class.template.list</field>
@@ -35,6 +104,7 @@
             <list>
                 <field name="name"/>
                 <field name="code"/>
+                <field name="program_id"/>
                 <field name="level"/>
                 <field name="duration_minutes"/>
                 <field name="max_capacity"/>
@@ -58,6 +128,7 @@
                         <group string="General">
                             <field name="name"/>
                             <field name="code"/>
+                            <field name="program_id"/>
                             <field name="level"/>
                             <field name="duration_minutes"/>
                             <field name="max_capacity"/>

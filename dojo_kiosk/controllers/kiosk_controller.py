@@ -1,32 +1,43 @@
 from odoo import http
 from odoo.http import request
+from odoo.exceptions import AccessError
 
 
 class KioskController(http.Controller):
     """
     Public JSON API for the Dojo Kiosk SPA.
-    All mutating operations run via sudo() on the tightly-scoped
-    dojo.kiosk.service AbstractModel.
+    All routes require a valid per-tablet kiosk token (stored on dojo.kiosk.config).
+    Mutating operations run via sudo() on the dojo.kiosk.service AbstractModel.
     """
 
     # ------------------------------------------------------------------
-    # SPA shell
+    # Helpers
     # ------------------------------------------------------------------
 
-    @http.route("/kiosk", auth="public", type="http", methods=["GET"], csrf=False)
-    def kiosk_index(self, config=None, **kw):
-        # Validate optional per-tablet config ID
-        config_id = None
-        if config:
-            try:
-                cid = int(config)
-                cfg = request.env["dojo.kiosk.config"].sudo().browse(cid)
-                if cfg.exists() and cfg.active:
-                    config_id = cid
-            except (ValueError, TypeError):
-                pass
+    def _require_token(self, token):
+        """Validate the kiosk token and return the matching config; raises AccessError on failure."""
+        svc = request.env["dojo.kiosk.service"].sudo()
+        return svc.validate_token(token)
 
-        config_js = str(config_id) if config_id is not None else "null"
+    # ------------------------------------------------------------------
+    # SPA shell  --  GET /kiosk/<token>
+    # ------------------------------------------------------------------
+
+    @http.route("/kiosk/<string:token>", auth="public", type="http", methods=["GET"], csrf=False)
+    def kiosk_index(self, token, **kw):
+        try:
+            config = request.env["dojo.kiosk.config"].sudo().search(
+                [("kiosk_token", "=", token), ("active", "=", True)], limit=1
+            )
+            if not config:
+                return request.make_response(
+                    _kiosk_error_page("Invalid or inactive kiosk token."),
+                    headers=[("Content-Type", "text/html; charset=utf-8")],
+                )
+            theme_class = "kiosk-theme-light" if config.theme_mode == "light" else "kiosk-theme-dark"
+        except Exception:
+            theme_class = "kiosk-theme-dark"
+
         html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -36,10 +47,10 @@ class KioskController(http.Controller):
     <title>Dojo Kiosk</title>
     <link rel="stylesheet" href="/dojo_kiosk/static/src/kiosk.css"/>
 </head>
-<body class="dojo-kiosk-body">
+<body class="dojo-kiosk-body {theme_class}">
     <div id="kiosk-root"></div>
-    <script>window.KIOSK_CONFIG_ID = {config_js};</script>
     <script>
+        window.KIOSK_TOKEN = {repr(token)};
         window.onerror = function(msg, src, line, col, err) {{
             document.getElementById('kiosk-root').innerHTML =
                 '<pre style="color:red;background:#111;padding:20px;font-size:13px;white-space:pre-wrap">'
@@ -55,19 +66,68 @@ class KioskController(http.Controller):
             html, headers=[("Content-Type", "text/html; charset=utf-8")]
         )
 
+    # Legacy: /kiosk without token
+    @http.route("/kiosk", auth="public", type="http", methods=["GET"], csrf=False)
+    def kiosk_no_token(self, **kw):
+        return request.make_response(
+            _kiosk_error_page(
+                "No kiosk token in URL. "
+                "Open Kiosk Settings in Odoo and copy the Kiosk URL for this tablet."
+            ),
+            headers=[("Content-Type", "text/html; charset=utf-8")],
+        )
+
+    # ------------------------------------------------------------------
+    # Bootstrap  (config + sessions in one call)
+    # ------------------------------------------------------------------
+
+    @http.route("/kiosk/api/bootstrap", type="jsonrpc", auth="public", methods=["POST"], csrf=False)
+    def kiosk_bootstrap(self, token=None, **kw):
+        if not token:
+            return {"error": "token_required"}
+        try:
+            svc = request.env["dojo.kiosk.service"].sudo()
+            return svc.get_config_bootstrap(token)
+        except AccessError:
+            return {"error": "invalid_token"}
+
+    # ------------------------------------------------------------------
+    # Announcements
+    # ------------------------------------------------------------------
+
+    @http.route("/kiosk/api/announcements", type="jsonrpc", auth="public", methods=["POST"], csrf=False)
+    def kiosk_announcements(self, token=None, **kw):
+        if not token:
+            return []
+        try:
+            svc = request.env["dojo.kiosk.service"].sudo()
+            return svc.get_announcements(token)
+        except AccessError:
+            return []
+
     # ------------------------------------------------------------------
     # Session data
     # ------------------------------------------------------------------
 
-    @http.route("/kiosk/sessions", type="json", auth="public", methods=["POST"], csrf=False)
-    def kiosk_sessions(self, **kw):
+    @http.route("/kiosk/sessions", type="jsonrpc", auth="public", methods=["POST"], csrf=False)
+    def kiosk_sessions(self, token=None, **kw):
+        if token:
+            try:
+                self._require_token(token)
+            except AccessError:
+                return []
         svc = request.env["dojo.kiosk.service"].sudo()
         return svc.get_todays_sessions()
 
-    @http.route("/kiosk/roster", type="json", auth="public", methods=["POST"], csrf=False)
-    def kiosk_roster(self, session_id=None, **kw):
+    @http.route("/kiosk/roster", type="jsonrpc", auth="public", methods=["POST"], csrf=False)
+    def kiosk_roster(self, session_id=None, token=None, **kw):
         if not session_id:
             return []
+        if token:
+            try:
+                self._require_token(token)
+            except AccessError:
+                return []
         svc = request.env["dojo.kiosk.service"].sudo()
         return svc.get_session_roster(session_id)
 
@@ -75,110 +135,171 @@ class KioskController(http.Controller):
     # Member lookup / search
     # ------------------------------------------------------------------
 
-    @http.route("/kiosk/lookup", type="json", auth="public", methods=["POST"], csrf=False)
-    def kiosk_lookup(self, barcode=None, **kw):
+    @http.route("/kiosk/lookup", type="jsonrpc", auth="public", methods=["POST"], csrf=False)
+    def kiosk_lookup(self, barcode=None, token=None, **kw):
         if not barcode:
             return {"found": False}
+        if token:
+            try:
+                self._require_token(token)
+            except AccessError:
+                return {"found": False, "error": "invalid_token"}
         svc = request.env["dojo.kiosk.service"].sudo()
         result = svc.lookup_member_by_barcode(barcode)
-        if result:
-            return {"found": True, "member": result}
-        return {"found": False}
+        return {"found": True, "member": result} if result else {"found": False}
 
-    @http.route("/kiosk/search", type="json", auth="public", methods=["POST"], csrf=False)
-    def kiosk_search(self, query=None, **kw):
+    @http.route("/kiosk/search", type="jsonrpc", auth="public", methods=["POST"], csrf=False)
+    def kiosk_search(self, query=None, token=None, **kw):
+        if token:
+            try:
+                self._require_token(token)
+            except AccessError:
+                return []
         svc = request.env["dojo.kiosk.service"].sudo()
         return svc.search_members(query or "")
 
-    @http.route("/kiosk/member/profile", type="json", auth="public", methods=["POST"], csrf=False)
-    def kiosk_member_profile(self, member_id=None, session_id=None, **kw):
+    @http.route("/kiosk/member/profile", type="jsonrpc", auth="public", methods=["POST"], csrf=False)
+    def kiosk_member_profile(self, member_id=None, session_id=None, token=None, **kw):
         if not member_id:
             return None
+        if token:
+            try:
+                self._require_token(token)
+            except AccessError:
+                return None
         svc = request.env["dojo.kiosk.service"].sudo()
         return svc.get_member_profile(member_id, session_id=session_id)
 
     # ------------------------------------------------------------------
-    # Student check-in
+    # Check-in / Check-out
     # ------------------------------------------------------------------
 
-    @http.route("/kiosk/checkin", type="json", auth="public", methods=["POST"], csrf=False)
-    def kiosk_checkin(self, member_id=None, session_id=None, **kw):
+    @http.route("/kiosk/checkin", type="jsonrpc", auth="public", methods=["POST"], csrf=False)
+    def kiosk_checkin(self, member_id=None, session_id=None, token=None, **kw):
         if not member_id or not session_id:
             return {"success": False, "error": "member_id and session_id are required."}
+        if token:
+            try:
+                self._require_token(token)
+            except AccessError:
+                return {"success": False, "error": "Invalid kiosk token."}
         svc = request.env["dojo.kiosk.service"].sudo()
         return svc.checkin_member(member_id, session_id)
+
+    @http.route("/kiosk/checkout", type="jsonrpc", auth="public", methods=["POST"], csrf=False)
+    def kiosk_checkout(self, member_id=None, session_id=None, token=None, **kw):
+        if not member_id or not session_id:
+            return {"success": False, "error": "member_id and session_id are required."}
+        if token:
+            try:
+                self._require_token(token)
+            except AccessError:
+                return {"success": False, "error": "Invalid kiosk token."}
+        svc = request.env["dojo.kiosk.service"].sudo()
+        return svc.checkout_member(member_id, session_id)
 
     # ------------------------------------------------------------------
     # Instructor PIN
     # ------------------------------------------------------------------
 
-    @http.route("/kiosk/auth/pin", type="json", auth="public", methods=["POST"], csrf=False)
-    def kiosk_auth_pin(self, pin=None, config_id=None, **kw):
+    @http.route("/kiosk/auth/pin", type="jsonrpc", auth="public", methods=["POST"], csrf=False)
+    def kiosk_auth_pin(self, pin=None, token=None, config_id=None, **kw):
         if not pin:
-            return {"success": False}
+            return {"success": False, "error": "wrong_pin"}
         svc = request.env["dojo.kiosk.service"].sudo()
-        return svc.verify_pin(pin, config_id=config_id)
+        return svc.verify_pin(pin, token=token, config_id=config_id)
 
     # ------------------------------------------------------------------
-    # Instructor — attendance
+    # Instructor -- attendance
     # ------------------------------------------------------------------
 
     @http.route(
         "/kiosk/instructor/attendance",
-        type="json",
-        auth="public",
-        methods=["POST"],
-        csrf=False,
+        type="jsonrpc", auth="public", methods=["POST"], csrf=False,
     )
-    def kiosk_mark_attendance(self, session_id=None, member_id=None, status=None, **kw):
+    def kiosk_mark_attendance(self, session_id=None, member_id=None, status=None, token=None, **kw):
         if not all([session_id, member_id, status]):
             return {"success": False, "error": "session_id, member_id, and status are required."}
+        if token:
+            try:
+                self._require_token(token)
+            except AccessError:
+                return {"success": False, "error": "Invalid kiosk token."}
         svc = request.env["dojo.kiosk.service"].sudo()
         return svc.mark_attendance(session_id, member_id, status)
 
     # ------------------------------------------------------------------
-    # Instructor — roster management
+    # Instructor -- roster management
     # ------------------------------------------------------------------
 
     @http.route(
         "/kiosk/instructor/roster/add",
-        type="json",
-        auth="public",
-        methods=["POST"],
-        csrf=False,
+        type="jsonrpc", auth="public", methods=["POST"], csrf=False,
     )
-    def kiosk_roster_add(self, session_id=None, member_id=None, **kw):
+    def kiosk_roster_add(self, session_id=None, member_id=None, token=None, **kw):
         if not session_id or not member_id:
             return {"success": False, "error": "session_id and member_id are required."}
+        if token:
+            try:
+                self._require_token(token)
+            except AccessError:
+                return {"success": False, "error": "Invalid kiosk token."}
         svc = request.env["dojo.kiosk.service"].sudo()
         return svc.roster_add(session_id, member_id)
 
     @http.route(
         "/kiosk/instructor/roster/remove",
-        type="json",
-        auth="public",
-        methods=["POST"],
-        csrf=False,
+        type="jsonrpc", auth="public", methods=["POST"], csrf=False,
     )
-    def kiosk_roster_remove(self, session_id=None, member_id=None, **kw):
+    def kiosk_roster_remove(self, session_id=None, member_id=None, token=None, **kw):
         if not session_id or not member_id:
             return {"success": False, "error": "session_id and member_id are required."}
+        if token:
+            try:
+                self._require_token(token)
+            except AccessError:
+                return {"success": False, "error": "Invalid kiosk token."}
         svc = request.env["dojo.kiosk.service"].sudo()
         return svc.roster_remove(session_id, member_id)
 
     # ------------------------------------------------------------------
-    # Instructor — session close
+    # Instructor -- session close
     # ------------------------------------------------------------------
 
     @http.route(
         "/kiosk/instructor/session/close",
-        type="json",
-        auth="public",
-        methods=["POST"],
-        csrf=False,
+        type="jsonrpc", auth="public", methods=["POST"], csrf=False,
     )
-    def kiosk_session_close(self, session_id=None, **kw):
+    def kiosk_session_close(self, session_id=None, token=None, **kw):
         if not session_id:
             return {"success": False, "error": "session_id is required."}
+        if token:
+            try:
+                self._require_token(token)
+            except AccessError:
+                return {"success": False, "error": "Invalid kiosk token."}
         svc = request.env["dojo.kiosk.service"].sudo()
         return svc.close_session(session_id)
+
+
+# ------------------------------------------------------------------
+# Utils
+# ------------------------------------------------------------------
+
+def _kiosk_error_page(message):
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><title>Kiosk</title>
+<style>
+body{{background:#111;color:#f87171;font-family:sans-serif;
+     display:flex;align-items:center;justify-content:center;
+     height:100vh;margin:0;}}
+.box{{text-align:center;max-width:480px;padding:40px;}}
+h2{{font-size:1.4rem;margin-bottom:16px;}}
+p{{font-size:0.95rem;color:#aaa;line-height:1.6;}}
+</style>
+</head>
+<body><div class="box">
+<h2>Kiosk Not Configured</h2>
+<p>{message}</p>
+</div></body></html>"""

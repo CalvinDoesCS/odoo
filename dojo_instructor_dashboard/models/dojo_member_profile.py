@@ -13,10 +13,18 @@ class DojoMemberProfile(models.Model):
         """Return a rich dict of member data for the OWL profile component.
 
         Called via ``orm.call("dojo.member", "get_member_profile_data", [id])``.
+        Uses sudo() so instructors can always see a student's full profile
+        regardless of record-level rules on related models.
         """
-        member = self.browse(member_id)
+        member = self.sudo().browse(member_id)
         if not member.exists():
             return {}
+
+        # ── Subscription plan ─────────────────────────────────────────────
+        plan_name = ""
+        sub = member.active_subscription_id
+        if sub and sub.plan_id:
+            plan_name = sub.plan_id.name or ""
 
         # ── Basics ────────────────────────────────────────────────────────
         data = {
@@ -28,6 +36,7 @@ class DojoMemberProfile(models.Model):
             "role": member.role or "",
             "membership_state": member.membership_state or "",
             "emergency_note": member.emergency_note or "",
+            "plan_name": plan_name,
         }
 
         # ── Household ─────────────────────────────────────────────────────
@@ -51,7 +60,7 @@ class DojoMemberProfile(models.Model):
         level_labels = dict(
             self.env["dojo.class.template"]._fields["level"].selection
         )
-        templates = self.env["dojo.class.template"].search(
+        templates = self.sudo().env["dojo.class.template"].search(
             [("course_member_ids", "in", [member_id])]
         )
         data["course_templates"] = [
@@ -67,15 +76,16 @@ class DojoMemberProfile(models.Model):
         ]
 
         # ── Upcoming session enrollments ───────────────────────────────────
-        # Search for future sessions first, then join to enrollments to avoid
-        # unsupported cross-model order/domain expressions.
+        # Use sudo() so instructors can see all sessions/enrollments,
+        # not just ones in their own sessions.
         today = Date.today()
-        future_sessions = self.env["dojo.class.session"].search(
+        env = self.sudo().env
+        future_sessions = env["dojo.class.session"].search(
             [("start_datetime", ">=", str(today) + " 00:00:00")],
             order="start_datetime asc",
             limit=200,
         )
-        enrollments = self.env["dojo.class.enrollment"].search(
+        enrollments = env["dojo.class.enrollment"].search(
             [
                 ("member_id", "=", member_id),
                 ("session_id", "in", future_sessions.ids),

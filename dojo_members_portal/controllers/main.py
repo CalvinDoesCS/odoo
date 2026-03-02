@@ -47,13 +47,56 @@ class DojoMemberPortal(CustomerPortal):
         return member or None
 
     def _get_household_member_ids(self):
-        """Return list of member IDs that belong to the current user's household."""
+        """Return member IDs scoped to the current user's access level.
+
+        Students (role == 'student') are strictly limited to their own record.
+        Parents and 'both' roles see the entire household.
+        """
         member = self._get_current_member()
         if not member:
             return []
+        # Students may only ever see their own data — never siblings or parents
+        if member.role == 'student':
+            return [member.id]
         if member.household_id:
             return member.household_id.member_ids.ids
         return [member.id]
+
+    def _get_student_members(self):
+        """Return dojo.member records that are students in the current household.
+
+        Only meaningful for parents; returns an empty RecordSet for students.
+        """
+        member = self._get_current_member()
+        if not member or member.role == 'student':
+            return request.env['dojo.member'].sudo().browse([])
+        all_members = request.env['dojo.member'].sudo().browse(
+            self._get_household_member_ids()
+        )
+        return all_members.filtered(lambda m: m.role in ('student', 'both'))
+
+    def _resolve_view_member_ids(self, member_id=None):
+        """Return the list of member IDs to use for a JSON data request.
+
+        If ``member_id`` is provided and the caller is a parent, validate that
+        the requested member belongs to their household and return [member_id].
+        Students always get only their own ID regardless of params.
+        """
+        member = self._get_current_member()
+        if not member:
+            return []
+        if member.role == 'student':
+            return [member.id]
+        if member_id:
+            try:
+                mid = int(member_id)
+            except (TypeError, ValueError):
+                mid = None
+            if mid:
+                hm_ids = self._get_household_member_ids()
+                if mid in hm_ids:
+                    return [mid]
+        return self._get_household_member_ids()
 
     def _get_household_invoice_ids(self):
         """Return all account.move IDs for invoices tied to household subscriptions."""
@@ -88,13 +131,14 @@ class DojoMemberPortal(CustomerPortal):
         return {'current_rank': current_rank, 'next_rank': next_rank, 'rank_pct': rank_pct}
 
     # ── /my/dojo  (unified portal page) ─────────────────────────────────
-    @http.route('/my/dojo', type='http', auth='user')
-    def portal_dojo_home(self, tab='schedule', saved=None, **kwargs):
+    @http.route('/my/dojo', type='http', auth='user', website=True)
+    def portal_dojo_home(self, tab='programs', saved=None, **kwargs):
         member = self._get_current_member()
         if not member:
             return request.render('dojo_members_portal.portal_no_member', {})
         env = request.env
         is_parent = member.role in ('parent', 'both')
+        is_student_only = member.role == 'student'
         household_member_ids = self._get_household_member_ids()
 
         attendance_count = env['dojo.attendance.log'].sudo().search_count([
@@ -109,27 +153,37 @@ class DojoMemberPortal(CustomerPortal):
         household_members = env['dojo.member'].sudo().browse(household_member_ids)
         members_json = json.dumps([{'id': m.id, 'name': m.name, 'role': m.role or ''} for m in household_members])
 
+        # Student members for the household switcher (parents only)
+        student_members = self._get_student_members() if is_parent else env['dojo.member'].sudo().browse([])
+        students_json = json.dumps([{'id': m.id, 'name': m.name} for m in student_members])
+
+        belt = self._get_belt_context(member)
+
         return request.render('dojo_members_portal.portal_dojo_home', {
             'member': member,
             'is_parent': is_parent,
+            'is_student_only': is_student_only,
             'initial_tab': tab,
             'page_name': 'dojo_home',
             'attendance_count': attendance_count,
             'upcoming_count': upcoming_count,
             'household_saved': saved == '1',
             'members_json': members_json,
-            **self._get_belt_context(member),
+            'students_json': students_json,
+            # Belt context: hide rank card for parents who have no rank of their own
+            'show_belt_card': is_student_only or bool(belt.get('current_rank')),
+            **belt,
         })
 
     # ── /my/dojo/schedule – redirect to unified page ───────────────────
     @http.route('/my/dojo/schedule', type='http', auth='user')
     def portal_my_schedule(self, **kwargs):
-        return request.redirect('/my/dojo?tab=schedule')
+        return request.redirect('/my/dojo?tab=classes')
 
     # ── /my/dojo/enrollments – redirect to unified page ─────────────────
     @http.route('/my/dojo/enrollments', type='http', auth='user')
     def portal_my_enrollments(self, **kwargs):
-        return request.redirect('/my/dojo?tab=enrollments')
+        return request.redirect('/my/dojo?tab=classes')
 
     # ── /my/dojo/attendance – redirect to unified page ──────────────────
     @http.route('/my/dojo/attendance', type='http', auth='user')
@@ -137,11 +191,51 @@ class DojoMemberPortal(CustomerPortal):
         return request.redirect('/my/dojo?tab=attendance')
 
     # ── JSON data endpoints for the OWL activities component ──────────────
+    @http.route('/my/dojo/json/belt', type='http', auth='user')
+    def portal_json_belt(self, member_id=None, **kwargs):
+        """Return belt rank context for a member. Parents can request any household member."""
+        current = self._get_current_member()
+        if not current:
+            return request.make_response(
+                json.dumps({'error': 'not found'}),
+                headers=[('Content-Type', 'application/json')],
+            )
+        # Resolve target member
+        target = current
+        if member_id and current.role != 'student':
+            try:
+                mid = int(member_id)
+                hm_ids = self._get_household_member_ids()
+                if mid in hm_ids:
+                    target = request.env['dojo.member'].sudo().browse(mid)
+            except (TypeError, ValueError):
+                pass
+        belt = self._get_belt_context(target)
+        return request.make_response(
+            json.dumps({
+                'member_id': target.id,
+                'member_name': target.name or '',
+                'current_rank': (
+                    {
+                        'id': belt['current_rank'].id,
+                        'name': belt['current_rank'].name,
+                        'color': getattr(belt['current_rank'], 'color', None) or '#cccccc',
+                    } if belt.get('current_rank') else None
+                ),
+                'next_rank': (
+                    {'id': belt['next_rank'].id, 'name': belt['next_rank'].name}
+                    if belt.get('next_rank') else None
+                ),
+                'rank_pct': belt.get('rank_pct', 0),
+            }),
+            headers=[('Content-Type', 'application/json')],
+        )
+
     @http.route('/my/dojo/json/schedule', type='http', auth='user')
-    def portal_json_schedule(self, **kwargs):
+    def portal_json_schedule(self, member_id=None, **kwargs):
         member = self._get_current_member()
         is_parent = member.role in ('parent', 'both') if member else True
-        household_member_ids = self._get_household_member_ids()
+        household_member_ids = self._resolve_view_member_ids(member_id)
 
         # Build a map of member_id -> set of enrolled template_ids
         household_members = request.env['dojo.member'].sudo().browse(household_member_ids)
@@ -194,8 +288,8 @@ class DojoMemberPortal(CustomerPortal):
         )
 
     @http.route('/my/dojo/json/enrollments', type='http', auth='user')
-    def portal_json_enrollments(self, **kwargs):
-        member_ids = self._get_household_member_ids()
+    def portal_json_enrollments(self, member_id=None, **kwargs):
+        member_ids = self._resolve_view_member_ids(member_id)
         enrollments = request.env['dojo.class.enrollment'].sudo().search(
             [('member_id', 'in', member_ids)],
             limit=200,
@@ -208,12 +302,20 @@ class DojoMemberPortal(CustomerPortal):
         )[:100]
         data = []
         for e in enrollments:
+            tmpl = e.session_id.template_id
             data.append({
                 'id': e.id,
+                'session_id': e.session_id.id,
+                'member_id': e.member_id.id,
                 'member_name': e.member_id.name or '',
-                'session_name': e.session_id.template_id.name or '',
+                'session_name': tmpl.name or '',
+                'template_id': tmpl.id,
+                'program_name': tmpl.program_id.name if tmpl.program_id else '',
+                'level': tmpl.level or 'all',
                 'start_datetime': fields.Datetime.to_string(e.session_id.start_datetime)
                     if e.session_id.start_datetime else None,
+                'end_datetime': fields.Datetime.to_string(e.session_id.end_datetime)
+                    if e.session_id.end_datetime else None,
                 'instructor': e.session_id.instructor_profile_id.name
                     if e.session_id.instructor_profile_id else None,
                 'status': e.status or '',
@@ -225,8 +327,8 @@ class DojoMemberPortal(CustomerPortal):
         )
 
     @http.route('/my/dojo/json/attendance', type='http', auth='user')
-    def portal_json_attendance(self, **kwargs):
-        member_ids = self._get_household_member_ids()
+    def portal_json_attendance(self, member_id=None, **kwargs):
+        member_ids = self._resolve_view_member_ids(member_id)
         logs = request.env['dojo.attendance.log'].sudo().search(
             [('member_id', 'in', member_ids)],
             order='checkin_datetime desc',
@@ -393,6 +495,293 @@ class DojoMemberPortal(CustomerPortal):
                     'email': (nc.get('email') or '').strip() or False,
                     'is_primary': False,
                 })
+        return request.make_response(
+            json.dumps({'ok': True}),
+            headers=[('Content-Type', 'application/json')],
+        )
+
+    # ── Private helpers ────────────────────────────────────────────────────
+    def _build_programs_for_member(self, target):
+        """Build programs data list for a given dojo.member record."""
+        env = request.env
+        # Source 1: explicit course-roster membership
+        roster_templates = target.enrolled_template_ids
+        # Source 2: templates the member has actually enrolled in via class sessions
+        enrollment_recs = env['dojo.class.enrollment'].sudo().search([
+            ('member_id', '=', target.id),
+            ('status', '!=', 'cancelled'),
+        ])
+        enrollment_templates = enrollment_recs.mapped('session_id.template_id')
+        all_template_ids = set(roster_templates.ids) | set(enrollment_templates.ids)
+        enrolled_templates = env['dojo.class.template'].sudo().browse(list(all_template_ids))
+        program_map = {}
+        for t in enrolled_templates:
+            if t.program_id:
+                pid = t.program_id.id
+                if pid not in program_map:
+                    program_map[pid] = {'program': t.program_id, 'templates': []}
+                if t.id not in [x.id for x in program_map[pid]['templates']]:
+                    program_map[pid]['templates'].append(t)
+        ODOO_COLORS = [
+            '#714B67', '#017E84', '#0D6EFD', '#17A2B8', '#28A745',
+            '#FFC107', '#DC3545', '#6F42C1', '#E83E8C', '#FD7E14',
+            '#20C997', '#6C757D',
+        ]
+        current_rank = getattr(target, 'current_rank_id', None) or None
+        test_pending = bool(getattr(target, 'test_invite_pending', False))
+        # Gather full rank history once — filter per program below
+        all_rank_history = getattr(target, 'rank_history_ids', env['dojo.member.rank'].sudo().browse([]))
+        all_company_ranks = env['dojo.belt.rank'].sudo().search(
+            [('company_id', '=', target.company_id.id), ('active', '=', True)],
+            order='sequence asc',
+        )
+        programs_data = []
+        for pdata in program_map.values():
+            prog = pdata['program']
+            prog_belts = prog.belt_rank_ids.sorted(lambda r: r.sequence)
+            belt_path = prog_belts if prog_belts else all_company_ranks
+            path_ids = belt_path.ids
+            current_in_path = next_in_path = None
+            rank_pct = 0
+            if current_rank and path_ids:
+                if current_rank.id in path_ids:
+                    idx = path_ids.index(current_rank.id)
+                else:
+                    history_rank_ids = set(
+                        target.rank_history_ids.mapped('rank_id').ids
+                    ) if hasattr(target, 'rank_history_ids') else set()
+                    achieved_in_path = [
+                        i for i, rid in enumerate(path_ids)
+                        if rid in history_rank_ids
+                    ]
+                    idx = max(achieved_in_path) if achieved_in_path else -1
+                if idx >= 0:
+                    total = len(path_ids)
+                    current_in_path = belt_path[idx]
+                    next_in_path = belt_path[idx + 1] if idx + 1 < total else None
+                    rank_pct = int(((idx + 1) / total) * 100) if total else 0
+            prog_color = ODOO_COLORS[(prog.color or 0) % len(ODOO_COLORS)] if prog.color else '#6C757D'
+            programs_data.append({
+                'id': prog.id,
+                'name': prog.name or '',
+                'code': prog.code or '',
+                'color': prog_color,
+                'templates': [
+                    {'id': t.id, 'name': t.name or '', 'level': t.level or 'all'}
+                    for t in pdata['templates']
+                ],
+                'belt_path': [
+                    {'id': r.id, 'name': r.name or '', 'color': r.color or '#cccccc', 'sequence': r.sequence}
+                    for r in belt_path
+                ],
+                'current_rank_id': current_in_path.id if current_in_path else None,
+                'current_rank_name': current_in_path.name if current_in_path else None,
+                'current_rank_color': (current_in_path.color or '#cccccc') if current_in_path else None,
+                'next_rank_id': next_in_path.id if next_in_path else None,
+                'next_rank_name': next_in_path.name if next_in_path else None,
+                'rank_pct': rank_pct,
+                'rank_position': (path_ids.index(current_in_path.id) + 1) if current_in_path else 0,
+                'rank_total': len(path_ids),
+                'test_invite_pending': test_pending,
+                'rank_history': [
+                    {
+                        'rank_name': h.rank_id.name if h.rank_id else '',
+                        'rank_color': h.rank_id.color if h.rank_id else '#cccccc',
+                        'date_awarded': fields.Date.to_string(h.date_awarded) if h.date_awarded else None,
+                        'awarded_by': h.awarded_by.name if h.awarded_by else None,
+                    }
+                    for h in all_rank_history.sorted(lambda r: r.date_awarded or fields.Date.today(), reverse=True)
+                    # If the rank record has an explicit program, match by program;
+                    # otherwise fall back to belt-path membership for legacy records.
+                    if h.rank_id and (
+                        (h.program_id and h.program_id.id == prog.id)
+                        or (not h.program_id and h.rank_id.id in path_ids)
+                    )
+                ],
+            })
+        return programs_data
+
+    def _build_belt_history_for_member(self, target):
+        """Build belt rank award history list for a given dojo.member record."""
+        history = getattr(target, 'rank_history_ids', request.env['dojo.member.rank'].sudo().browse([]))
+        data = []
+        for h in history.sorted(lambda r: r.date_awarded or fields.Date.today(), reverse=True):
+            data.append({
+                'rank_name': h.rank_id.name if h.rank_id else '',
+                'rank_color': h.rank_id.color if h.rank_id else '#cccccc',
+                'date_awarded': fields.Date.to_string(h.date_awarded) if h.date_awarded else None,
+                'awarded_by': h.awarded_by.name if h.awarded_by else None,
+            })
+        return data
+
+    # ── /my/dojo/json/programs ──────────────────────────────────────────────
+    @http.route('/my/dojo/json/programs', type='http', auth='user')
+    def portal_json_programs(self, member_id=None, **kwargs):
+        """Return programs the member is enrolled in with per-program belt path.
+
+        For parent users without a member_id, returns all household students'
+        programs grouped: {programs: [], students: [{id, name, programs, belt_history}]}
+        """
+        current = self._get_current_member()
+        if not current:
+            return request.make_response(
+                json.dumps({'programs': [], 'students': []}),
+                headers=[('Content-Type', 'application/json')],
+            )
+        def _json(d):
+            return request.make_response(
+                json.dumps(d), headers=[('Content-Type', 'application/json')]
+            )
+        # Parent without a specific student selected → return all students' data
+        if not member_id and current.role != 'student':
+            hm_ids = self._get_household_member_ids()
+            students_data = []
+            for mid in hm_ids:
+                m = request.env['dojo.member'].sudo().browse(mid)
+                if not m.exists() or m.role != 'student':
+                    continue
+                students_data.append({
+                    'id': m.id,
+                    'name': m.name or '',
+                    'programs': self._build_programs_for_member(m),
+                    'belt_history': self._build_belt_history_for_member(m),
+                })
+            return _json({'programs': [], 'students': students_data})
+        # Specific member or student self-view
+        target = current
+        if member_id and current.role != 'student':
+            try:
+                mid = int(member_id)
+                hm_ids = self._get_household_member_ids()
+                if mid in hm_ids:
+                    target = request.env['dojo.member'].sudo().browse(mid)
+            except (TypeError, ValueError):
+                pass
+        return _json({'programs': self._build_programs_for_member(target), 'students': []})
+
+    # ── /my/dojo/json/belt-history ──────────────────────────────────────────
+    @http.route('/my/dojo/json/belt-history', type='http', auth='user')
+    def portal_json_belt_history(self, member_id=None, **kwargs):
+        """Return rank award history for a member."""
+        current = self._get_current_member()
+        if not current:
+            return request.make_response(
+                json.dumps({'history': []}),
+                headers=[('Content-Type', 'application/json')],
+            )
+        target = current
+        if member_id and current.role != 'student':
+            try:
+                mid = int(member_id)
+                hm_ids = self._get_household_member_ids()
+                if mid in hm_ids:
+                    target = request.env['dojo.member'].sudo().browse(mid)
+            except (TypeError, ValueError):
+                pass
+        return request.make_response(
+            json.dumps({'history': self._build_belt_history_for_member(target)}),
+            headers=[('Content-Type', 'application/json')],
+        )
+
+    # ── /my/dojo/unenroll ──────────────────────────────────────────────────
+    @http.route('/my/dojo/unenroll', type='http', auth='user', methods=['POST'], csrf=False)
+    def portal_unenroll(self, enrollment_id=None, **kwargs):
+        def _err(msg):
+            return request.make_response(
+                json.dumps({'ok': False, 'error': msg}),
+                headers=[('Content-Type', 'application/json')],
+            )
+        member = self._get_current_member()
+        if not member:
+            return _err('Not authenticated.')
+        try:
+            enrollment_id = int(enrollment_id)
+        except (TypeError, ValueError):
+            return _err('Invalid parameters.')
+        household_member_ids = self._get_household_member_ids()
+        enrollment = request.env['dojo.class.enrollment'].sudo().browse(enrollment_id)
+        if not enrollment.exists() or enrollment.member_id.id not in household_member_ids:
+            return _err('Not authorised.')
+        now = fields.Datetime.now()
+        if enrollment.session_id.start_datetime and enrollment.session_id.start_datetime <= now:
+            return _err('Cannot cancel a session that has already started.')
+        if enrollment.status == 'cancelled':
+            return _err('Already cancelled.')
+        enrollment.sudo().write({'status': 'cancelled'})
+        return request.make_response(
+            json.dumps({'ok': True}),
+            headers=[('Content-Type', 'application/json')],
+        )
+
+    # ── /my/dojo/belt-test-request ─────────────────────────────────────────
+    @http.route('/my/dojo/belt-test-request', type='http', auth='user', methods=['POST'], csrf=False)
+    def portal_belt_test_request(self, member_id=None, **kwargs):
+        def _err(msg):
+            return request.make_response(
+                json.dumps({'ok': False, 'error': msg}),
+                headers=[('Content-Type', 'application/json')],
+            )
+        member = self._get_current_member()
+        if not member:
+            return _err('Not authenticated.')
+        target = member
+        if member_id and member.role != 'student':
+            try:
+                mid = int(member_id)
+                hm_ids = self._get_household_member_ids()
+                if mid in hm_ids:
+                    target = request.env['dojo.member'].sudo().browse(mid)
+                    if not target.exists():
+                        return _err('Member not found.')
+            except (TypeError, ValueError):
+                return _err('Invalid member ID.')
+        if target.role not in ('student', 'both'):
+            return _err('Belt tests are for students only.')
+        if getattr(target, 'test_invite_pending', False):
+            return _err('A belt test request is already pending.')
+        target.sudo().write({'test_invite_pending': True})
+        return request.make_response(
+            json.dumps({'ok': True}),
+            headers=[('Content-Type', 'application/json')],
+        )
+
+    # ── /my/dojo/message ───────────────────────────────────────────────────
+    @http.route('/my/dojo/message', type='http', auth='user', methods=['POST'], csrf=False)
+    def portal_message_instructor(self, **kwargs):
+        def _err(msg):
+            return request.make_response(
+                json.dumps({'ok': False, 'error': msg}),
+                headers=[('Content-Type', 'application/json')],
+            )
+        member = self._get_current_member()
+        if not member:
+            return _err('Not authenticated.')
+        try:
+            payload = json.loads(request.httprequest.data)
+        except Exception:
+            return _err('Invalid request body.')
+        message_body = (payload.get('message') or '').strip()
+        if not message_body:
+            return _err('Message cannot be empty.')
+        target = member
+        mid_param = payload.get('member_id')
+        if mid_param and member.role != 'student':
+            try:
+                mid = int(mid_param)
+                hm_ids = self._get_household_member_ids()
+                if mid in hm_ids:
+                    t = request.env['dojo.member'].sudo().browse(mid)
+                    if t.exists():
+                        target = t
+            except (TypeError, ValueError):
+                pass
+        author = member.sudo().partner_id
+        target.sudo().message_post(
+            body=message_body,
+            author_id=author.id,
+            message_type='comment',
+            subtype_xmlid='mail.mt_comment',
+        )
         return request.make_response(
             json.dumps({'ok': True}),
             headers=[('Content-Type', 'application/json')],
@@ -593,7 +982,7 @@ class DojoMemberPortal(CustomerPortal):
             )
 
     # ── /my/dojo/invoices  (parents only) ────────────────────────────────
-    @http.route('/my/dojo/invoices', type='http', auth='user')
+    @http.route('/my/dojo/invoices', type='http', auth='user', website=True)
     def portal_my_dojo_invoices(self, **kwargs):
         member = self._get_current_member()
         if not member or member.role not in ('parent', 'both'):
@@ -634,7 +1023,7 @@ class DojoMemberPortal(CustomerPortal):
     # ── /my/dojo/household ────────────────────────────────────────────────
     @http.route(
         '/my/dojo/household',
-        type='http', auth='user', methods=['GET', 'POST'],
+        type='http', auth='user', methods=['GET', 'POST'], website=True,
     )
     def portal_my_household(self, **post):
         member = self._get_current_member()

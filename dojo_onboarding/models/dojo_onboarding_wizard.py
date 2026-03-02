@@ -13,7 +13,7 @@ class DojoOnboardingWizard(models.TransientModel):
             ('member_info',    '1. Member Info'),
             ('household',      '2. Household'),
             ('guardian_setup', '3. Guardian Setup'),
-            ('enrollment',     '4. Class Enrollment'),
+            ('enrollment',     '4. Program Enrollment'),
             ('subscription',   '5. Subscription'),
             ('portal_access',  '6. Portal Access'),
         ],
@@ -77,27 +77,49 @@ class DojoOnboardingWizard(models.TransientModel):
         string="Guardian's Relation to New Member",
     )
 
-    # ── Step 3: Class Enrollment ─────────────────────────────────────────────
+    # ── Step 3: Program ────────────────────────────────────────────────────
+    program_id = fields.Many2one(
+        'dojo.program',
+        string='Program',
+        domain="[('active', '=', True)]",
+        help='The program / curriculum this member is enrolling in (required).',
+    )
     session_ids = fields.Many2many(
         'dojo.class.session',
-        string='Enroll In Sessions',
+        string='Specific Sessions (optional)',
         domain="[('state', '=', 'open')]",
+        help='Optionally pre-register the member in specific upcoming sessions.',
     )
 
     # ── Step 4: Subscription ─────────────────────────────────────────────────
-    plan_id = fields.Many2one('dojo.subscription.plan', string='Subscription Plan')
+    plan_id = fields.Many2one(
+        'dojo.subscription.plan',
+        string='Subscription Plan',
+        domain="['|', '&', ('plan_type', '=', 'program'), ('program_id', '=', program_id), ('plan_type', '=', 'course')]",
+        help='Choose a plan that covers the selected program, or any course-based plan.',
+    )
     subscription_start_date = fields.Date(
         'Subscription Start Date',
         default=fields.Date.today,
     )
+
     # ── Step 5: Portal Access ────────────────────────────────────────────────
     create_portal_login = fields.Boolean(
-        'Create Portal Login',
+        'Create Portal Login for New Member',
         default=True,
-        help='Creates a res.users record linked to the new member so they can log into the portal.',
+        help='Creates a user account linked to the new member so they can log into the portal.',
     )
     send_welcome_email = fields.Boolean(
-        'Send Welcome / Password-Reset Email',
+        'Send Welcome Email to Member',
+        default=True,
+    )
+    create_guardian_portal_login = fields.Boolean(
+        'Create Portal Login for Guardian',
+        default=True,
+        help='Also creates a portal account for the new guardian so they can manage their household online.',
+    )
+    send_guardian_welcome_email = fields.Boolean(
+        'Send Welcome Email to Guardian',
         default=True,
     )
 
@@ -146,6 +168,16 @@ class DojoOnboardingWizard(models.TransientModel):
                 raise UserError(_(
                     "Please specify the guardian's relation to the new member."
                 ))
+        elif self.step == 'enrollment':
+            if not self.program_id:
+                raise UserError(_(
+                    'Please select a program for this member.'
+                ))
+        elif self.step == 'subscription':
+            if not self.plan_id:
+                raise UserError(_(
+                    'A subscription plan is required. Please select a plan to continue.'
+                ))
 
         # ── Advance step, skipping guardian_setup when not creating a new household ──
         idx = self._STEP_ORDER.index(self.step)
@@ -170,6 +202,10 @@ class DojoOnboardingWizard(models.TransientModel):
 
         if not self.name:
             raise UserError(_('Member name is required.'))
+        if not self.program_id:
+            raise UserError(_('A program selection is required.'))
+        if not self.plan_id:
+            raise UserError(_('A subscription plan is required.'))
 
         # ── Resolve / create household ────────────────────────────────────────
         household = self.household_id
@@ -237,7 +273,10 @@ class DojoOnboardingWizard(models.TransientModel):
                 'is_primary': True,
             })
 
-        # ── Class enrollments ─────────────────────────────────────────────────
+        # ── Program enrollment — access is now controlled by subscription ─────
+        # No action needed here; the subscription plan links member to program.
+
+        # ── Specific session enrollments (optional) ───────────────────────────
         for session in self.session_ids:
             # Enforce capacity before enrolling
             if session.seats_taken >= session.capacity:
@@ -253,24 +292,25 @@ class DojoOnboardingWizard(models.TransientModel):
                 'attendance_state': 'pending',
             })
 
-        # ── Subscription ──────────────────────────────────────────────────────
-        if self.plan_id:
-            sub_start = self.subscription_start_date or fields.Date.today()
-            period = self.plan_id.billing_period
-            if period == 'weekly':
-                next_billing = sub_start + relativedelta(weeks=1)
-            elif period == 'yearly':
-                next_billing = sub_start + relativedelta(years=1)
-            else:
-                next_billing = sub_start + relativedelta(months=1)
-            self.env['dojo.member.subscription'].create({
-                'member_id': member.id,
-                'plan_id': self.plan_id.id,
-                'start_date': sub_start,
-                'next_billing_date': next_billing,
-                'state': 'active',
-                'company_id': self.env.company.id,
-            })
+        # ── Subscription (required) ───────────────────────────────────────────
+        sub_start = self.subscription_start_date or fields.Date.today()
+        period = self.plan_id.billing_period
+        if period == 'weekly':
+            next_billing = sub_start + relativedelta(weeks=1)
+        elif period == 'yearly':
+            next_billing = sub_start + relativedelta(years=1)
+        else:
+            next_billing = sub_start + relativedelta(months=1)
+        self.env['dojo.member.subscription'].create({
+            'member_id': member.id,
+            'plan_id': self.plan_id.id,
+            'start_date': sub_start,
+            'next_billing_date': next_billing,
+            'state': 'active',
+            'company_id': self.env.company.id,
+        })
+        # Transition membership state to active now that a plan is assigned
+        member.action_set_active()
 
         # ── Issue Stripe card for new households ──────────────────────────────
         if self.create_new_household and household:
@@ -280,29 +320,42 @@ class DojoOnboardingWizard(models.TransientModel):
             except Exception:
                 pass  # Stripe not configured yet — admin can issue the card manually from the household form
 
-        # ── Portal login ──────────────────────────────────────────────────────
+        # ── Portal login — new member ─────────────────────────────────────────
         if self.create_portal_login:
             if not member.email:
                 raise UserError(_(
                     'An email address is required to create a portal login. '
                     'Please add an email in Step 1.'
                 ))
-            portal_group = self.env.ref('base.group_portal')
-            user = self.env['res.users'].create({
-                'name': member.name,
-                'login': member.email,
-                'partner_id': member.partner_id.id,
-                'groups_id': [(4, portal_group.id)],
-            })
+            member.action_grant_portal_access()
             if self.send_welcome_email:
-                user.action_reset_password()
+                user = self.env['res.users'].sudo().search(
+                    [('partner_id', '=', member.partner_id.id)], limit=1
+                )
+                if user:
+                    user.action_reset_password()
+
+        # ── Portal login — guardian (new household path only) ─────────────────
+        if self.create_new_household and guardian_member and self.create_guardian_portal_login:
+            if not guardian_member.email:
+                raise UserError(_(
+                    'A guardian email address is required to create a guardian portal login. '
+                    'Please go back to Step 3 and enter the guardian\'s email.'
+                ))
+            guardian_member.action_grant_portal_access()
+            if self.send_guardian_welcome_email:
+                guardian_user = self.env['res.users'].sudo().search(
+                    [('partner_id', '=', guardian_member.partner_id.id)], limit=1
+                )
+                if guardian_user:
+                    guardian_user.action_reset_password()
 
         # ── Onboarding record ──────────────────────────────────────────────────
         self.env['dojo.onboarding.record'].create({
             'member_id': member.id,
             'step_member_info': True,
             'step_household': bool(household),
-            'step_enrollment': bool(self.session_ids),
+            'step_enrollment': bool(self.program_id),
             'step_subscription': bool(self.plan_id),
             'step_portal_access': self.create_portal_login,
             'state': 'completed',

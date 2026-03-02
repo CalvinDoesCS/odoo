@@ -11,3 +11,7 @@ access_dojo_class_enrollment_user,dojo.class.enrollment user,model_dojo_class_en
 access_dojo_class_enrollment_admin,dojo.class.enrollment admin,model_dojo_class_enrollment,dojo_base.group_dojo_admin,1,1,1,1
 access_dojo_class_enrollment_instructor,dojo.class.enrollment instructor,model_dojo_class_enrollment,dojo_base.group_dojo_instructor,1,1,1,1
 access_dojo_class_enrollment_parent,dojo.class.enrollment parent,model_dojo_class_enrollment,dojo_base.group_dojo_parent_student,1,1,1,0
+access_dojo_program_user,dojo.program user,model_dojo_program,base.group_user,1,0,0,0
+access_dojo_program_admin,dojo.program admin,model_dojo_program,dojo_base.group_dojo_admin,1,1,1,1
+access_dojo_program_instructor,dojo.program instructor,model_dojo_program,dojo_base.group_dojo_instructor,1,0,0,0
+access_dojo_program_parent,dojo.program parent,model_dojo_program,dojo_base.group_dojo_parent_student,1,0,0,0

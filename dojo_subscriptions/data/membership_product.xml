@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!--
+        Service product used as the invoice line item for subscription billing.
+        noupdate="1" so admins can change the product name / tax / income account
+        in the UI without the next upgrade overwriting their settings.
+    -->
+    <record id="product_membership_subscription" model="product.product">
+        <field name="name">Membership Subscription</field>
+        <field name="type">service</field>
+        <field name="list_price">0.0</field>
+        <field name="sale_ok">False</field>
+        <field name="purchase_ok">False</field>
+    </record>
+</odoo>

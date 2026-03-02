@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Add "Message All Enrolled" button to the dojo.class.session form view -->
+    <record id="view_dojo_class_session_form_comm_inherit" model="ir.ui.view">
+        <field name="name">dojo.class.session.form.comm.inherit</field>
+        <field name="model">dojo.class.session</field>
+        <field name="inherit_id" ref="dojo_classes.view_dojo_class_session_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <header>
+                    <button
+                        name="action_message_all_enrolled"
+                        string="Message All Enrolled"
+                        type="object"
+                        class="btn-secondary"
+                    />
+                </header>
+            </xpath>
+            <!-- Add reminder_sent indicator to the main sheet group -->
+            <xpath expr="//sheet/group/field[@name='state']" position="after">
+                <field name="reminder_sent" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

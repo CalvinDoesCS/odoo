@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Wizard action -->
+    <record id="action_dojo_send_message_wizard" model="ir.actions.act_window">
+        <field name="name">Send Message</field>
+        <field name="res_model">dojo.send.message.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Wizard form view -->
+    <record id="view_dojo_send_message_wizard_form" model="ir.ui.view">
+        <field name="name">dojo.send.message.wizard.form</field>
+        <field name="model">dojo.send.message.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Send Message to Members">
+                <sheet>
+                    <group>
+                        <field name="member_ids" widget="many2many_tags"
+                               options="{'no_create': True}"/>
+                    </group>
+                    <group>
+                        <field name="subject"/>
+                        <field name="send_email"/>
+                        <field name="send_sms"/>
+                    </group>
+                    <group>
+                        <field name="message_body" widget="html" colspan="2"/>
+                    </group>
+                    <p class="text-muted">
+                        Messages are sent to the primary guardian of each member's household,
+                        or directly to the member if no household is configured.
+                    </p>
+                </sheet>
+                <footer>
+                    <button name="action_send" string="Send" type="object"
+                            class="btn-primary"/>
+                    <button string="Discard" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

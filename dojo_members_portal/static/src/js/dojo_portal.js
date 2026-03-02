@@ -29,7 +29,7 @@
     var STATUS_CLR = { registered:"#198754", waitlist:"#ffc107", cancelled:"#6c757d" };
     var LOG_CLR    = { present:"#198754", late:"#ffc107", absent:"#dc3545", excused:"#6c757d" };
 
-    var TAB_TITLES = { schedule:"Class Schedule", enrollments:"My Enrollments", attendance:"Attendance History", household:"My Household", billing:"Billing" };
+    var TAB_TITLES = { programs:"Programs", classes:"Classes", attendance:"Attendance History", household:"My Household", billing:"Billing" };
 
     function b(map, key)  { return map[key] || { label: key || "\u2014", cls: "bg-secondary" }; }
     function esc(s)       { return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
@@ -560,19 +560,281 @@
         if (el) el.remove();
         document.body.classList.remove("dojo-overlay-open");
     }
+    /* ── Student switcher (dropdown) ────────────────────────────────────── */
+    function studentSwitcherHtml(students, selectedId) {
+        if (!students || !students.length) return '';
+        var html = '<div class="dojo-student-switcher card mb-3 border-0 bg-light">';
+        html += '<div class="card-body py-2 px-3 d-flex align-items-center gap-2 flex-wrap">';
+        html += '<label class="text-muted small fw-semibold mb-0 flex-shrink-0"><i class="fa fa-user-circle me-1"></i>Viewing student:</label>';
+        html += '<select class="form-select form-select-sm dojo-student-select" id="dojoStudentSelect" style="max-width:220px">';
+        html += '<option value=""' + (!selectedId ? ' selected' : '') + '>All Students</option>';
+        students.forEach(function(s) {
+            html += '<option value="' + s.id + '"' + (s.id === selectedId ? ' selected' : '') + '>' + esc(s.name) + '</option>';
+        });
+        html += '</select>';
+        html += '</div></div>';
+        return html;
+    }
 
+    function studentBeltBannerHtml(belt) {
+        if (!belt) return '';
+        var rank = belt.current_rank;
+        if (!rank) return '';
+        var color = rank.color || '#cccccc';
+        var pct = belt.rank_pct || 0;
+        var html = '<div class="dojo-student-context-banner card mb-3 border-0" style="border-left:4px solid ' + esc(color) + ' !important">';
+        html += '<div class="card-body py-2 px-3 d-flex align-items-center gap-3">';
+        html += '<div style="width:32px;height:32px;border-radius:50%;background:' + esc(color) + ';border:2px solid rgba(0,0,0,.15);flex-shrink:0;"></div>';
+        html += '<div class="flex-grow-1">';
+        html += '<div class="fw-semibold small">' + esc(rank.name) + '</div>';
+        html += '<div class="progress mt-1" style="height:4px;max-width:200px"><div class="progress-bar" role="progressbar" style="width:' + pct + '%;background:' + esc(color) + '"></div></div>';
+        html += '</div>';
+        if (belt.next_rank) html += '<small class="text-muted">Next: ' + esc(belt.next_rank.name) + '</small>';
+        html += '</div></div>';
+        return html;
+    }
+
+    /* ── Belt rail ───────────────────────────────────────────────────── */
+    function _isDark(hexColor) {
+        try {
+            var c = (hexColor || '').replace('#', '');
+            if (c.length === 3) c = c[0]+c[0]+c[1]+c[1]+c[2]+c[2];
+            var r = parseInt(c.substr(0,2),16), g = parseInt(c.substr(2,2),16), b = parseInt(c.substr(4,2),16);
+            return (r*299 + g*587 + b*114) / 1000 < 128;
+        } catch(e) { return false; }
+    }
+
+    function beltRailHtml(beltPath, currentRankId, nextRankId) {
+        if (!beltPath || !beltPath.length) return '<p class="text-muted small fst-italic">No belt path defined for this program.</p>';
+        var curIdx = beltPath.findIndex(function(r){ return r.id === currentRankId; });
+        var html = '<div class="dojo-belt-rail d-flex align-items-center flex-wrap">';
+        beltPath.forEach(function(rank, i) {
+            var isCurrent = rank.id === currentRankId;
+            var isNext    = rank.id === nextRankId;
+            var isAchieved = curIdx >= 0 && i < curIdx;
+            var nodeColor = rank.color || '#cccccc';
+            var txtColor  = _isDark(nodeColor) ? '#fff' : '#333';
+            var bgStyle   = (isCurrent || isAchieved) ? 'background:' + esc(nodeColor) + ';' : 'background:#f0f0f0;';
+            var borderSt  = isCurrent  ? 'border:3px solid ' + esc(nodeColor) + ';box-shadow:0 0 0 3px rgba(0,0,0,.12);'
+                          : isNext     ? 'border:2px dashed ' + esc(nodeColor) + ';'
+                          : isAchieved ? 'border:2px solid ' + esc(nodeColor) + ';'
+                          :              'border:2px solid #dee2e6;';
+            html += '<div class="text-center" style="min-width:52px">';
+            html += '<div class="dojo-belt-node mx-auto d-flex align-items-center justify-content-center" title="' + esc(rank.name) + '"';
+            html += ' style="width:36px;height:36px;border-radius:50%;' + bgStyle + borderSt + '">';
+            if (isCurrent)   html += '<i class="fa fa-star" style="color:' + txtColor + ';font-size:13px"></i>';
+            else if (isAchieved) html += '<i class="fa fa-check" style="color:' + txtColor + ';font-size:11px"></i>';
+            html += '</div>';
+            html += '<div class="dojo-belt-label" style="font-size:.6rem;line-height:1.1;margin-top:2px;color:#666;word-break:break-word">' + esc(rank.name) + '</div>';
+            html += '</div>';
+            if (i < beltPath.length - 1) {
+                html += '<div style="flex:1;min-width:6px;height:2px;background:#dee2e6;margin-bottom:18px"></div>';
+            }
+        });
+        html += '</div>';
+        return html;
+    }
+
+    /* ── Programs tab: all students overview (parent, no student selected) ── */
+    function allStudentsProgramsHtml(studentPrograms) {
+        if (!studentPrograms || !studentPrograms.length) {
+            return '<div class="alert alert-info"><i class="fa fa-info-circle me-2"></i>No student programs found. Make sure your students are enrolled in classes.</div>';
+        }
+        var html = '';
+        studentPrograms.forEach(function(student) {
+            html += '<div class="mb-5">';
+            html += '<div class="d-flex align-items-center gap-2 mb-3">';
+            html += '<div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:34px;height:34px;font-size:.85rem">' + esc((student.name || '?')[0].toUpperCase()) + '</div>';
+            html += '<h5 class="fw-bold mb-0">' + esc(student.name) + '</h5>';
+            if (student.programs && student.programs.length) {
+                html += '<span class="badge bg-secondary ms-1">' + student.programs.length + ' program' + (student.programs.length !== 1 ? 's' : '') + '</span>';
+            }
+            html += '</div>';
+            if (!student.programs || !student.programs.length) {
+                html += '<div class="alert alert-light border py-2 small"><i class="fa fa-info-circle me-1"></i>No programs found for this student.</div>';
+            } else {
+                html += programsTabHtml(student.programs, student.belt_history || [], student.id, true);
+            }
+            html += '</div>';
+        });
+        return html;
+    }
+
+    /* ── Programs tab ─────────────────────────────────────────────────── */
+    function programsTabHtml(programs, beltHistory, selectedMemberId, isParent) {
+        if (!programs || !programs.length) {
+            return '<div class="alert alert-info"><i class="fa fa-info-circle me-2"></i>No programs found. Enroll in a class to see your programs here.</div>';
+        }
+        var html = '';
+        programs.forEach(function(prog) {
+            var progColor = prog.color || '#6C757D';
+            html += '<div class="dojo-program-card card mb-4 shadow-sm" style="border-left:4px solid ' + esc(progColor) + '">';
+            html += '<div class="card-body p-4">';
+            html += '<div class="d-flex align-items-start justify-content-between gap-2 mb-3">';
+            html += '<div><h5 class="fw-bold mb-0">' + esc(prog.name) + '</h5>';
+            if (prog.code) html += '<span class="badge bg-secondary small mt-1">' + esc(prog.code) + '</span>';
+            html += '</div>';
+            if (prog.current_rank_id !== null) {
+                if (prog.test_invite_pending) {
+                    html += '<span class="badge bg-success align-self-start"><i class="fa fa-check me-1"></i>Belt Test Requested</span>';
+                } else {
+                    html += '<button class="btn btn-sm btn-outline-warning dojo-test-request-btn flex-shrink-0" data-member-id="' + esc(selectedMemberId || '') + '"><i class="fa fa-trophy me-1"></i>Request Belt Test</button>';
+                }
+            }
+            html += '</div>';
+            if (prog.templates && prog.templates.length) {
+                html += '<div class="d-flex flex-wrap gap-1 mb-3">';
+                prog.templates.forEach(function(t) {
+                    var lvl = b(LEVEL, t.level);
+                    html += '<span class="badge ' + esc(lvl.cls) + '"><i class="fa fa-calendar me-1"></i>' + esc(t.name) + '</span>';
+                });
+                html += '</div>';
+            }
+            if (prog.belt_path && prog.belt_path.length) {
+                html += '<div class="mb-3">';
+                html += '<div class="d-flex align-items-center justify-content-between mb-2">';
+                html += '<p class="text-muted small fw-semibold mb-0">Belt Progression</p>';
+                if (prog.current_rank_name) {
+                    var rankColor = prog.current_rank_color || '#cccccc';
+                    html += '<div class="d-flex align-items-center gap-2">';
+                    html += '<div style="width:14px;height:14px;border-radius:50%;background:' + esc(rankColor) + ';border:2px solid rgba(0,0,0,.15);flex-shrink:0"></div>';
+                    html += '<span class="small fw-semibold">' + esc(prog.current_rank_name) + '</span>';
+                    if (prog.rank_position && prog.rank_total) {
+                        html += '<span class="text-muted small">(' + prog.rank_position + '/' + prog.rank_total + ')</span>';
+                    }
+                    html += '</div>';
+                } else {
+                    html += '<span class="text-muted small fst-italic">No rank yet</span>';
+                }
+                html += '</div>';
+                html += beltRailHtml(prog.belt_path, prog.current_rank_id, prog.next_rank_id);
+                if (prog.next_rank_name && prog.rank_pct > 0) {
+                    html += '<div class="d-flex align-items-center gap-2 mt-2">';
+                    html += '<div class="progress flex-grow-1" style="height:5px;max-width:180px"><div class="progress-bar" role="progressbar" style="width:' + prog.rank_pct + '%;background:' + esc(progColor) + '"></div></div>';
+                    html += '<small class="text-muted">Next: <strong>' + esc(prog.next_rank_name) + '</strong></small>';
+                    html += '</div>';
+                } else if (!prog.current_rank_name) {
+                    html += '<div class="mt-2"><small class="text-muted fst-italic">Complete sessions to advance through the belt path.</small></div>';
+                } else if (!prog.next_rank_name && prog.current_rank_name) {
+                    html += '<div class="mt-2"><small class="text-success fw-semibold"><i class="fa fa-trophy me-1"></i>Highest rank achieved!</small></div>';
+                }
+                html += '</div>';
+            }
+            if (prog.rank_history && prog.rank_history.length) {
+                html += '<div class="border-top pt-3 mt-2 mb-3">';
+                html += '<p class="text-muted small fw-semibold mb-2"><i class="fa fa-history me-1"></i>Rank History</p>';
+                html += '<div class="vstack gap-2">';
+                prog.rank_history.forEach(function(h) {
+                    var rc = h.rank_color || '#cccccc';
+                    html += '<div class="d-flex align-items-center gap-3 p-2 rounded bg-light">';
+                    html += '<div style="width:20px;height:20px;border-radius:50%;background:' + esc(rc) + ';border:2px solid rgba(0,0,0,.12);flex-shrink:0"></div>';
+                    html += '<div class="flex-grow-1"><div class="fw-semibold small">' + esc(h.rank_name) + '</div>';
+                    if (h.awarded_by) html += '<div class="text-muted" style="font-size:.75rem">Awarded by ' + esc(h.awarded_by) + '</div>';
+                    html += '</div>';
+                    if (h.date_awarded) html += '<small class="text-muted flex-shrink-0">' + esc(fmtDate(h.date_awarded)) + '</small>';
+                    html += '</div>';
+                });
+                html += '</div></div>';
+            }
+            html += '<div class="border-top pt-3 mt-2">';
+            html += '<p class="text-muted small fw-semibold mb-2"><i class="fa fa-envelope me-1"></i>Message Instructor</p>';
+            html += '<div class="d-flex gap-2">';
+            html += '<textarea class="form-control form-control-sm dojo-msg-input" id="dojoMsgInput_' + prog.id + '" rows="2" placeholder="Write a message to your instructor\u2026" style="resize:none"></textarea>';
+            html += '<button class="btn btn-sm btn-outline-primary dojo-msg-send-btn" data-program-id="' + prog.id + '" data-member-id="' + esc(selectedMemberId || '') + '" style="height:fit-content;align-self:flex-end">Send</button>';
+            html += '</div><div class="dojo-msg-feedback small mt-1" id="dojoMsgFeedback_' + prog.id + '"></div>';
+            html += '</div>';
+            html += '</div></div>';
+        });
+        return html;
+    }
+
+    /* ── Classes tab (merged schedule + enrollments) ────────────────────── */
+    function classesTabHtml(enrollments, sessions, isParent, members) {
+        var now = new Date();
+        function dt(iso) { return iso ? new Date(iso.indexOf('T') !== -1 ? iso + 'Z' : iso) : null; }
+        var active = (enrollments || []).filter(function(e){ return e.status !== 'cancelled'; });
+        var upcoming = active.filter(function(e){ var d = dt(e.start_datetime); return d && d > now; });
+        var past     = active.filter(function(e){ var d = dt(e.start_datetime); return d && d <= now; });
+        var html = '';
+        html += '<div class="dojo-classes-section mb-4">';
+        html += '<h6 class="dojo-classes-section-header fw-semibold mb-3"><i class="fa fa-calendar-check-o me-2 text-success"></i>Upcoming Enrolled Sessions</h6>';
+        if (upcoming.length) {
+            html += '<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">';
+            upcoming.forEach(function(e) {
+                var clr = STATUS_CLR[e.status] || '#6c757d';
+                var lvl = b(LEVEL, e.level);
+                html += '<div class="col"><div class="card dojo-activity-card h-100" data-type="enrollment" data-id="' + e.id + '">';
+                html += '<div class="dojo-card-accent" style="background:' + esc(clr) + '"></div>';
+                html += '<div class="card-body p-3">';
+                html += '<div class="d-flex justify-content-between align-items-start mb-2">';
+                html += '<span class="badge ' + esc(lvl.cls) + '">' + esc(lvl.label) + '</span>';
+                html += '<span class="badge bg-success">Registered</span>';
+                html += '</div>';
+                html += '<h6 class="card-title fw-bold mb-2 lh-sm">' + esc(e.session_name) + '</h6>';
+                if (e.program_name) html += '<div class="text-muted small mb-1"><i class="fa fa-tag me-1"></i>' + esc(e.program_name) + '</div>';
+                html += '<div class="vstack gap-1 text-muted small mb-3">';
+                html += '<div><i class="fa fa-calendar-o me-1"></i>' + esc(fmtDt(e.start_datetime)) + '</div>';
+                if (e.instructor)   html += '<div><i class="fa fa-user me-1"></i>' + esc(e.instructor) + '</div>';
+                if (e.member_name)  html += '<div><i class="fa fa-graduation-cap me-1"></i>' + esc(e.member_name) + '</div>';
+                html += '</div>';
+                html += '<button class="btn btn-sm btn-outline-danger dojo-cancel-enroll-btn" data-enrollment-id="' + e.id + '">Cancel</button>';
+                html += '</div></div></div>';
+            });
+            html += '</div>';
+        } else {
+            html += '<div class="alert alert-light border py-2 small">No upcoming enrolled sessions.</div>';
+        }
+        html += '</div>';
+        if (isParent && sessions && sessions.length) {
+            var enrolledSids = {};
+            active.forEach(function(e){ if (e.session_id) enrolledSids[e.session_id] = true; });
+            var available = sessions.filter(function(s){ return !enrolledSids[s.id]; });
+            if (available.length) {
+                html += '<div class="dojo-classes-section mb-4">';
+                html += '<h6 class="dojo-classes-section-header fw-semibold mb-3"><i class="fa fa-calendar-plus-o me-2 text-primary"></i>Available Sessions</h6>';
+                html += '<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">';
+                available.forEach(function(s){ html += sessionCard(s); });
+                html += '</div></div>';
+            }
+        }
+        if (past.length) {
+            html += '<div class="dojo-classes-section">';
+            html += '<h6 class="dojo-classes-section-header fw-semibold mb-3"><i class="fa fa-history me-2 text-muted"></i>Past Sessions <span class="badge bg-secondary ms-1">' + past.length + '</span></h6>';
+            html += '<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">';
+            past.forEach(function(e) {
+                var at  = b(ATT_STATE, e.attendance_state);
+                var clr = LOG_CLR[e.attendance_state] || '#6c757d';
+                html += '<div class="col"><div class="card dojo-activity-card h-100 opacity-75" data-type="enrollment" data-id="' + e.id + '">';
+                html += '<div class="dojo-card-accent" style="background:' + esc(clr) + '"></div>';
+                html += '<div class="card-body p-3">';
+                html += '<div class="d-flex justify-content-between align-items-start mb-2">';
+                html += '<span class="badge ' + esc(at.cls) + '">' + esc(at.label) + '</span>';
+                html += '</div>';
+                html += '<h6 class="card-title fw-bold mb-2 lh-sm">' + esc(e.session_name) + '</h6>';
+                if (e.program_name) html += '<div class="text-muted small mb-1"><i class="fa fa-tag me-1"></i>' + esc(e.program_name) + '</div>';
+                html += '<div class="vstack gap-1 text-muted small">';
+                html += '<div><i class="fa fa-calendar-o me-1"></i>' + esc(fmtDt(e.start_datetime)) + '</div>';
+                if (e.instructor) html += '<div><i class="fa fa-user me-1"></i>' + esc(e.instructor) + '</div>';
+                html += '</div></div></div></div>';
+            });
+            html += '</div></div>';
+        }
+        return html;
+    }
     /* ── Render ──────────────────────────────────────────────────────────── */
-    function render(root, state, isParent, members) {
+    function render(root, state, isParent, members, students, isStudentOnly) {
+        students     = students     || [];
+        isStudentOnly = !!isStudentOnly;
         var TABS = [
-            { key:"schedule",    icon:"fa-calendar",    label:"Class Schedule"    },
-            { key:"enrollments", icon:"fa-list",         label:"My Enrollments"  },
-            { key:"attendance",  icon:"fa-check-circle", label:"Attendance"       },
-            { key:"household",   icon:"fa-home",         label:"My Household"    },
+            { key:"programs",   icon:"fa-graduation-cap", label:"Programs"     },
+            { key:"classes",    icon:"fa-calendar",       label:"Classes"      },
+            { key:"attendance", icon:"fa-check-circle",   label:"Attendance"   },
+            { key:"household",  icon:"fa-home",           label:"My Household" },
         ];
         if (isParent) TABS.push({ key:"billing", icon:"fa-credit-card", label:"Billing" });
         var navHtml = TABS.map(function(t){
             var active = state.activeTab === t.key ? " active" : "";
-            var cnt = t.key==="schedule"?state.sessions.length : t.key==="enrollments"?state.enrollments.length : t.key==="attendance"?state.logs.length : t.key==="billing"?(state.billing?(state.billing.invoices||[]).length:0) : 0;
+            var cnt = t.key==="programs"?state.programs.length : t.key==="classes"?(state.enrollments||[]).filter(function(e){return e.status!=='cancelled';}).length : t.key==="attendance"?state.logs.length : t.key==="billing"?(state.billing?(state.billing.invoices||[]).length:0) : 0;
             var badge = cnt ? '<span class="badge bg-secondary ms-1">' + cnt + '</span>' : "";
             return '<li class="nav-item"><button type="button" role="tab" class="nav-link' + active +
                    ' dojo-tab-btn" data-tab="' + t.key + '"><i class="fa ' + t.icon + ' me-1"></i>' + t.label + badge + '</button></li>';
@@ -581,18 +843,15 @@
         var body;
         if (state.loading) {
             body = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading\u2026</span></div></div>';
-        } else if (state.activeTab === "schedule") {
-            if (state.sessions.length) {
-                body = '<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">' + state.sessions.map(sessionCard).join("") + '</div>';
-            } else if (!isParent) {
-                body = '<div class="alert alert-info">You haven\'t been assigned to any classes yet. Ask your instructor or parent to enroll you.</div>';
+        } else if (state.activeTab === "programs") {
+            if (isParent && !state.selectedStudentId) {
+                body = allStudentsProgramsHtml(state.studentPrograms);
             } else {
-                body = '<div class="alert alert-info">No upcoming open sessions right now \u2014 check back soon!</div>';
+                var _memberId = state.selectedStudentId || parseInt(root.dataset.memberId, 10);
+                body = programsTabHtml(state.programs, state.beltHistory, _memberId, isParent);
             }
-        } else if (state.activeTab === "enrollments") {
-            body = state.enrollments.length
-                ? '<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">' + state.enrollments.map(enrollmentCard).join("") + '</div>'
-                : '<div class="alert alert-info">No enrollments found. Switch to <strong>Class Schedule</strong> to sign up!</div>';
+        } else if (state.activeTab === "classes") {
+            body = classesTabHtml(state.enrollments, state.sessions, isParent, members);
         } else if (state.activeTab === "attendance") {
             body = state.logs.length
                 ? '<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">' + state.logs.map(attendanceCard).join("") + '</div>'
@@ -603,13 +862,116 @@
             body = householdTabHtml(state.household, isParent);
         }
 
-        root.innerHTML = '<ul class="nav nav-tabs mb-4" role="tablist">' + navHtml + '</ul>' +
+        // Prepend student switcher for parents
+        var extraHtml = '';
+        if (isParent && students.length > 1) {
+            extraHtml += studentSwitcherHtml(students, state.selectedStudentId);
+        }
+        root.innerHTML = extraHtml +
+                         '<ul class="nav nav-tabs mb-4" role="tablist">' + navHtml + '</ul>' +
                          '<div id="dojoTabContent">' + body + '</div>';
+
+        /* ── refreshForStudent: re-fetch all data scoped to one student ── */
+        function refreshForStudent(studentId) {
+            state.selectedStudentId   = studentId || null;
+            state.selectedStudentBelt = null;
+            state.loading = true;
+            render(root, state, isParent, members, students, isStudentOnly);
+            var qs = studentId ? '?member_id=' + studentId : '';
+            Promise.all([
+                fetchJson('/my/dojo/json/schedule'     + qs),
+                fetchJson('/my/dojo/json/enrollments'  + qs),
+                fetchJson('/my/dojo/json/attendance'   + qs),
+                fetchJson('/my/dojo/json/programs'     + qs),
+                studentId ? fetchJson('/my/dojo/json/belt?member_id='         + studentId) : Promise.resolve(null),
+                studentId ? fetchJson('/my/dojo/json/belt-history?member_id=' + studentId) : Promise.resolve(null),
+            ]).then(function(r) {
+                state.sessions            = r[0].sessions    || [];
+                state.enrollments         = r[1].enrollments || [];
+                state.logs                = r[2].logs        || [];
+                state.programs            = r[3].programs    || [];
+                state.selectedStudentBelt = r[4];
+                state.beltHistory         = r[5] ? (r[5].history || []) : [];
+                state.loading = false;
+                render(root, state, isParent, members, students, isStudentOnly);
+            });
+        }
+
+        /* ── Student switcher clicks ── */
+        var studentSel = document.getElementById('dojoStudentSelect');
+        if (studentSel) {
+            studentSel.addEventListener('change', function() {
+                var val = parseInt(this.value, 10);
+                refreshForStudent(isNaN(val) ? null : val);
+            });
+        }
+
+        root.querySelectorAll('.dojo-cancel-enroll-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(ev) {
+                ev.stopPropagation();
+                var eid = parseInt(btn.dataset.enrollmentId, 10);
+                if (!eid || !confirm('Cancel this enrollment?')) return;
+                btn.disabled = true; btn.textContent = 'Cancelling\u2026';
+                var form = new FormData(); form.set('enrollment_id', eid);
+                fetch('/my/dojo/unenroll', { method: 'POST', credentials: 'same-origin', body: form })
+                    .then(function(r){ return r.json(); })
+                    .then(function(res){
+                        if (res.ok) {
+                            var e = state.enrollments.find(function(x){ return x.id === eid; });
+                            if (e) e.status = 'cancelled';
+                            render(root, state, isParent, members, students, isStudentOnly);
+                        } else { btn.disabled = false; btn.textContent = 'Cancel'; alert(res.error || 'Could not cancel.'); }
+                    }).catch(function(){ btn.disabled = false; btn.textContent = 'Cancel'; });
+            });
+        });
+
+        root.querySelectorAll('.dojo-test-request-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                if (!confirm('Request a belt test? Your instructor will be notified.')) return;
+                btn.disabled = true; btn.textContent = 'Requesting\u2026';
+                var mid = btn.dataset.memberId;
+                var form = new FormData(); if (mid) form.set('member_id', mid);
+                fetch('/my/dojo/belt-test-request', { method: 'POST', credentials: 'same-origin', body: form })
+                    .then(function(r){ return r.json(); })
+                    .then(function(res){
+                        if (res.ok) {
+                            state.programs.forEach(function(p){ p.test_invite_pending = true; });
+                            render(root, state, isParent, members, students, isStudentOnly);
+                        } else { btn.disabled = false; btn.textContent = 'Request Belt Test'; alert(res.error || 'Could not submit.'); }
+                    });
+            });
+        });
+
+        root.querySelectorAll('.dojo-msg-send-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var pid = btn.dataset.programId;
+                var mid = btn.dataset.memberId;
+                var input    = document.getElementById('dojoMsgInput_' + pid);
+                var feedback = document.getElementById('dojoMsgFeedback_' + pid);
+                var msg = input ? input.value.trim() : '';
+                if (!msg) { if (feedback) feedback.innerHTML = '<span class="text-danger">Please enter a message.</span>'; return; }
+                btn.disabled = true; btn.textContent = 'Sending\u2026';
+                if (feedback) feedback.innerHTML = '';
+                fetch('/my/dojo/message', {
+                    method: 'POST', credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg, member_id: mid ? parseInt(mid, 10) : null }),
+                }).then(function(r){ return r.json(); }).then(function(res){
+                    if (res.ok) {
+                        if (feedback) feedback.innerHTML = '<span class="text-success"><i class="fa fa-check me-1"></i>Message sent!</span>';
+                        if (input) input.value = '';
+                    } else {
+                        if (feedback) feedback.innerHTML = '<span class="text-danger">' + esc(res.error || 'Could not send.') + '</span>';
+                    }
+                    btn.disabled = false; btn.textContent = 'Send';
+                });
+            });
+        });
 
         root.querySelectorAll(".dojo-tab-btn").forEach(function(btn){
             btn.addEventListener("click", function(){
                 state.activeTab = btn.dataset.tab;
-                render(root, state, isParent, members);
+                render(root, state, isParent, members, students, isStudentOnly);
                 var brand = document.querySelector(".o_portal_navbar .navbar-brand");
                 if (brand) brand.textContent = TAB_TITLES[btn.dataset.tab] || "Dojo Portal";
             });
@@ -633,7 +995,7 @@
                 openHouseholdEditOverlay(state.household, members, function(){
                     fetchJson("/my/dojo/json/household").then(function(d){
                         state.household = d;
-                        render(root, state, isParent, members);
+                        render(root, state, isParent, members, students, isStudentOnly);
                     });
                 });
             });
@@ -643,7 +1005,7 @@
         function refreshBilling() {
             fetchJson("/my/dojo/json/billing").then(function(d){
                 state.billing = d;
-                render(root, state, isParent, members);
+                render(root, state, isParent, members, students, isStudentOnly);
             });
         }
         var changePlanBtn = document.getElementById("dojoBillingChangePlan");
@@ -745,37 +1107,48 @@
         var root = document.getElementById("dojo_activities_mount");
         if (!root) return;
 
-        var isParent = root.dataset.isParent === 'true';
+        var isParent      = root.dataset.isParent === 'true';
+        var isStudentOnly = root.dataset.isStudentOnly === 'true';
         var members  = [];
         try { members = JSON.parse(root.dataset.members || '[]'); } catch(e){}
+        var students = [];
+        try { students = JSON.parse(root.dataset.students || '[]'); } catch(e){}
 
         var state = {
-            activeTab:   root.dataset.tab || "schedule",
-            sessions:    [], enrollments: [], logs: [],
-            household:   null,
-            billing:     null,
-            loading:     true,
+            activeTab:          root.dataset.tab || "programs",
+            sessions:           [], enrollments: [], logs: [],
+            programs:           [], beltHistory: [],
+            studentPrograms:    [],
+            household:          null,
+            billing:            null,
+            selectedStudentId:  null,
+            selectedStudentBelt: null,
+            loading:            true,
         };
-        render(root, state, isParent, members);
+        render(root, state, isParent, members, students, isStudentOnly);
 
         var brand = document.querySelector(".o_portal_navbar .navbar-brand");
         if (brand) brand.textContent = TAB_TITLES[state.activeTab] || "Dojo Portal";
 
-        var fetches = [
+        Promise.all([
             fetchJson("/my/dojo/json/schedule"),
             fetchJson("/my/dojo/json/enrollments"),
             fetchJson("/my/dojo/json/attendance"),
             fetchJson("/my/dojo/json/household"),
-        ];
-        if (isParent) fetches.push(fetchJson("/my/dojo/json/billing"));
-        Promise.all(fetches).then(function(results){
-            state.sessions    = results[0].sessions    || [];
-            state.enrollments = results[1].enrollments || [];
-            state.logs        = results[2].logs        || [];
-            state.household   = results[3];
-            state.billing     = isParent ? results[4] : null;
-            state.loading     = false;
-            render(root, state, isParent, members);
+            fetchJson("/my/dojo/json/programs"),
+            fetchJson("/my/dojo/json/belt-history"),
+            isParent ? fetchJson("/my/dojo/json/billing") : Promise.resolve(null),
+        ]).then(function(results){
+            state.sessions        = results[0].sessions    || [];
+            state.enrollments     = results[1].enrollments || [];
+            state.logs            = results[2].logs        || [];
+            state.household       = results[3];
+            state.programs        = results[4].programs    || [];
+            state.studentPrograms = results[4].students    || [];
+            state.beltHistory     = results[5].history     || [];
+            state.billing         = results[6];
+            state.loading         = false;
+            render(root, state, isParent, members, students, isStudentOnly);
         });
     }
 

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Waiver tab on the member backend form -->
+    <record id="view_dojo_member_form_waiver_inherit" model="ir.ui.view">
+        <field name="name">dojo.member.form.waiver.inherit</field>
+        <field name="model">dojo.member</field>
+        <field name="inherit_id" ref="dojo_base.view_dojo_member_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Waiver">
+                    <group>
+                        <field name="waiver_request_id"/>
+                        <field name="waiver_state" readonly="1" invisible="not waiver_request_id"/>
+                        <field name="has_signed_waiver" readonly="1" widget="boolean_toggle"
+                               invisible="not waiver_request_id"/>
+                    </group>
+                    <div class="alert alert-warning mt-2"
+                         invisible="not waiver_request_id or has_signed_waiver"
+                         role="alert">
+                        <b>Waiver pending signature.</b>
+                        Portal access will be granted automatically once the member signs the waiver.
+                    </div>
+                    <div class="alert alert-success mt-2"
+                         invisible="not has_signed_waiver"
+                         role="alert">
+                        <i class="fa fa-check me-1"/><b>Waiver signed.</b>
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -29,6 +29,7 @@
                 <field name="member_id"/>
                 <field name="status"/>
                 <field name="checkin_datetime"/>
+                <field name="checkout_datetime"/>
             </list>
         </field>
     </record>
@@ -45,6 +46,7 @@
                         <field name="enrollment_id"/>
                         <field name="status"/>
                         <field name="checkin_datetime"/>
+                        <field name="checkout_datetime"/>
                     </group>
                     <group>
                         <field name="note"/>

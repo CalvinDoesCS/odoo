@@ -9,6 +9,7 @@
     "data": [
         "security/ir.model.access.csv",
         "security/dojo_subscriptions_security.xml",
+        "data/membership_product.xml",
         "data/ir_cron.xml",
         "views/dojo_subscription_views.xml",
     ],

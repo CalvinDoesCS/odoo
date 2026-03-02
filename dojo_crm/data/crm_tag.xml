@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- ================================================================
+         Dojo CRM Tags — segmentation (source, interest, age group)
+         noupdate=1 so manual customisations are preserved on upgrades
+         ================================================================ -->
+
+    <!-- Lead source -->
+    <record id="crm_tag_source_walk_in" model="crm.tag">
+        <field name="name">Walk-In</field>
+        <field name="color">1</field>
+    </record>
+    <record id="crm_tag_source_referral" model="crm.tag">
+        <field name="name">Referral</field>
+        <field name="color">2</field>
+    </record>
+    <record id="crm_tag_source_online" model="crm.tag">
+        <field name="name">Online</field>
+        <field name="color">3</field>
+    </record>
+    <record id="crm_tag_source_event" model="crm.tag">
+        <field name="name">Event</field>
+        <field name="color">4</field>
+    </record>
+
+    <!-- Interest / discipline -->
+    <record id="crm_tag_interest_adult_bjj" model="crm.tag">
+        <field name="name">Adult BJJ</field>
+        <field name="color">5</field>
+    </record>
+    <record id="crm_tag_interest_kids_bjj" model="crm.tag">
+        <field name="name">Kids BJJ</field>
+        <field name="color">6</field>
+    </record>
+    <record id="crm_tag_interest_muay_thai" model="crm.tag">
+        <field name="name">Muay Thai</field>
+        <field name="color">7</field>
+    </record>
+
+    <!-- Age group -->
+    <record id="crm_tag_age_adult" model="crm.tag">
+        <field name="name">Adult</field>
+        <field name="color">8</field>
+    </record>
+    <record id="crm_tag_age_teen" model="crm.tag">
+        <field name="name">Teen</field>
+        <field name="color">9</field>
+    </record>
+    <record id="crm_tag_age_child" model="crm.tag">
+        <field name="name">Child</field>
+        <field name="color">10</field>
+    </record>
+</odoo>

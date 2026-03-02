@@ -29,18 +29,25 @@ class DojoClassEnrollment(models.Model):
                     member.name,
                 ))
 
-            # ── Rule 2: at least one plan must permit this course ──────────
-            # A plan permits the course when its allowed_template_ids is empty
-            # (= no restriction) OR the template is explicitly listed.
-            permitting_subs = [
-                sub for sub in active_subs
-                if not sub.plan_id.allowed_template_ids
-                or template in sub.plan_id.allowed_template_ids
-            ]
+            # ── Rule 2: at least one plan must permit this class ───────────
+            # - Program-based: template's program_id must match sub's program_id
+            # - Course-based: template must be in allowed_template_ids (or list empty = all)
+            permitting_subs = []
+            for sub in active_subs:
+                plan = sub.plan_id
+                if plan.plan_type == 'program':
+                    if sub.program_id and template.program_id == sub.program_id:
+                        permitting_subs.append(sub)
+                else:  # course-based
+                    if not plan.allowed_template_ids or template in plan.allowed_template_ids:
+                        permitting_subs.append(sub)
+
             if not permitting_subs:
                 plan_names = ', '.join(s.plan_id.name for s in active_subs)
                 raise ValidationError(_(
-                    'The course "%s" is not included in the current subscription plan(s): %s.',
+                    'The class "%s" is not included in the current subscription plan(s): %s.\n'
+                    'For Program-Based plans the class must belong to the subscribed program. '
+                    'For Course-Based plans the class must be listed in the allowed courses.',
                     template.name, plan_names,
                 ))
 
@@ -67,11 +74,14 @@ class DojoClassEnrollment(models.Model):
                          '%s 23:59:59' % week_end),
                         ('id', '!=', rec.id),
                     ]
-                    # Scope the count to templates this plan allows
-                    if plan.allowed_template_ids:
+                    # Scope the count to this plan's accessible templates
+                    if plan.plan_type == 'program' and sub.program_id:
                         domain.append(
-                            ('session_id.template_id', 'in',
-                             plan.allowed_template_ids.ids)
+                            ('session_id.template_id.program_id', '=', sub.program_id.id)
+                        )
+                    elif plan.plan_type == 'course' and plan.allowed_template_ids:
+                        domain.append(
+                            ('session_id.template_id', 'in', plan.allowed_template_ids.ids)
                         )
                     weekly_count = self.env['dojo.class.enrollment'].search_count(domain)
                     if weekly_count >= plan.max_sessions_per_week:
@@ -83,8 +93,9 @@ class DojoClassEnrollment(models.Model):
                         ))
                         plan_ok = False
 
-                # ── Billing-period cap ────────────────────────────────────
+                # ── Billing-period cap (course-based only) ────────────────
                 if (plan_ok
+                        and plan.plan_type == 'course'
                         and not plan.unlimited_sessions
                         and plan.sessions_per_period > 0
                         and sub.start_date and sub.next_billing_date):
@@ -99,8 +110,7 @@ class DojoClassEnrollment(models.Model):
                     ]
                     if plan.allowed_template_ids:
                         domain.append(
-                            ('session_id.template_id', 'in',
-                             plan.allowed_template_ids.ids)
+                            ('session_id.template_id', 'in', plan.allowed_template_ids.ids)
                         )
                     period_count = self.env['dojo.class.enrollment'].search_count(domain)
                     if period_count >= plan.sessions_per_period:
@@ -119,3 +129,4 @@ class DojoClassEnrollment(models.Model):
             # Every permitting plan hit at least one cap — raise with the first error.
             if cap_errors:
                 raise ValidationError(cap_errors[0])
+

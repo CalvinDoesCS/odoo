@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Rule 1: When lead moves to "Trial Booked" stage →
+                send booking confirmation email + SMS
+    -->
+    <record id="automation_trial_booked_email" model="base.automation">
+        <field name="name">Dojo CRM: Trial Booked — Send Confirmation</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="trigger">on_write</field>
+        <field name="filter_pre_domain">[('stage_id.name', '!=', 'Trial Booked')]</field>
+        <field name="filter_domain">[('stage_id.name', '=', 'Trial Booked')]</field>
+        <field name="active" eval="True"/>
+        <field name="action_server_ids">
+            <record model="ir.actions.server" id="automation_trial_booked_email_action">
+                <field name="name">Send Trial Booked Confirmation</field>
+                <field name="model_id" ref="crm.model_crm_lead"/>
+                <field name="state">code</field>
+                <field name="code"><![CDATA[
+template = env.ref('dojo_crm.mail_template_trial_booked', raise_if_not_found=False)
+for rec in records:
+    if template and rec.email_from:
+        template.send_mail(rec.id, force_send=True)
+    mobile = rec.mobile or (rec.partner_id.mobile if rec.partner_id else False)
+    if mobile:
+        session_info = ''
+        if rec.trial_session_id:
+            session_info = f' on {rec.trial_session_id.start_datetime}'
+        body = f"Your trial class at {rec.company_id.name or 'the dojo'} is confirmed{session_info}. See you there!"
+        env['sms.sms'].create({
+            'number': mobile,
+            'body': body,
+            'partner_id': rec.partner_id.id if rec.partner_id else False,
+        }).send()
+                ]]></field>
+            </record>
+        </field>
+    </record>
+
+    <!--
+        Rule 2: When lead moves to "Trial Attended" stage →
+                send post-trial offer email; set offer_sent_date
+    -->
+    <record id="automation_trial_attended_offer" model="base.automation">
+        <field name="name">Dojo CRM: Trial Attended — Send Offer</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="trigger">on_write</field>
+        <field name="filter_pre_domain">[('stage_id.name', '!=', 'Trial Attended')]</field>
+        <field name="filter_domain">[('stage_id.name', '=', 'Trial Attended')]</field>
+        <field name="active" eval="True"/>
+        <field name="action_server_ids">
+            <record model="ir.actions.server" id="automation_trial_attended_offer_action">
+                <field name="name">Send Offer Email + Set offer_sent_date</field>
+                <field name="model_id" ref="crm.model_crm_lead"/>
+                <field name="state">code</field>
+                <field name="code"><![CDATA[
+template = env.ref('dojo_crm.mail_template_trial_attended', raise_if_not_found=False)
+for rec in records:
+    if template and rec.email_from:
+        template.send_mail(rec.id, force_send=True)
+    rec.write({'offer_sent_date': fields.Date.today(), 'trial_attended': True})
+                ]]></field>
+            </record>
+        </field>
+    </record>
+
+    <!--
+        Rule 3: When lead moves to "Offer Made" stage →
+                send full membership plan details + CTA email
+    -->
+    <record id="automation_offer_made_details" model="base.automation">
+        <field name="name">Dojo CRM: Offer Made — Send Plan Details</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="trigger">on_write</field>
+        <field name="filter_pre_domain">[('stage_id.name', '!=', 'Offer Made')]</field>
+        <field name="filter_domain">[('stage_id.name', '=', 'Offer Made')]</field>
+        <field name="active" eval="True"/>
+        <field name="action_server_ids">
+            <record model="ir.actions.server" id="automation_offer_made_details_action">
+                <field name="name">Send Offer Made Details Email</field>
+                <field name="model_id" ref="crm.model_crm_lead"/>
+                <field name="state">code</field>
+                <field name="code"><![CDATA[
+template = env.ref('dojo_crm.mail_template_offer_made_details', raise_if_not_found=False)
+for rec in records:
+    if template and rec.email_from:
+        template.send_mail(rec.id, force_send=True)
+                ]]></field>
+            </record>
+        </field>
+    </record>
+</odoo>

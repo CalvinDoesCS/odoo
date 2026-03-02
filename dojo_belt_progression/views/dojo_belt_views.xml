@@ -27,6 +27,12 @@
                         <field name="active"/>
                         <field name="company_id" groups="base.group_multi_company"/>
                     </group>
+                    <group string="Eligibility &amp; Fees">
+                        <field name="attendance_threshold"
+                               help="0 = disabled. Sessions attended since last rank award needed to auto-create a test invite."/>
+                        <field name="testing_fee_product_id"
+                               placeholder="Leave blank if no fee applies"/>
+                    </group>
                     <group string="Description">
                         <field name="description" nolabel="1"/>
                     </group>
@@ -43,6 +49,7 @@
             <list>
                 <field name="member_id"/>
                 <field name="rank_id"/>
+                <field name="program_id"/>
                 <field name="date_awarded"/>
                 <field name="awarded_by"/>
             </list>
@@ -58,6 +65,7 @@
                     <group>
                         <field name="member_id"/>
                         <field name="rank_id"/>
+                        <field name="program_id"/>
                         <field name="date_awarded"/>
                         <field name="awarded_by"/>
                         <field name="test_registration_id" readonly="1"/>
@@ -77,6 +85,7 @@
         <field name="arch" type="xml">
             <list>
                 <field name="name"/>
+                <field name="program_id"/>
                 <field name="test_date"/>
                 <field name="location"/>
                 <field name="instructor_profile_id"/>
@@ -105,6 +114,7 @@
                     <group>
                         <group string="Test Details">
                             <field name="name"/>
+                            <field name="program_id"/>
                             <field name="test_date"/>
                             <field name="location"/>
                             <field name="instructor_profile_id"/>
@@ -194,13 +204,44 @@
                 <page string="Belt Progression">
                     <group>
                         <field name="current_rank_id" readonly="1"/>
+                        <field name="attendance_since_last_rank" readonly="1"/>
+                        <field name="test_invite_pending" readonly="1"/>
                     </group>
+                    <div invisible="not test_invite_pending" class="alert alert-info" role="alert">
+                        A belt-test invitation has been created for this member.
+                        Once the test is recorded (pass / fail / withdrew), this flag will reset automatically.
+                        <button name="action_reset_test_invite" type="object" string="Reset Manually"
+                                class="btn btn-sm btn-secondary ms-2"
+                                groups="dojo_base.group_dojo_admin"/>
+                    </div>
                     <field name="rank_history_ids">
                         <list>
                             <field name="rank_id"/>
+                            <field name="program_id"/>
                             <field name="date_awarded"/>
                             <field name="awarded_by"/>
                             <field name="notes"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ========== Inject Belt Path tab into Program form ========== -->
+    <record id="view_dojo_program_form_belt_inherit" model="ir.ui.view">
+        <field name="name">dojo.program.form.belt.inherit</field>
+        <field name="model">dojo.program</field>
+        <field name="inherit_id" ref="dojo_classes.view_dojo_program_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Belt Path" name="belt_path">
+                    <field name="belt_rank_ids">
+                        <list>
+                            <field name="sequence" widget="handle"/>
+                            <field name="name"/>
+                            <field name="color"/>
+                            <field name="active"/>
                         </list>
                     </field>
                 </page>

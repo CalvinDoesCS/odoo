@@ -15,6 +15,16 @@ class DojoMemberSubscription(models.Model):
         "dojo.household", related="member_id.household_id", store=True, readonly=True
     )
     plan_id = fields.Many2one("dojo.subscription.plan", required=True, index=True)
+    plan_type = fields.Selection(
+        related="plan_id.plan_type", store=True, readonly=True, string="Plan Type"
+    )
+    program_id = fields.Many2one(
+        "dojo.program",
+        related="plan_id.program_id",
+        store=True,
+        readonly=True,
+        string="Program",
+    )
     company_id = fields.Many2one(
         "res.company", default=lambda self: self.env.company, index=True
     )
@@ -49,8 +59,8 @@ class DojoMemberSubscription(models.Model):
         """Return the res.partner to invoice for this subscription."""
         self.ensure_one()
         household = self.household_id
-        if household and household.billing_partner_id:
-            return household.billing_partner_id
+        if household and household.primary_guardian_id and household.primary_guardian_id.partner_id:
+            return household.primary_guardian_id.partner_id
         member = self.member_id
         if member.partner_id:
             return member.partner_id
@@ -80,24 +90,60 @@ class DojoMemberSubscription(models.Model):
         period_label = {"weekly": "Weekly", "monthly": "Monthly", "yearly": "Annual"}.get(
             plan.billing_period, plan.billing_period.capitalize()
         )
-        invoice = self.env["account.move"].sudo().create({
-            "move_type": "out_invoice",
-            "partner_id": billing_partner.id,
-            "invoice_date": today,
-            "invoice_date_due": today + relativedelta(days=7),
-            "subscription_id": self.id,
-            "company_id": (self.company_id or self.env.company).id,
-            "invoice_line_ids": [(0, 0, {
-                "name": "{} – {} Membership".format(plan.name, period_label),
-                "quantity": 1.0,
-                "price_unit": plan.price,
-            })],
+        # Determine the billing period date range for the invoice description
+        period_start = self.next_billing_date or today
+        period_end = self._next_date_from(period_start) - relativedelta(days=1)
+        date_range = "{} – {}".format(
+            period_start.strftime("%-d %b %Y"),
+            period_end.strftime("%-d %b %Y"),
+        )
+        # Resolve the service product for the invoice line
+        product = self.env.ref(
+            'dojo_subscriptions.product_membership_subscription',
+            raise_if_not_found=False,
+        )
+
+        line_vals = {
+            'name': '{} – {} Membership ({})'.format(plan.name, period_label, date_range),
+            'quantity': 1.0,
+            'price_unit': plan.price,
+        }
+        if product:
+            line_vals['product_id'] = product.id
+
+        invoice = self.env['account.move'].sudo().create({
+            'move_type': 'out_invoice',
+            'partner_id': billing_partner.id,
+            'invoice_date': today,
+            'invoice_date_due': today + relativedelta(months=1),
+            'subscription_id': self.id,
+            'company_id': (self.company_id or self.env.company).id,
+            'invoice_line_ids': [(0, 0, line_vals)],
         })
         invoice.action_post()
         self.last_invoice_id = invoice
         # Advance next billing date by one period
-        base = self.next_billing_date or today
-        self.next_billing_date = self._next_date_from(base)
+        self.next_billing_date = self._next_date_from(period_start)
+
+        # Email the invoice PDF to the billing partner
+        if plan.auto_send_invoice and billing_partner.email:
+            try:
+                template = self.env.ref(
+                    'account.email_template_edi_invoice',
+                    raise_if_not_found=False,
+                )
+                if template:
+                    template.sudo().send_mail(
+                        invoice.id,
+                        force_send=True,
+                        raise_exception=False,
+                    )
+            except Exception:
+                _logger.warning(
+                    'Dojo billing: could not email invoice %s for subscription %s',
+                    invoice.name, self.id, exc_info=True,
+                )
+
         return invoice
 
     def action_view_invoices(self):

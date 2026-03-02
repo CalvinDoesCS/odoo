@@ -89,3 +89,86 @@
 body.dojo-overlay-open {
     overflow: hidden;
 }
+
+/* ── Student switcher ─────────────────────────────────────────────────── */
+.dojo-student-switcher {
+    border-radius: 0.5rem;
+}
+.dojo-student-switcher .btn-group .btn {
+    font-size: 0.8rem;
+}
+
+/* ── Selected student belt banner ─────────────────────────────────────── */
+.dojo-student-context-banner {
+    background: var(--bs-body-bg);
+}
+@media (max-width: 575px) {
+    .dojo-student-switcher .btn-group {
+        flex-wrap: wrap;
+    }
+}
+
+/* ── Welcome hero card ────────────────────────────────────────────────── */
+.dojo-hero {
+    border-radius: 0.75rem;
+    background: var(--bs-body-bg);
+}
+.dojo-hero .dojo-hero-avatar {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .15);
+}
+.dojo-hero-chip {
+    min-width: 64px;
+    padding: 0.4rem 0.75rem;
+}
+.dojo-hero-chip.text-decoration-none:hover {
+    background: var(--bs-light);
+}
+@media (max-width: 575px) {
+    .dojo-hero-stats {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+/* ── Program card ────────────────────────────────────────────────── */
+.dojo-program-card {
+    border-left-width: 4px !important;
+    border-left-style: solid !important;
+    transition: box-shadow 0.15s ease;
+}
+.dojo-program-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* ── Belt rail ───────────────────────────────────────────────────── */
+.dojo-belt-rail {
+    overflow-x: auto;
+    padding-bottom: 4px;
+    gap: 0;
+}
+.dojo-belt-node {
+    transition: transform 0.15s ease;
+    cursor: default;
+}
+.dojo-belt-node:hover {
+    transform: scale(1.12);
+}
+.dojo-belt-label {
+    text-align: center;
+}
+
+/* ── Classes tab section headers ────────────────────────────────── */
+.dojo-classes-section-header {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #dee2e6;
+    color: #495057;
+}
+
+/* ── Student select dropdown ────────────────────────────────────── */
+.dojo-student-select {
+    border-radius: 20px;
+    font-size: 0.85rem;
+}

@@ -19,6 +19,26 @@ class DojoBeltRank(models.Model):
         "res.company", default=lambda self: self.env.company, index=True
     )
 
+    # ── Attendance-threshold eligibility ─────────────────────────────────
+    attendance_threshold = fields.Integer(
+        string="Attendance Threshold",
+        default=0,
+        help=(
+            "Number of attended sessions since the member's last rank award required "
+            "to automatically create a belt-test invitation.  Set to 0 to disable "
+            "automatic invitations for this rank."
+        ),
+    )
+    testing_fee_product_id = fields.Many2one(
+        "product.product",
+        string="Testing Fee Product",
+        domain="[('type', 'in', ['service', 'consu'])]",
+        help=(
+            "If set, an invoice for this product will be posted automatically when a "
+            "belt-test invitation is created for this rank."
+        ),
+    )
+
     # Reverse links
     member_rank_ids = fields.One2many(
         "dojo.member.rank", "rank_id", string="Awarded To"

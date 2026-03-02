@@ -114,6 +114,12 @@
                             <span class="o_mp_info_value"
                                   t-esc="fmtDate(state.member.date_of_birth)"/>
                         </div>
+                        <div class="o_mp_info_row" t-if="state.member.plan_name">
+                            <span class="o_mp_info_label">
+                                <i class="fa fa-id-badge"/> Plan
+                            </span>
+                            <span class="o_mp_info_value" t-esc="state.member.plan_name"/>
+                        </div>
 
                         <!-- Emergency / Medical Note -->
                         <t t-if="state.member.emergency_note">

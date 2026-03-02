@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================================================================
+         Trial Booked — confirmation email
+         ================================================================ -->
+    <record id="mail_template_trial_booked" model="mail.template">
+        <field name="name">Dojo CRM: Trial Booked Confirmation (Email)</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="subject">Your Free Trial is Confirmed! 🥋</field>
+        <field name="email_to">{{ object.email_from }}</field>
+        <field name="body_html"><![CDATA[
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2 style="color: #2c3e50;">Your Trial Class is Booked!</h2>
+    <p>Hi {{ object.contact_name or object.partner_name or 'there' }},</p>
+    <p>
+        We're excited to have you join us for a <strong>free trial class</strong>!
+        Here are your booking details:
+    </p>
+    {% if object.trial_session_id %}
+    <table style="width:100%; border-collapse: collapse; margin: 16px 0;">
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; background: #f9f9f9;">Class</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ object.trial_session_id.name }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; background: #f9f9f9;">Date &amp; Time</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ object.trial_session_id.start_datetime | datetime }}</td>
+        </tr>
+        {% if object.trial_session_id.instructor_profile_id %}
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; background: #f9f9f9;">Instructor</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ object.trial_session_id.instructor_profile_id.name }}</td>
+        </tr>
+        {% endif %}
+    </table>
+    {% endif %}
+    <p>Please arrive 10 minutes early. Wear comfortable workout clothes.</p>
+    <p>We look forward to meeting you!</p>
+    <p style="color: #7f8c8d; font-size: 12px;">
+        — {{ object.company_id.name }}
+    </p>
+</div>
+        ]]></field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+
+    <!-- ================================================================
+         Trial Attended — post-trial offer email
+         ================================================================ -->
+    <record id="mail_template_trial_attended" model="mail.template">
+        <field name="name">Dojo CRM: Post-Trial Membership Offer (Email)</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="subject">Great Class Today — Here's a Special Offer for You 🥋</field>
+        <field name="email_to">{{ object.email_from }}</field>
+        <field name="body_html"><![CDATA[
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2 style="color: #2c3e50;">We Loved Having You!</h2>
+    <p>Hi {{ object.contact_name or object.partner_name or 'there' }},</p>
+    <p>
+        Thank you for attending your free trial class today. We hope you had a great time!
+    </p>
+    <p>
+        We'd love to have you join our community. As a thank-you for attending,
+        we're offering you a <strong>special limited-time membership rate</strong>.
+    </p>
+    <div style="background: #f0f8ff; border-left: 4px solid #3498db; padding: 16px; margin: 16px 0;">
+        <strong>This offer is valid for 72 hours.</strong><br/>
+        Contact us or visit your member portal to enroll.
+    </div>
+    <p>
+        Questions? Simply reply to this email or give us a call.
+    </p>
+    <p style="color: #7f8c8d; font-size: 12px;">
+        — {{ object.company_id.name }}
+    </p>
+</div>
+        ]]></field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+
+    <!-- ================================================================
+         No-Show — reschedule follow-up email
+         ================================================================ -->
+    <record id="mail_template_no_show" model="mail.template">
+        <field name="name">Dojo CRM: No-Show Reschedule Follow-Up (Email)</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="subject">We Missed You — Let's Find a Better Time</field>
+        <field name="email_to">{{ object.email_from }}</field>
+        <field name="body_html"><![CDATA[
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2 style="color: #2c3e50;">We Missed You!</h2>
+    <p>Hi {{ object.contact_name or object.partner_name or 'there' }},</p>
+    <p>
+        It looks like you weren't able to make it to your free trial class.
+        No worries — life happens!
+    </p>
+    <p>
+        We'd still love to have you try us out. Reply to this email or call us
+        and we'll get you into another trial class at a time that works for you.
+    </p>
+    <p>
+        Your spot is waiting for you!
+    </p>
+    <p style="color: #7f8c8d; font-size: 12px;">
+        — {{ object.company_id.name }}
+    </p>
+</div>
+        ]]></field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+
+    <!-- ================================================================
+         Trial Reminder — 24h before trial session (for leads)
+         ================================================================ -->
+    <record id="mail_template_trial_reminder" model="mail.template">
+        <field name="name">Dojo CRM: Trial Class Reminder — 24h (Email)</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="subject">Reminder: Your Free Trial is Tomorrow! 🥋</field>
+        <field name="email_to">{{ object.email_from }}</field>
+        <field name="body_html"><![CDATA[
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2 style="color: #2c3e50;">See You Tomorrow!</h2>
+    <p>Hi {{ object.contact_name or object.partner_name or 'there' }},</p>
+    <p>
+        Just a friendly reminder that your <strong>free trial class</strong> is coming up!
+    </p>
+    {% if object.trial_session_id %}
+    <table style="width:100%; border-collapse: collapse; margin: 16px 0;">
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; background: #f9f9f9;">Class</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ object.trial_session_id.name }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; background: #f9f9f9;">Date &amp; Time</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ object.trial_session_id.start_datetime | datetime }}</td>
+        </tr>
+        {% if object.trial_session_id.instructor_profile_id %}
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; background: #f9f9f9;">Instructor</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ object.trial_session_id.instructor_profile_id.name }}</td>
+        </tr>
+        {% endif %}
+    </table>
+    {% endif %}
+    <p>Please arrive 10 minutes early. Wear comfortable workout clothes.</p>
+    <p>If you need to reschedule, reply to this email and we'll find a new time.</p>
+    <p style="color: #7f8c8d; font-size: 12px;">
+        — {{ object.company_id.name }}
+    </p>
+</div>
+        ]]></field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+
+    <!-- ================================================================
+         Offer Made — membership plan details + CTA
+         ================================================================ -->
+    <record id="mail_template_offer_made_details" model="mail.template">
+        <field name="name">Dojo CRM: Offer Made — Membership Plan Details (Email)</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="subject">Your Personalised Membership Offer is Ready 🥋</field>
+        <field name="email_to">{{ object.email_from }}</field>
+        <field name="body_html"><![CDATA[
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2 style="color: #2c3e50;">Your Membership Offer</h2>
+    <p>Hi {{ object.contact_name or object.partner_name or 'there' }},</p>
+    <p>
+        We've put together a personalised membership offer just for you based on
+        your recent trial class. Here are the details:
+    </p>
+    <div style="background: #f0f8ff; border-left: 4px solid #3498db; padding: 16px; margin: 16px 0;">
+        <p style="margin: 0 0 8px 0;">
+            <strong>Ready to join?</strong> Contact us to lock in your membership today.
+        </p>
+        <p style="margin: 0; color: #e74c3c;">
+            <strong>⏰ This offer expires 72 hours from receipt.</strong>
+        </p>
+    </div>
+    <p>
+        To get started, simply reply to this email or give us a call.
+        We'll handle the paperwork and get you on the mat!
+    </p>
+    <p>
+        We look forward to welcoming you to the team.
+    </p>
+    <p style="color: #7f8c8d; font-size: 12px;">
+        — {{ object.company_id.name }}
+    </p>
+</div>
+        ]]></field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+
+    <!-- ================================================================
+         Offer Expiry Nudge — 72h after offer sent, urgency email
+         ================================================================ -->
+    <record id="mail_template_offer_expiry_nudge" model="mail.template">
+        <field name="name">Dojo CRM: Offer Expiry Nudge — 72h (Email)</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="subject">Last Chance — Your Offer Expires Soon ⚠️</field>
+        <field name="email_to">{{ object.email_from }}</field>
+        <field name="body_html"><![CDATA[
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2 style="color: #e74c3c;">Your Offer is About to Expire!</h2>
+    <p>Hi {{ object.contact_name or object.partner_name or 'there' }},</p>
+    <p>
+        We wanted to reach out one more time because your special membership offer is
+        expiring very soon.
+    </p>
+    <div style="background: #fff3cd; border-left: 4px solid #f0ad4e; padding: 16px; margin: 16px 0;">
+        <strong>Don't miss out — this offer was made just for you.</strong>
+    </div>
+    <p>
+        If you have any questions or need more time, just reply to this email and
+        we'll work something out. We'd love to have you on the mat!
+    </p>
+    <p style="color: #7f8c8d; font-size: 12px;">
+        — {{ object.company_id.name }}
+    </p>
+</div>
+        ]]></field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+
+    <!-- ================================================================
+         No-Show 2nd Follow-Up — 5 days after no-show, warmer tone
+         ================================================================ -->
+    <record id="mail_template_no_show_followup" model="mail.template">
+        <field name="name">Dojo CRM: No-Show 2nd Follow-Up — 5 Days (Email)</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="subject">Still Interested? We'd Love to Have You 🥋</field>
+        <field name="email_to">{{ object.email_from }}</field>
+        <field name="body_html"><![CDATA[
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2 style="color: #2c3e50;">We're Still Here For You!</h2>
+    <p>Hi {{ object.contact_name or object.partner_name or 'there' }},</p>
+    <p>
+        We reached out a few days ago after you missed your trial class.
+        We completely understand that life gets busy!
+    </p>
+    <p>
+        We have classes running throughout the week at multiple times,
+        so there's sure to be a slot that suits you.
+    </p>
+    <p>
+        If you're still interested in giving us a try, we'd love to set up
+        a new trial class for you — just reply to this email or give us a quick call.
+    </p>
+    <p>
+        No pressure at all. We'll be here whenever you're ready!
+    </p>
+    <p style="color: #7f8c8d; font-size: 12px;">
+        — {{ object.company_id.name }}
+    </p>
+</div>
+        ]]></field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+</odoo>

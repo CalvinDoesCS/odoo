@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================================================================
+         Book Trial Wizard — form view
+         ================================================================ -->
+    <record id="view_dojo_book_trial_wizard_form" model="ir.ui.view">
+        <field name="name">dojo.book.trial.wizard.form</field>
+        <field name="model">dojo.book.trial.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Book Trial Class">
+                <group>
+                    <group string="Lead">
+                        <field name="lead_id" readonly="1"/>
+                    </group>
+                    <group string="Session">
+                        <field name="session_id"
+                               options="{'no_create': True}"
+                               context="{'order': 'start_datetime asc'}"/>
+                        <field name="capacity_warning" invisible="1"/>
+                        <div class="alert alert-warning" role="alert"
+                             invisible="capacity_warning == False">
+                            <strong>This session is at full capacity.</strong>
+                            Tick "Override Capacity" below to book anyway.
+                        </div>
+                        <field name="force_book" invisible="capacity_warning == False"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_confirm"
+                            string="Confirm Booking"
+                            type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action to open the wizard from a lead -->
+    <record id="action_dojo_book_trial_wizard" model="ir.actions.act_window">
+        <field name="name">Book Trial Class</field>
+        <field name="res_model">dojo.book.trial.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_lead_id': active_id}</field>
+    </record>
+</odoo>

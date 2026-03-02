@@ -5,10 +5,11 @@
     "category": "Services",
     "license": "LGPL-3",
     "author": "Dojo",
-    "depends": ["dojo_classes", "dojo_members"],
+    "depends": ["dojo_classes", "dojo_members", "dojo_attendance", "account"],
     "data": [
         "security/dojo_belt_security.xml",
         "security/ir.model.access.csv",
+        "data/ir_cron.xml",
         "views/dojo_belt_views.xml",
     ],
     "application": True,

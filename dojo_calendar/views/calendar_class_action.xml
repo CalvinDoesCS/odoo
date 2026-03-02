@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         Custom calendar view — color-coded by instructor, sidebar filters
+         ================================================================ -->
+    <record id="view_class_calendar_event_calendar" model="ir.ui.view">
+        <field name="name">calendar.event.class.calendar</field>
+        <field name="model">calendar.event</field>
+        <field name="arch" type="xml">
+            <calendar
+                string="Class Calendar"
+                date_start="start"
+                date_stop="stop"
+                color="x_instructor_id"
+                quick_create="false"
+                event_limit="5"
+            >
+                <!-- Sidebar filter groups -->
+                <field name="x_instructor_id" filters="1" string="Instructor"/>
+                <field name="x_site_id" filters="1" string="Site"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Custom list view for Class Calendar
+         ================================================================ -->
+    <record id="view_class_calendar_event_list" model="ir.ui.view">
+        <field name="name">calendar.event.class.list</field>
+        <field name="model">calendar.event</field>
+        <field name="arch" type="xml">
+            <list string="Class Calendar" default_order="start desc">
+                <field name="name" string="Class"/>
+                <field name="start" string="Start"/>
+                <field name="stop" string="End"/>
+                <field name="x_instructor_id" string="Instructor"/>
+                <field name="x_site_id" string="Site"/>
+                <field name="x_capacity" string="Capacity"/>
+                <field name="x_roster_count" string="Enrolled"/>
+                <field name="x_attendance_complete" string="Attendance Done"
+                       widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Custom search view — instructor & site filters, groupbys
+         ================================================================ -->
+    <record id="view_class_calendar_event_search" model="ir.ui.view">
+        <field name="name">calendar.event.class.search</field>
+        <field name="model">calendar.event</field>
+        <field name="arch" type="xml">
+            <search string="Class Calendar">
+                <field name="name" string="Class Name"/>
+                <field name="x_instructor_id" string="Instructor"/>
+                <field name="x_site_id" string="Site"/>
+                <field name="x_session_id" string="Session"/>
+
+                <filter
+                    name="attendance_pending"
+                    string="Attendance Pending"
+                    domain="[('x_attendance_complete', '=', False)]"
+                />
+                <filter
+                    name="attendance_complete"
+                    string="Attendance Complete"
+                    domain="[('x_attendance_complete', '=', True)]"
+                />
+                <separator/>
+                <filter
+                    name="upcoming"
+                    string="Upcoming"
+                    domain="[('start', '&gt;=', context_today().strftime('%Y-%m-%d 00:00:00'))]"
+                />
+                <separator/>
+                <filter
+                    name="group_instructor"
+                    string="Instructor"
+                    context="{'group_by': 'x_instructor_id'}"
+                />
+                <filter
+                    name="group_site"
+                    string="Site"
+                    context="{'group_by': 'x_site_id'}"
+                />
+                <filter
+                    name="group_date"
+                    string="Date"
+                    context="{'group_by': 'start:day'}"
+                />
+            </search>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Class Calendar action
+         ================================================================ -->
+    <record id="action_dojo_class_calendar" model="ir.actions.act_window">
+        <field name="name">Class Calendar</field>
+        <field name="res_model">calendar.event</field>
+        <field name="view_mode">calendar,list,form</field>
+        <field name="domain">[('x_session_id', '!=', False)]</field>
+        <field name="context">{
+            'default_x_session_id': False,
+            'search_default_upcoming': True
+        }</field>
+        <field name="view_id" ref="view_class_calendar_event_calendar"/>
+        <field name="search_view_id" ref="view_class_calendar_event_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No class sessions found on the calendar.
+            </p>
+            <p>
+                Create a dojo class session and it will automatically appear here.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu item under Classes root -->
+    <menuitem
+        id="menu_dojo_class_calendar"
+        name="Class Calendar"
+        parent="dojo_classes.menu_dojo_classes_root"
+        action="action_dojo_class_calendar"
+        sequence="5"
+    />
+
+</odoo>

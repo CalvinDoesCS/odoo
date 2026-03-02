@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dojo_convert_lead_wizard_admin,dojo.convert.lead.wizard (admin),model_dojo_convert_lead_wizard,dojo_base.group_dojo_admin,1,1,1,1
+access_dojo_convert_lead_wizard_instructor,dojo.convert.lead.wizard (instructor),model_dojo_convert_lead_wizard,dojo_base.group_dojo_instructor,1,1,1,0
+access_dojo_book_trial_wizard_admin,dojo.book.trial.wizard (admin),model_dojo_book_trial_wizard,dojo_base.group_dojo_admin,1,1,1,1
+access_dojo_book_trial_wizard_instructor,dojo.book.trial.wizard (instructor),model_dojo_book_trial_wizard,dojo_base.group_dojo_instructor,1,1,1,0
+access_crm_lead_dojo_admin,crm.lead (dojo admin),crm.model_crm_lead,dojo_base.group_dojo_admin,1,1,1,1
+access_crm_lead_dojo_instructor,crm.lead (dojo instructor),crm.model_crm_lead,dojo_base.group_dojo_instructor,1,1,1,0
+access_crm_tag_dojo_instructor,crm.tag (dojo instructor),sales_team.model_crm_tag,dojo_base.group_dojo_instructor,1,0,0,0

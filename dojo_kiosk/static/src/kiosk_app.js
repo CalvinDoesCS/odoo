@@ -7,12 +7,14 @@
 /* global owl */
 const { Component, useState, onMounted, onWillUnmount, mount, xml } = owl;
 
-// ─── Config identity (per-tablet via ?config=<id>) ───────────────────────────
-const KIOSK_CONFIG_ID = window.KIOSK_CONFIG_ID || null;
+// ─── Config identity (per-tablet token from URL) ─────────────────────────────
+const KIOSK_TOKEN = window.KIOSK_TOKEN || null;
 
 // ─── Utility ─────────────────────────────────────────────────────────────────
 
 async function jsonPost(url, params = {}) {
+    // Automatically attach the device token to every request
+    if (KIOSK_TOKEN) params = { token: KIOSK_TOKEN, ...params };
     const resp = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -110,15 +112,18 @@ class PinModal extends Component {
 
     async _verify() {
         try {
-            // Pass config_id so PIN is verified only against this tablet's config
-            const result = await jsonPost("/kiosk/auth/pin", {
-                pin: this.state.pin,
-                config_id: KIOSK_CONFIG_ID,
-            });
+            const result = await jsonPost("/kiosk/auth/pin", { pin: this.state.pin });
             if (result.success) {
                 this.props.onSuccess();
+            } else if (result.error === "locked") {
+                const mins = result.retry_in_minutes || 15;
+                this.state.error = `Too many attempts. Locked for ${mins} min.`;
+                this.state.pin = "";
             } else {
-                this.state.error = "Incorrect PIN. Try again.";
+                const tries = result.remaining_tries;
+                this.state.error = tries
+                    ? `Incorrect PIN. ${tries} attempt${tries === 1 ? "" : "s"} remaining.`
+                    : "Incorrect PIN. Try again.";
                 this.state.pin = "";
             }
         } catch {
@@ -161,6 +166,64 @@ class CheckinConfirmation extends Component {
         onMounted(() => { this._timer = setTimeout(() => this.props.onDone(), 4000); });
         onWillUnmount(() => clearTimeout(this._timer));
     }
+}
+
+// ─── IdleScreen — shown after inactivity timeout ──────────────────────────────
+
+const IDLE_TIMEOUT_MS = 90_000; // 90 seconds
+
+class IdleScreen extends Component {
+    static template = xml`
+        <div class="k-idle-screen" t-on-click="wake" t-on-keydown="wake">
+            <div class="k-idle-content">
+                <t t-if="props.announcements &amp;&amp; props.announcements.length">
+                    <div class="k-idle-slide">
+                        <div class="k-idle-slide__title" t-esc="currentAnnouncement().title"/>
+                        <t t-if="currentAnnouncement().body">
+                            <div class="k-idle-slide__body" t-esc="currentAnnouncement().body"/>
+                        </t>
+                    </div>
+                    <div class="k-idle-dots">
+                        <t t-foreach="props.announcements" t-as="a" t-key="a.id">
+                            <div t-attf-class="k-idle-dot #{state.idx === a_index ? 'k-idle-dot--active' : ''}"/>
+                        </t>
+                    </div>
+                </t>
+                <t t-else="">
+                    <div class="k-idle-slide">
+                        <div class="k-idle-slide__dojo">🥋</div>
+                        <div class="k-idle-slide__title">Welcome</div>
+                        <div class="k-idle-slide__body">Tap to check in</div>
+                    </div>
+                </t>
+                <div class="k-idle-tap-hint">Tap anywhere to continue</div>
+            </div>
+        </div>
+    `;
+
+    static props = ["announcements", "onWake"];
+
+    setup() {
+        this.state = useState({ idx: 0 });
+        this._carouselTimer = null;
+        onMounted(() => this._startCarousel());
+        onWillUnmount(() => clearInterval(this._carouselTimer));
+    }
+
+    currentAnnouncement() {
+        const ann = this.props.announcements;
+        if (!ann || !ann.length) return { title: "Welcome", body: "Tap to check in" };
+        return ann[this.state.idx % ann.length];
+    }
+
+    _startCarousel() {
+        if (!this.props.announcements || this.props.announcements.length <= 1) return;
+        this._carouselTimer = setInterval(() => {
+            this.state.idx = (this.state.idx + 1) % this.props.announcements.length;
+        }, 5000);
+    }
+
+    wake() { this.props.onWake(); }
 }
 
 // ─── MemberProfileCard ────────────────────────────────────────────────────────
@@ -306,7 +369,12 @@ class MemberProfileCard extends Component {
                         </t>
                         <t t-else="">
                             <t t-if="props.member.attendance_state === 'present' || props.member.attendance_state === 'late'">
-                                <button class="k-btn k-btn--secondary" disabled="1">+ Already Checked In</button>
+                                <div class="k-checkout-section">
+                                    <div class="k-checkout-checkedin">Already checked in</div>
+                                    <button class="k-btn k-btn--checkout" t-on-click="onCheckout">
+                                        Check Out
+                                    </button>
+                                </div>
                             </t>
                             <t t-elif="!props.sessionId">
                                 <p style="text-align:center;color:#aaa;font-size:13px;">Select a session to check in.</p>
@@ -373,7 +441,7 @@ class MemberProfileCard extends Component {
         </div>
     `;
 
-    static props = ["member", "sessionId", "instructorMode", "onClose", "onCheckin", "onMarkAttendance", "onRosterAdd", "onRosterRemove"];
+    static props = ["member", "sessionId", "instructorMode", "onClose", "onCheckin", "onMarkAttendance", "onRosterAdd", "onRosterRemove", "onCheckout"];
 
     setup() {
         this.state = useState({ tab: "profile" });
@@ -384,6 +452,7 @@ class MemberProfileCard extends Component {
     onImgError(ev) { ev.target.style.display = "none"; }
     markAttendance(status) { this.props.onMarkAttendance(this.props.member, this.props.sessionId, status); }
     onCheckin() { this.props.onCheckin(this.props.member, this.props.sessionId); }
+    onCheckout() { this.props.onCheckout(this.props.member, this.props.sessionId); }
     onRosterAdd() { this.props.onRosterAdd(this.props.member, this.props.sessionId); this.props.onClose(); }
     onRosterRemove() { this.props.onRosterRemove(this.props.member, this.props.sessionId); this.props.onClose(); }
 }
@@ -540,6 +609,13 @@ class SessionCard extends Component {
 class KioskApp extends Component {
     static template = xml`
         <div class="k-app">
+
+            <!-- ── Idle screen ── -->
+            <t t-if="state.idle">
+                <IdleScreen
+                    announcements="state.announcements"
+                    onWake="() => this.wakeFromIdle()"/>
+            </t>
 
             <!-- ── Confirmation overlay ── -->
             <t t-if="state.confirmation">
@@ -722,6 +798,7 @@ class KioskApp extends Component {
                     instructorMode="state.instructorMode"
                     onClose="() => this.closeProfile()"
                     onCheckin="(member, sessionId) => this.doCheckin(member, sessionId)"
+                    onCheckout="(member, sessionId) => this.doCheckout(member, sessionId)"
                     onMarkAttendance="(member, sessionId, status) => this.markAttendanceFromProfile(member, sessionId, status)"
                     onRosterAdd="(member, sessionId) => this.rosterAdd(member, sessionId)"
                     onRosterRemove="(member, sessionId) => this.rosterRemove(member, sessionId)"/>
@@ -742,6 +819,7 @@ class KioskApp extends Component {
         SessionCard,
         PinModal,
         CheckinConfirmation,
+        IdleScreen,
     };
 
     setup() {
@@ -761,20 +839,49 @@ class KioskApp extends Component {
             confirmation: null,
             sessionRosters: {},
             loadingRosters: {},
+            idle: false,
+            announcements: [],
         });
 
         this._searchTimer = null;
         this._barcodeBuffer = "";
         this._barcodeTimer = null;
+        this._idleTimer = null;
+        this._interactionHandler = this._resetIdleTimer.bind(this);
 
         onMounted(() => {
-            this._loadSessions();
+            this._bootstrap();
             this._startBarcodeListener();
+            document.addEventListener("click", this._interactionHandler, true);
+            document.addEventListener("keydown", this._interactionHandler, true);
+            document.addEventListener("touchstart", this._interactionHandler, true);
+            this._resetIdleTimer();
         });
-        onWillUnmount(() => this._stopBarcodeListener());
+        onWillUnmount(() => {
+            this._stopBarcodeListener();
+            document.removeEventListener("click", this._interactionHandler, true);
+            document.removeEventListener("keydown", this._interactionHandler, true);
+            document.removeEventListener("touchstart", this._interactionHandler, true);
+            clearTimeout(this._idleTimer);
+        });
     }
 
     formatTime(dt) { return formatTime(dt); }
+
+    // ── Idle timer ───────────────────────────────────────────────
+
+    _resetIdleTimer() {
+        if (this.state.idle) this.state.idle = false;
+        clearTimeout(this._idleTimer);
+        this._idleTimer = setTimeout(() => {
+            this.state.idle = true;
+        }, IDLE_TIMEOUT_MS);
+    }
+
+    wakeFromIdle() {
+        this.state.idle = false;
+        this._resetIdleTimer();
+    }
 
     // ── Mode ─────────────────────────────────────────────────────
 
@@ -782,6 +889,28 @@ class KioskApp extends Component {
         if (this.state.mode === mode) return;
         this.state.mode = mode;
         if (mode === "sessions") this._loadAllSessionRosters();
+    }
+
+    // ── Bootstrap ────────────────────────────────────────────────
+
+    async _bootstrap() {
+        try {
+            const data = await jsonPost("/kiosk/api/bootstrap");
+            if (data && !data.error) {
+                this.state.announcements = data.announcements || [];
+                this.state.sessions = data.sessions || [];
+                if (this.state.sessions.length === 1) {
+                    this.state.sessionId = this.state.sessions[0].id;
+                    await this._loadScanRoster();
+                }
+            } else {
+                // Fallback: fetch sessions directly (no token configured yet)
+                await this._loadSessions();
+            }
+        } catch (e) {
+            console.error("Kiosk: bootstrap failed, falling back to sessions", e);
+            await this._loadSessions();
+        }
     }
 
     // ── Sessions ─────────────────────────────────────────────────
@@ -904,6 +1033,32 @@ class KioskApp extends Component {
     }
 
     clearConfirmation() { this.state.confirmation = null; }
+
+    // ── Check-out ────────────────────────────────────────────────
+
+    async doCheckout(member, sessionId) {
+        this.state.profileMember = null;
+        this.state.profileSessionId = null;
+        try {
+            const result = await jsonPost("/kiosk/checkout", {
+                member_id: member.member_id,
+                session_id: sessionId,
+            });
+            if (result.success) {
+                this._updateScanRosterEntry(member.member_id, { attendance_state: "absent" });
+                this._updateSessionRosterEntry(sessionId, member.member_id, { attendance_state: "absent" });
+                this.state.confirmation = {
+                    success: true,
+                    member,
+                    sessionName: "",
+                    status: "checkout",
+                    error: "",
+                };
+            }
+        } catch (e) {
+            console.error("Kiosk: checkout failed", e);
+        }
+    }
 
     // ── Instructor — attendance (scan mode) ──────────────────────
 

@@ -1,0 +1,27 @@
+{
+    "name": "Dojo Communications",
+    "version": "19.0.1.0.0",
+    "summary": "Automated SMS/email for check-in parent alerts, session reminders, and instructor messaging",
+    "author": "Dojo",
+    "category": "Martial Arts",
+    "license": "LGPL-3",
+    "depends": [
+        "dojo_attendance",
+        "dojo_classes",
+        "dojo_members",
+        "dojo_sms_twilio",
+        "sms",
+        "mail",
+    ],
+    "data": [
+        "security/ir.model.access.csv",
+        "data/mail_template_checkin.xml",
+        "data/mail_template_reminder.xml",
+        "data/ir_cron.xml",
+        "views/dojo_send_message_wizard_view.xml",
+        "views/dojo_member_view_inherit.xml",
+        "views/dojo_class_session_view_inherit.xml",
+    ],
+    "installable": True,
+    "auto_install": False,
+}

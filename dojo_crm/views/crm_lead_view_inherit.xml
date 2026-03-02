@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Add dojo fields to the CRM lead form view -->
+    <record id="view_crm_lead_form_dojo_inherit" model="ir.ui.view">
+        <field name="name">crm.lead.form.dojo.inherit</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <!-- Add Convert to Member button in the header -->
+            <xpath expr="//header" position="inside">
+                <button
+                    name="%(dojo_crm.action_dojo_book_trial_wizard)d"
+                    string="Book Trial"
+                    type="action"
+                    class="btn-primary"
+                    invisible="is_converted == True or stage_id.name == 'Trial Booked'"
+                />
+                <button
+                    name="action_convert_to_member"
+                    string="Convert to Member"
+                    type="object"
+                    class="btn-primary"
+                    invisible="is_converted == True"
+                />
+                <button
+                    name="action_view_converted_member"
+                    string="View Member"
+                    type="object"
+                    class="btn-secondary"
+                    invisible="is_converted == False"
+                />
+            </xpath>
+
+            <!-- Add dojo tab to the form -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Dojo Trial" name="dojo_trial">
+                    <group>
+                        <group string="Trial Details">
+                            <field name="trial_session_id"/>
+                            <field name="trial_attended"/>
+                            <field name="trial_reminder_sent" readonly="1"/>
+                            <field name="no_show"/>
+                            <field name="no_show_date" readonly="1"/>
+                            <field name="no_show_followup_sent" readonly="1"/>
+                            <field name="offer_sent_date"/>
+                            <field name="offer_expiry_followup_sent" readonly="1"/>
+                        </group>
+                        <group string="Conversion">
+                            <field name="dojo_member_id" readonly="1"/>
+                            <field name="is_converted" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

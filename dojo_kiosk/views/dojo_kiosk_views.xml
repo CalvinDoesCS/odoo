@@ -20,6 +20,11 @@
         <field name="model">dojo.kiosk.config</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <button name="action_regenerate_token" type="object"
+                        string="Regenerate Token" class="btn-secondary"
+                        confirm="This will invalidate the current kiosk URL. Continue?"/>
+                </header>
                 <sheet>
                     <div class="oe_title">
                         <label for="name"/>
@@ -31,12 +36,31 @@
                                 password="True"
                                 placeholder="6-digit PIN"
                                 help="Exactly 6 digits. Used to unlock Instructor Mode on the kiosk tablet."/>
+                            <field name="theme_mode"/>
                             <field name="active"/>
                         </group>
                         <group string="Company">
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                     </group>
+                    <group string="Kiosk URL">
+                        <field name="kiosk_url" widget="url" readonly="1"
+                            help="Open this URL on the kiosk tablet. Keep it secret."/>
+                        <field name="kiosk_token" readonly="1"
+                            help="Unguessable token embedded in the Kiosk URL."/>
+                    </group>
+                    <notebook>
+                        <page string="Idle Screen Announcements">
+                            <field name="announcement_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="title"/>
+                                    <field name="body"/>
+                                    <field name="active"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>
@@ -60,15 +84,6 @@
     <!-- ================================================================
          Menu items — nested under the existing app menu
     ================================================================ -->
-    <menuitem
-        id="menu_dojo_kiosk_open"
-        name="Open Kiosk"
-        parent="dojo_members.menu_dojo_members_root"
-        action="action_open_kiosk"
-        sequence="90"
-        groups="dojo_base.group_dojo_admin,dojo_base.group_dojo_instructor"
-    />
-
     <menuitem
         id="menu_dojo_kiosk_config"
         name="Kiosk Settings"

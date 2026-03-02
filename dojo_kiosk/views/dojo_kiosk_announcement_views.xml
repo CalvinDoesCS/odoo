@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dojo_kiosk_announcement_list" model="ir.ui.view">
+        <field name="name">dojo.kiosk.announcement.list</field>
+        <field name="model">dojo.kiosk.announcement</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="config_id"/>
+                <field name="title"/>
+                <field name="body"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+</odoo>

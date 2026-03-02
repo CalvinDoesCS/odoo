@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Add "Contact Guardian" button to the dojo.member form view -->
+    <record id="view_dojo_member_form_comm_inherit" model="ir.ui.view">
+        <field name="name">dojo.member.form.comm.inherit</field>
+        <field name="model">dojo.member</field>
+        <field name="inherit_id" ref="dojo_base.view_dojo_member_form"/>
+        <field name="arch" type="xml">
+            <!-- Insert "Contact Guardian" button into the existing header -->
+            <xpath expr="//header/field[@name='membership_state']" position="before">
+                <button
+                    name="action_contact_guardian"
+                    string="Contact Guardian"
+                    type="object"
+                    class="btn-secondary"
+                />
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Wizard action -->
+    <record id="action_dojo_convert_lead_wizard" model="ir.actions.act_window">
+        <field name="name">Convert to Member</field>
+        <field name="res_model">dojo.convert.lead.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_lead_id': active_id}</field>
+    </record>
+
+    <!-- Wizard form view -->
+    <record id="view_dojo_convert_lead_wizard_form" model="ir.ui.view">
+        <field name="name">dojo.convert.lead.wizard.form</field>
+        <field name="model">dojo.convert.lead.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Convert Lead to Dojo Member">
+                <sheet>
+                    <group string="Lead">
+                        <field name="lead_id" readonly="1"/>
+                    </group>
+                    <group string="Student / Member">
+                        <group>
+                            <field name="first_name"/>
+                            <field name="last_name"/>
+                            <field name="role"/>
+                            <field name="date_of_birth"/>
+                        </group>
+                        <group>
+                            <field name="email"/>
+                            <field name="phone"/>
+                            <field name="mobile"/>
+                        </group>
+                    </group>
+                    <group string="Household">
+                        <field name="create_household"/>
+                        <field name="household_id"
+                               invisible="create_household == True"
+                               required="create_household == False"/>
+                        <field name="guardian_name"
+                               invisible="create_household == False"/>
+                        <field name="guardian_email"
+                               invisible="create_household == False"/>
+                        <field name="guardian_mobile"
+                               invisible="create_household == False"/>
+                    </group>
+                    <group string="Subscription">
+                        <field name="create_subscription"/>
+                        <field name="plan_id"
+                               invisible="create_subscription == False"
+                               required="create_subscription == True"/>
+                        <field name="subscription_start_date"
+                               invisible="create_subscription == False"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_convert" string="Convert to Member" type="object"
+                            class="btn-primary"/>
+                    <button string="Discard" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

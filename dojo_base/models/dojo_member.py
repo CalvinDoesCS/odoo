@@ -77,12 +77,11 @@ class DojoMember(models.Model):
                 vals["partner_id"] = partner.id
         return super().create(vals_list)
 
-    @api.depends("partner_id.user_ids.group_ids")
+    @api.depends("partner_id.user_ids")
     def _compute_has_portal_login(self):
-        portal_group = self.env.ref("base.group_portal")
         for member in self:
             member.has_portal_login = any(
-                portal_group in user.group_ids for user in member.partner_id.user_ids
+                user.share for user in member.partner_id.user_ids
             )
 
     def action_create_household(self):

@@ -62,72 +62,63 @@
     <template id="portal_dojo_home" name="Dojo Portal">
         <t t-call="portal.portal_layout">
             <t t-set="breadcrumbs_searchbar" t-value="False"/>
-            <t t-call="portal.portal_searchbar">
-                <t t-set="title">Dojo Portal</t>
-            </t>
-            <!-- ── Banner Image ─────────────────────────────────────────────────── -->
+
+            <!-- ── Banner ────────────────────────────────────────────────── -->
             <div class="dojo-portal-banner mt-3"/>
-            <!-- ── Belt Rank ─────────────────────────────────────────────── -->
-            <div class="card mb-4 mt-3">
-                <div class="card-body">
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <t t-if="current_rank">
-                            <div t-attf-style="width:56px;height:56px;border-radius:50%;background:#{current_rank.color or '#cccccc'};border:3px solid rgba(0,0,0,.15);flex-shrink:0;"/>
-                            <div>
-                                <h5 class="mb-0 fw-bold" t-out="current_rank.name"/>
-                                <small class="text-muted">Current Belt</small>
-                            </div>
-                        </t>
-                        <t t-else="">
-                            <div style="width:56px;height:56px;border-radius:50%;background:#e9ecef;border:3px solid rgba(0,0,0,.1);flex-shrink:0;"/>
-                            <div>
-                                <h5 class="mb-0 text-muted">No Belt Rank Yet</h5>
-                                <small class="text-muted">Speak to your instructor to get started</small>
-                            </div>
-                        </t>
-                    </div>
-                    <t t-if="current_rank">
-                        <div class="d-flex justify-content-between mb-1">
-                            <small class="text-muted" t-out="current_rank.name"/>
-                            <small class="text-muted">
-                                <t t-if="next_rank" t-out="next_rank.name"/>
-                                <t t-else="">Top Rank ✓</t>
-                            </small>
-                        </div>
-                        <div class="progress mb-2" style="height:10px;">
-                            <div class="progress-bar bg-warning"
-                                 role="progressbar"
-                                 t-att-style="'width:' + str(rank_pct) + '%'"
-                                 t-att-aria-valuenow="rank_pct"
-                                 aria-valuemin="0"
-                                 aria-valuemax="100"/>
-                        </div>
-                        <small t-if="not next_rank" class="text-success fw-semibold">Highest rank achieved!</small>
-                    </t>
-                </div>
-            </div>
 
-            <!-- ── KPI Cards ─────────────────────────────────────────────── -->
-            <div class="row g-3 mb-4">
-                <div class="col-6 col-md-4">
-                    <div class="card text-center h-100">
-                        <div class="card-body py-3">
-                            <h3 class="mb-0 fw-bold text-primary" t-out="attendance_count"/>
-                            <small class="text-muted">Sessions Attended</small>
+            <!-- ── Welcome Hero Card ──────────────────────────────────────── -->
+            <div class="card dojo-hero mb-4 mt-3 shadow-sm border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-start gap-3 flex-wrap">
+
+                        <!-- Avatar circle: belt colour if ranked, else role colour -->
+                        <t t-set="_avatar_bg" t-value="current_rank.color if current_rank and current_rank.color else ('#0d6efd' if is_parent else '#198754')"/>
+                        <div class="dojo-hero-avatar flex-shrink-0 d-flex align-items-center justify-content-center text-white fw-bold fs-3"
+                             t-attf-style="width:64px;height:64px;border-radius:50%;background:#{_avatar_bg};border:3px solid rgba(0,0,0,.12);">
+                            <t t-out="(member.name or '?')[0].upper()"/>
                         </div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-4">
-                    <div class="card text-center h-100">
-                        <div class="card-body py-3">
-                            <h3 class="mb-0 fw-bold text-success" t-out="upcoming_count"/>
-                            <small class="text-muted">Upcoming Enrollments</small>
+
+                        <!-- Name + role + household -->
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <h4 class="mb-0 fw-bold lh-1 text-truncate" t-out="member.name"/>
+                                <t t-if="member.role == 'parent'">
+                                    <span class="badge bg-primary">Parent / Guardian</span>
+                                </t>
+                                <t t-elif="member.role == 'both'">
+                                    <span class="badge bg-success">Student &amp; Parent</span>
+                                </t>
+                                <t t-else="">
+                                    <span class="badge bg-secondary">Student</span>
+                                </t>
+                            </div>
+                            <t t-if="member.household_id">
+                                <small class="text-muted" t-out="member.household_id.name"/>
+                            </t>
+
+                            <!-- Stat chips -->
+                            <div class="dojo-hero-stats d-flex flex-wrap gap-2 mt-3">
+                                <span class="badge rounded-pill border dojo-hero-chip text-center">
+                                    <span class="d-block fs-6 fw-bold text-primary" t-out="attendance_count"/>
+                                    <span class="d-block" style="font-size:0.7rem;font-weight:normal;opacity:.75;">Sessions</span>
+                                </span>
+                                <span class="badge rounded-pill border dojo-hero-chip text-center">
+                                    <span class="d-block fs-6 fw-bold text-success" t-out="upcoming_count"/>
+                                    <span class="d-block" style="font-size:0.7rem;font-weight:normal;opacity:.75;">Upcoming</span>
+                                </span>
+                                <t t-if="is_parent">
+                                    <a href="/my/dojo/invoices" class="badge rounded-pill border dojo-hero-chip text-center text-decoration-none">
+                                        <span class="d-block fs-6 fw-bold text-warning"><i class="fa fa-file-text-o"/></span>
+                                        <span class="d-block" style="font-size:0.7rem;font-weight:normal;opacity:.75;">Billing</span>
+                                    </a>
+                                </t>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ── Household saved flash ──────────────────────────────────── -->
+            <!-- ── Household saved flash ───────────────────────────────────── -->
             <t t-if="household_saved">
                 <div class="alert alert-success alert-dismissible mb-3" role="alert">
                     <i class="fa fa-check-circle me-1"/> Household information saved.
@@ -135,11 +126,14 @@
                 </div>
             </t>
 
-            <!-- ── JS activities mount (schedule / enrollments / attendance / household) ── -->
+            <!-- ── JS activities mount ─────────────────────────────────────── -->
             <div id="dojo_activities_mount"
-                 t-att-data-tab="initial_tab or 'schedule'"
+                 t-att-data-tab="initial_tab or 'programs'"
                  t-att-data-is-parent="'true' if is_parent else 'false'"
+                 t-att-data-is-student-only="'true' if is_student_only else 'false'"
                  t-att-data-members="members_json"
+                 t-att-data-students="students_json"
+                 t-att-data-member-id="member.id"
                  class="dojo-portal-root mt-3"/>
         </t>
     </template>
