@@ -60,7 +60,6 @@
         <field name="name">My KPIs</field>
         <field name="res_model">dojo.instructor.profile</field>
         <field name="view_mode">form</field>
-        <field name="view_id" ref="view_dojo_instructor_profile_kpi_form"/>
         <field name="domain">[('user_id', '=', uid)]</field>
         <field name="context">{'create': False}</field>
     </record>

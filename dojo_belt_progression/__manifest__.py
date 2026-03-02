@@ -5,7 +5,7 @@
     "category": "Services",
     "license": "LGPL-3",
     "author": "Dojo",
-    "depends": ["dojo_classes", "dojo_members", "dojo_attendance", "account"],
+    "depends": ["dojo_classes", "dojo_members", "dojo_attendance", "account", "dojo_instructor_dashboard"],
     "data": [
         "security/dojo_belt_security.xml",
         "security/ir.model.access.csv",
