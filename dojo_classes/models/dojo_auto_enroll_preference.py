@@ -160,6 +160,63 @@ class DojoAutoEnrollPreference(models.Model):
                 labels.append(label)
         return ", ".join(labels) if labels else "All days"
 
+    def _enroll_in_existing_future_sessions(self):
+        """Ensure self.member_id is on the course roster and enrolled in all
+        existing future sessions of self.template_id that this preference permits.
+        Skips sessions where the member is already enrolled.
+        """
+        self.ensure_one()
+        if not self.active:
+            return
+
+        # ── 1. Add member to the course roster if not already there ───────
+        # Use a context flag so DojoClassTemplate.write() skips its own
+        # enrollment logic for this member (we handle it in step 2 below).
+        tmpl = self.template_id
+        if self.member_id not in tmpl.course_member_ids:
+            tmpl.with_context(auto_enroll_skip_members={self.member_id.id}).write(
+                {"course_member_ids": [(4, self.member_id.id)]}
+            )
+
+        # ── 2. Enroll in existing future sessions ─────────────────────────
+        now = fields.Datetime.now()
+        future_sessions = self.env["dojo.class.session"].search([
+            ("template_id", "=", tmpl.id),
+            ("start_datetime", ">=", now),
+            ("state", "not in", ["done", "cancelled"]),
+        ])
+        Enrollment = self.env["dojo.class.enrollment"]
+        for session in future_sessions:
+            already = Enrollment.search([
+                ("session_id", "=", session.id),
+                ("member_id", "=", self.member_id.id),
+            ], limit=1)
+            if already:
+                continue
+            if self.should_enroll_on_date(session.start_datetime.date()):
+                Enrollment.with_context(skip_course_membership_check=True).create({
+                    "session_id": session.id,
+                    "member_id": self.member_id.id,
+                    "status": "registered",
+                })
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        for rec in records:
+            rec._enroll_in_existing_future_sessions()
+        return records
+
+    def write(self, vals):
+        # Capture which records were previously inactive so we can enroll them
+        # if they are being re-activated.
+        previously_inactive = self.filtered(lambda r: not r.active) if "active" in vals else self.env[self._name]
+        res = super().write(vals)
+        if "active" in vals and vals["active"]:
+            for rec in previously_inactive:
+                rec._enroll_in_existing_future_sessions()
+        return res
+
 
 # ── Extend dojo.class.template with auto_enroll_pref_ids ──────────────────────
 

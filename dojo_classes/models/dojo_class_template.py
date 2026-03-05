@@ -236,6 +236,52 @@ class DojoClassTemplate(models.Model):
                     ])
                     if enrollments:
                         enrollments.write({'status': 'cancelled'})
+
+                # ── Enroll newly added members in existing future sessions ──
+                # Skip members being handled by auto-enroll preference logic
+                # (they pass context key 'auto_enroll_skip_members' to avoid double-enrollment).
+                skip_ids = self.env.context.get('auto_enroll_skip_members', set())
+                added_ids = list((new_ids - old_ids) - skip_ids)
+                if added_ids:
+                    # Fetch auto-enroll preferences for these members on this template
+                    pref_by_member = {
+                        pref.member_id.id: pref
+                        for pref in self.env['dojo.course.auto.enroll'].with_context(
+                            active_test=False
+                        ).search([
+                            ('template_id', '=', tmpl.id),
+                            ('member_id', 'in', added_ids),
+                        ])
+                    }
+                    future_sessions = self.env['dojo.class.session'].search([
+                        ('template_id', '=', tmpl.id),
+                        ('start_datetime', '>=', now),
+                        ('state', 'not in', ['done', 'cancelled']),
+                    ])
+                    Enrollment = self.env['dojo.class.enrollment']
+                    for session in future_sessions:
+                        session_date = session.start_datetime.date()
+                        for member_id in added_ids:
+                            # Skip if already enrolled
+                            already = Enrollment.search([
+                                ('session_id', '=', session.id),
+                                ('member_id', '=', member_id),
+                            ], limit=1)
+                            if already:
+                                continue
+                            pref = pref_by_member.get(member_id)
+                            if pref is None:
+                                enroll = True  # no preference = enroll all days
+                            else:
+                                enroll = pref.should_enroll_on_date(session_date)
+                            if enroll:
+                                Enrollment.with_context(
+                                    skip_course_membership_check=True
+                                ).create({
+                                    'session_id': session.id,
+                                    'member_id': member_id,
+                                    'status': 'registered',
+                                })
         return res
 
     @api.model

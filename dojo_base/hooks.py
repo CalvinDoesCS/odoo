@@ -27,6 +27,4 @@ def post_init_hook(env):
     _ensure_admin_dojo_group(env)
 
 
-def post_migrate_hook(env, *args, **kwargs):
-    """Re-apply admin group on every install or upgrade of dojo_base."""
-    _ensure_admin_dojo_group(env)
+
