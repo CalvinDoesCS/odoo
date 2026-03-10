@@ -1,0 +1,215 @@
+/* ═══════════════════════════════════════════════════════════
+   Dojo Checkout — Shared page styles
+   All selectors are scoped under .dojo-checkout-page
+═══════════════════════════════════════════════════════════ */
+
+/* ── Page wrapper ──────────────────────────────────────── */
+.dojo-checkout-page {
+    font-family: inherit;
+}
+
+/* ── Step progress bar ─────────────────────────────────── */
+.dojo-checkout-progress {
+    user-select: none;
+}
+
+.dojo-cp-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.dojo-cp-dot {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e9ecef;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    transition: background .25s, color .25s;
+}
+
+.dojo-cp-step.active .dojo-cp-dot {
+    background: #0d6efd;
+    color: #fff;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, .2);
+}
+
+.dojo-cp-step.done .dojo-cp-dot {
+    background: #198754;
+    color: #fff;
+}
+
+.dojo-cp-label {
+    font-size: 0.7rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.dojo-cp-step.active .dojo-cp-label {
+    color: #0d6efd;
+    font-weight: 700;
+}
+
+.dojo-cp-step.done .dojo-cp-label {
+    color: #198754;
+}
+
+.dojo-cp-line {
+    height: 2px;
+    width: 48px;
+    background: #e9ecef;
+    margin-bottom: 20px;
+    transition: background .25s;
+}
+
+.dojo-cp-line.done {
+    background: #198754;
+}
+
+@media (max-width: 575px) {
+    .dojo-cp-line { width: 24px; }
+}
+
+/* ── Program heading ───────────────────────────────────── */
+.dojo-program-heading {
+    border-left: 4px solid #0d6efd;
+    padding-left: 12px;
+}
+
+/* ── Plan cards (gallery + upgrade) ───────────────────── */
+.dojo-plan-card {
+    border-radius: 12px;
+    transition: transform .2s, box-shadow .2s;
+    overflow: hidden;
+}
+
+.dojo-plan-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .12) !important;
+}
+
+.dojo-plan-img {
+    height: 160px;
+    object-fit: cover;
+}
+
+.dojo-featured-badge .badge {
+    border-radius: 6px;
+    letter-spacing: .3px;
+}
+
+.dojo-plan-banner {
+    font-size: 0.8rem;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+}
+
+/* ── Plan sidebar (detail page) ────────────────────────── */
+.dojo-plan-sidebar {
+    border-radius: 12px;
+    position: sticky;
+    top: 80px;
+}
+
+.dojo-price-summary .d-flex {
+    font-size: 0.9rem;
+}
+
+/* ── Day picker ────────────────────────────────────────── */
+.dojo-day-card {
+    border-radius: 10px;
+    transition: border-color .15s, background .15s, color .15s;
+    cursor: pointer;
+    border: 2px solid #dee2e6 !important;
+}
+
+.dojo-day-card:hover {
+    border-color: #0d6efd !important;
+    background: #f0f6ff;
+}
+
+.dojo-day-card.selected,
+.dojo-day-check:checked + .dojo-day-fw {
+    border-color: #198754 !important;
+    background: #d1fae5;
+    color: #0f5132;
+}
+
+/* JS-driven selected state */
+.dojo-day-card.dojo-selected {
+    border-color: #198754 !important;
+    background: #d1fae5;
+    color: #0f5132;
+}
+
+/* ── Upsell toggle cards ───────────────────────────────── */
+.dojo-upsell-card {
+    border-radius: 10px;
+    border: 2px solid #dee2e6 !important;
+    transition: border-color .15s, background .15s;
+    cursor: pointer;
+}
+
+.dojo-upsell-card:hover {
+    border-color: #0d6efd !important;
+    background: #f0f6ff;
+}
+
+.dojo-upsell-card.dojo-selected {
+    border-color: #198754 !important;
+    background: #d1fae5;
+}
+
+/* checkmark overlay when selected */
+.dojo-upsell-card.dojo-selected::after {
+    content: "✓";
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    font-size: 1rem;
+    color: #198754;
+    font-weight: 900;
+}
+
+.dojo-upsell-card {
+    position: relative;
+}
+
+/* ── Order summary ─────────────────────────────────────── */
+.dojo-summary-total {
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+/* ── Complete page ─────────────────────────────────────── */
+.dojo-complete-icon {
+    animation: dojo-bounce .6s ease;
+}
+
+@keyframes dojo-bounce {
+    0%   { transform: scale(0.5); opacity: 0; }
+    60%  { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); }
+}
+
+.dojo-thank-you-html {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+}
+
+/* ── Portal upgrade CTA ────────────────────────────────── */
+.dojo-upgrade-cta {
+    animation: dojo-fadein .4s ease;
+}
+
+@keyframes dojo-fadein {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}

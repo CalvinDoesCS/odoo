@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         List View
+    ================================================================ -->
+    <record id="view_dojo_marketing_card_list" model="ir.ui.view">
+        <field name="name">dojo.marketing.card.list</field>
+        <field name="model">dojo.marketing.card</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name" string="Card Title"/>
+                <field name="card_type" string="Type"/>
+                <field name="subtitle"/>
+                <field name="publish_kiosk" string="Kiosk" widget="boolean_toggle"/>
+                <field name="publish_portal" string="Portal" widget="boolean_toggle"/>
+                <field name="active" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Form View
+    ================================================================ -->
+    <record id="view_dojo_marketing_card_form" model="ir.ui.view">
+        <field name="name">dojo.marketing.card.form</field>
+        <field name="model">dojo.marketing.card</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group string="Card Info">
+                            <field name="name" string="Title"/>
+                            <field name="card_type"/>
+                            <field name="subtitle"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group string="Publishing">
+                            <field name="active"/>
+                            <field name="publish_kiosk"/>
+                            <field name="publish_portal"/>
+                        </group>
+                    </group>
+
+                    <group string="Body Text">
+                        <field name="body" nolabel="1" widget="text" placeholder="Optional longer description shown on the card…"/>
+                    </group>
+
+                    <!-- URL group: hidden for badge (personal QR, URL n/a) and book_trial (auto) -->
+                    <group string="Target URL"
+                           invisible="card_type in ['book_trial', 'badge']">
+                        <field name="custom_url" string="URL"
+                               placeholder="https://example.com/donate"/>
+                        <field name="target_url" string="Resolved URL" readonly="1"/>
+                    </group>
+                    <group string="Target URL (auto-generated)"
+                           invisible="card_type != 'book_trial'">
+                        <field name="target_url" string="Resolved URL" readonly="1"/>
+                    </group>
+
+                    <!-- QR preview: not shown for badge (per-member, no static QR) -->
+                    <group string="QR Code Preview"
+                           invisible="card_type == 'badge' or not qr_image">
+                        <field name="qr_image" widget="image" readonly="1" nolabel="1"
+                               options="{'size': [200, 200]}"/>
+                    </group>
+                    <div class="alert alert-info" role="alert"
+                         invisible="card_type != 'badge'">
+                        <strong>Member Badge</strong> — QR codes for this card type are
+                        generated individually per member at
+                        <code>/my/dojo/badge-qr</code> and encode the member's check-in
+                        barcode. No static QR is stored here.
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Search View
+    ================================================================ -->
+    <record id="view_dojo_marketing_card_search" model="ir.ui.view">
+        <field name="name">dojo.marketing.card.search</field>
+        <field name="model">dojo.marketing.card</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="card_type"/>
+                <filter name="kiosk" string="Kiosk" domain="[('publish_kiosk','=',True)]"/>
+                <filter name="portal" string="Portal" domain="[('publish_portal','=',True)]"/>
+                <separator/>
+                <filter name="inactive" string="Archived" domain="[('active','=',False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Window Action
+    ================================================================ -->
+    <record id="action_dojo_marketing_card" model="ir.actions.act_window">
+        <field name="name">Marketing Cards</field>
+        <field name="res_model">dojo.marketing.card</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'active_test': True}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first marketing card!
+            </p>
+            <p>
+                Marketing cards appear in the kiosk idle carousel and the member portal.
+                Each card can carry a QR code pointing to a custom URL, the trial booking
+                page, or a member's personal check-in barcode.
+            </p>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Menu — under Kiosk app root
+    ================================================================ -->
+    <menuitem
+        id="menu_dojo_marketing_cards"
+        name="Marketing Cards"
+        parent="dojo_kiosk.menu_dojo_kiosk_root"
+        action="action_dojo_marketing_card"
+        sequence="20"
+        groups="dojo_base.group_dojo_admin"
+    />
+
+</odoo>

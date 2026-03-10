@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ── List ─────────────────────────────────────────────────────── -->
+    <record id="view_dojo_checkout_config_list" model="ir.ui.view">
+        <field name="name">dojo.checkout.config.list</field>
+        <field name="model">dojo.checkout.config</field>
+        <field name="arch" type="xml">
+            <list string="Checkout Page Configs">
+                <field name="plan_id"/>
+                <field name="featured" widget="boolean_toggle"/>
+                <field name="cta_label"/>
+                <field name="banner_text"/>
+                <field name="upsell_ids" widget="many2many_tags"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ── Form ─────────────────────────────────────────────────────── -->
+    <record id="view_dojo_checkout_config_form" model="ir.ui.view">
+        <field name="name">dojo.checkout.config.form</field>
+        <field name="model">dojo.checkout.config</field>
+        <field name="arch" type="xml">
+            <form string="Checkout Page Config">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="plan_id" string="Plan"/>
+                        <h1><field name="plan_id" options="{'no_create': True}"/></h1>
+                    </div>
+                    <group>
+                        <group string="Gallery Card">
+                            <field name="featured" widget="boolean_toggle"/>
+                            <field name="cta_label"/>
+                            <field name="banner_text"/>
+                        </group>
+                        <group string="Upsells">
+                            <field name="upsell_ids" widget="many2many_tags"
+                                   options="{'no_quick_create': True}"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Hero Image">
+                            <field name="hero_image_1920" widget="image"
+                                   options="{'preview_image': 'hero_image_1920'}"/>
+                        </page>
+                        <page string="Thank You Message">
+                            <field name="thank_you_html" widget="html"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── Action ──────────────────────────────────────────────────── -->
+    <record id="action_dojo_checkout_config" model="ir.actions.act_window">
+        <field name="name">Checkout Page Configs</field>
+        <field name="res_model">dojo.checkout.config</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No checkout pages configured yet.</p>
+            <p>Create a config to customise the public checkout page for each subscription plan.</p>
+        </field>
+    </record>
+
+    <!-- ── Menus ─────────────────────────────────────────────────────── -->
+    <menuitem id="menu_dojo_checkout_root"
+        name="Checkout Pages"
+        parent="dojo_classes.menu_dojo_classes_root"
+        sequence="90"
+        groups="dojo_base.group_dojo_admin"/>
+
+    <menuitem id="menu_dojo_checkout_configs"
+        name="Page Configs"
+        parent="menu_dojo_checkout_root"
+        action="action_dojo_checkout_config"
+        sequence="10"
+        groups="dojo_base.group_dojo_admin"/>
+
+    <menuitem id="menu_dojo_checkout_upsells"
+        name="Upsell Items"
+        parent="menu_dojo_checkout_root"
+        action="action_dojo_checkout_upsell"
+        sequence="20"
+        groups="dojo_base.group_dojo_admin"/>
+
+</odoo>

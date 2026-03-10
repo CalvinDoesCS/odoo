@@ -208,10 +208,11 @@ class DojoOnboardingWizard(models.TransientModel):
                     'A subscription plan is required. Please select a plan to continue.'
                 ))
 
-        # ── Advance step, skipping guardian_setup when not creating a new household ──
+        # ── Advance step, skipping guardian_setup when not creating a new household
+        # or when the member is role='both' (they are their own guardian) ──────────
         idx = self._STEP_ORDER.index(self.step)
         next_step = self._STEP_ORDER[idx + 1] if idx < len(self._STEP_ORDER) - 1 else self.step
-        if next_step == 'guardian_setup' and not self.create_new_household:
+        if next_step == 'guardian_setup' and (not self.create_new_household or self.role == 'both'):
             next_step = 'enrollment'
         # Skip auto_enroll step if no recurring templates were selected
         if next_step == 'auto_enroll' and not self.template_ids:
@@ -223,8 +224,9 @@ class DojoOnboardingWizard(models.TransientModel):
         self.ensure_one()
         idx = self._STEP_ORDER.index(self.step)
         prev_step = self._STEP_ORDER[idx - 1] if idx > 0 else self.step
-        # Skip guardian_setup when going back if we're not on the new-household path
-        if prev_step == 'guardian_setup' and not self.create_new_household:
+        # Skip guardian_setup when going back if not on the new-household path
+        # or when the member is role='both' (they are their own guardian)
+        if prev_step == 'guardian_setup' and (not self.create_new_household or self.role == 'both'):
             prev_step = 'household'
         # Skip auto_enroll when going back if no templates selected
         if prev_step == 'auto_enroll' and not self.template_ids:
@@ -247,26 +249,32 @@ class DojoOnboardingWizard(models.TransientModel):
         guardian_member = None
 
         if self.create_new_household:
-            # Step 1: create the guardian member
-            guardian_vals = {
-                'name': self.new_guardian_name,
-                'email': self.new_guardian_email or False,
-                'phone': self.new_guardian_phone or False,
-                'role': self.new_guardian_role or 'parent',
-                'company_id': self.env.company.id,
-            }
-            guardian_member = self.env['dojo.member'].create(guardian_vals)
+            if self.role == 'both':
+                # The member IS their own guardian — create the household now
+                # and set them as primary_guardian_id after they are created below.
+                hh_name = self.new_household_name or (self.name + ' Household')
+                household = self.env['dojo.household'].create({
+                    'name': hh_name,
+                    'company_id': self.env.company.id,
+                })
+            else:
+                # Standard path: create a separate guardian member first.
+                guardian_vals = {
+                    'name': self.new_guardian_name,
+                    'email': self.new_guardian_email or False,
+                    'phone': self.new_guardian_phone or False,
+                    'role': self.new_guardian_role or 'parent',
+                    'company_id': self.env.company.id,
+                }
+                guardian_member = self.env['dojo.member'].create(guardian_vals)
 
-            # Step 2: create household
-            hh_name = self.new_household_name or (self.new_guardian_name + ' Household')
-            household = self.env['dojo.household'].create({
-                'name': hh_name,
-                'primary_guardian_id': guardian_member.id,
-                'company_id': self.env.company.id,
-            })
-
-            # Step 3: assign the guardian to their own household
-            guardian_member.write({'household_id': household.id})
+                hh_name = self.new_household_name or (self.new_guardian_name + ' Household')
+                household = self.env['dojo.household'].create({
+                    'name': hh_name,
+                    'primary_guardian_id': guardian_member.id,
+                    'company_id': self.env.company.id,
+                })
+                guardian_member.write({'household_id': household.id})
 
         # ── Create new member ─────────────────────────────────────────────────
         member_vals = {
@@ -388,13 +396,7 @@ class DojoOnboardingWizard(models.TransientModel):
                     'An email address is required to create a portal login. '
                     'Please add an email in Step 1.'
                 ))
-            member.action_grant_portal_access()
-            if self.send_welcome_email:
-                user = self.env['res.users'].sudo().search(
-                    [('partner_id', '=', member.partner_id.id)], limit=1
-                )
-                if user:
-                    user.action_reset_password()
+            member.action_grant_portal_access()  # sends "Set your password" email for new users
 
         # ── Portal login — guardian (new household path only) ─────────────────
         if self.create_new_household and guardian_member and self.create_guardian_portal_login:
@@ -403,13 +405,7 @@ class DojoOnboardingWizard(models.TransientModel):
                     'A guardian email address is required to create a guardian portal login. '
                     'Please go back to Step 3 and enter the guardian\'s email.'
                 ))
-            guardian_member.action_grant_portal_access()
-            if self.send_guardian_welcome_email:
-                guardian_user = self.env['res.users'].sudo().search(
-                    [('partner_id', '=', guardian_member.partner_id.id)], limit=1
-                )
-                if guardian_user:
-                    guardian_user.action_reset_password()
+            guardian_member.action_grant_portal_access()  # sends "Set your password" email for new users
 
         # ── Onboarding record ──────────────────────────────────────────────────
         self.env['dojo.onboarding.record'].create({

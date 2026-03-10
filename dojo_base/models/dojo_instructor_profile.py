@@ -30,7 +30,6 @@ class DojoInstructorProfile(models.Model):
             "name": self.name,
             "user_id": self.user_id.id,
             "work_email": self.user_id.email or False,
-            "address_home_id": self.partner_id.id,
             "job_title": "Instructor",
             "company_id": self.company_id.id,
         }
@@ -50,8 +49,6 @@ class DojoInstructorProfile(models.Model):
                 employee_vals["user_id"] = vals["user_id"]
                 new_user = self.env["res.users"].browse(vals["user_id"])
                 employee_vals["work_email"] = new_user.email or False
-            if "partner_id" in vals:
-                employee_vals["address_home_id"] = vals["partner_id"]
             if "company_id" in vals:
                 employee_vals["company_id"] = vals["company_id"]
             if employee_vals:

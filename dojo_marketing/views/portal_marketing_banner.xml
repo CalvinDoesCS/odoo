@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Inject marketing banner strip into the dojo portal home page.
+        Replaces the placeholder <div class="dojo-portal-banner"/> with
+        an actual horizontal pill-strip of active marketing cards.
+    -->
+    <template id="portal_dojo_marketing_banner"
+              inherit_id="dojo_members_portal.portal_dojo_home"
+              name="Dojo Marketing Banner"
+              priority="20">
+
+        <xpath expr="//div[hasclass('dojo-portal-banner')]" position="replace">
+            <t t-if="marketing_cards">
+                <div class="dojo-marketing-banner mt-3 mb-1">
+                    <div class="dojo-marketing-banner__track">
+                        <t t-foreach="marketing_cards" t-as="card" t-key="card['id']">
+                            <div class="dojo-marketing-pill">
+                                <!-- Text side -->
+                                <div class="dojo-marketing-pill__text">
+                                    <span class="dojo-marketing-pill__name"
+                                          t-esc="card['name']"/>
+                                    <t t-if="card['subtitle']">
+                                        <span class="dojo-marketing-pill__sub"
+                                              t-esc="card['subtitle']"/>
+                                    </t>
+                                </div>
+                                <!-- QR side -->
+                                <t t-if="card['qr_url']">
+                                    <div class="dojo-marketing-pill__qr">
+                                        <img t-att-src="card['qr_url']"
+                                             t-att-alt="card['name'] + ' QR'"
+                                             class="dojo-marketing-pill__qr-img"
+                                             loading="lazy"/>
+                                    </div>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </t>
+        </xpath>
+
+    </template>
+</odoo>

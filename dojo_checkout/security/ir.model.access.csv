@@ -1,0 +1,13 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dojo_checkout_upsell_admin,dojo.checkout.upsell admin,model_dojo_checkout_upsell,dojo_base.group_dojo_admin,1,1,1,1
+access_dojo_checkout_upsell_instructor,dojo.checkout.upsell instructor,model_dojo_checkout_upsell,dojo_base.group_dojo_instructor,1,0,0,0
+access_dojo_checkout_upsell_public,dojo.checkout.upsell public,model_dojo_checkout_upsell,base.group_public,1,0,0,0
+access_dojo_checkout_upsell_user,dojo.checkout.upsell user,model_dojo_checkout_upsell,base.group_user,1,0,0,0
+access_dojo_checkout_config_admin,dojo.checkout.config admin,model_dojo_checkout_config,dojo_base.group_dojo_admin,1,1,1,1
+access_dojo_checkout_config_instructor,dojo.checkout.config instructor,model_dojo_checkout_config,dojo_base.group_dojo_instructor,1,0,0,0
+access_dojo_checkout_config_public,dojo.checkout.config public,model_dojo_checkout_config,base.group_public,1,0,0,0
+access_dojo_checkout_config_user,dojo.checkout.config user,model_dojo_checkout_config,base.group_user,1,0,0,0
+access_dojo_checkout_session_admin,dojo.checkout.session admin,model_dojo_checkout_session,dojo_base.group_dojo_admin,1,1,1,1
+access_dojo_checkout_session_instructor,dojo.checkout.session instructor,model_dojo_checkout_session,dojo_base.group_dojo_instructor,1,0,0,0
+access_dojo_checkout_session_public,dojo.checkout.session public,model_dojo_checkout_session,base.group_public,1,1,1,0
+access_dojo_checkout_session_user,dojo.checkout.session user,model_dojo_checkout_session,base.group_user,1,1,1,0

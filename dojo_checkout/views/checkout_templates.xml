@@ -1,0 +1,557 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SHARED MACRO: Step progress bar
+     usage: <t t-call="dojo_checkout.checkout_progress"><t t-set="step" t-value="1"/></t>
+     steps: 1=Plan, 2=Schedule, 3=Summary, 4=Done
+════════════════════════════════════════════════════════════════════════════ -->
+<template id="checkout_progress" name="Checkout Progress Bar">
+    <div class="dojo-checkout-progress d-flex align-items-center justify-content-center gap-0 mb-4 mt-2">
+        <t t-foreach="[('1','Plan'),('2','Schedule'),('3','Review'),('4','Done')]" t-as="s">
+            <div t-attf-class="dojo-cp-step #{int(s[0]) == step and 'active' or (int(s[0]) &lt; step and 'done' or '')}">
+                <div class="dojo-cp-dot"><t t-esc="s[0]"/></div>
+                <div class="dojo-cp-label d-none d-sm-block"><t t-esc="s[1]"/></div>
+            </div>
+            <t t-if="int(s[0]) &lt; 4">
+                <div t-attf-class="dojo-cp-line #{int(s[0]) &lt; step and 'done' or ''}"/>
+            </t>
+        </t>
+    </div>
+</template>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     STEP 0 — Plan Gallery
+════════════════════════════════════════════════════════════════════════════ -->
+<template id="checkout_gallery" name="Join Our Dojo">
+    <t t-call="website.layout">
+        <div class="dojo-checkout-page container py-5">
+            <div class="text-center mb-5">
+                <h1 class="fw-bold">Choose Your Membership</h1>
+                <p class="text-muted lead">Select a programme below to get started.</p>
+            </div>
+
+            <t t-foreach="plan_groups" t-as="group">
+                <t t-set="prog" t-value="group['program']"/>
+                <div class="mb-5">
+                    <h3 class="dojo-program-heading fw-semibold mb-3">
+                        <span t-esc="prog.name or 'General'"/>
+                    </h3>
+                    <div class="row g-4">
+                        <t t-foreach="group['plans']" t-as="item">
+                            <t t-set="plan" t-value="item['plan']"/>
+                            <t t-set="cfg" t-value="item['config']"/>
+                            <div class="col-sm-6 col-lg-4">
+                                <div class="dojo-plan-card card h-100 shadow-sm border-0 position-relative">
+                                    <!-- Featured badge -->
+                                    <t t-if="cfg and cfg.featured">
+                                        <div class="dojo-featured-badge position-absolute top-0 end-0 m-2">
+                                            <span class="badge bg-warning text-dark fw-semibold px-2 py-1">Featured</span>
+                                        </div>
+                                    </t>
+                                    <!-- Banner text -->
+                                    <t t-if="cfg and cfg.banner_text">
+                                        <div class="dojo-plan-banner bg-primary text-white text-center py-1 px-3 small fw-semibold" style="border-radius: 8px 8px 0 0;">
+                                            <t t-esc="cfg.banner_text"/>
+                                        </div>
+                                    </t>
+                                    <!-- Hero image -->
+                                    <t t-if="cfg and cfg.hero_image_1920">
+                                        <img t-att-src="'/web/image/dojo.checkout.config/' + str(cfg.id) + '/hero_image_1920'"
+                                             class="card-img-top dojo-plan-img" alt=""/>
+                                    </t>
+                                    <div class="card-body d-flex flex-column p-4">
+                                        <h5 class="card-title fw-bold mb-1" t-esc="plan.name"/>
+                                        <p class="text-muted small mb-3" t-esc="plan.description or ''"/>
+                                        <div class="dojo-price mt-auto mb-3">
+                                            <span class="dojo-price-amount fs-3 fw-bold" t-esc="'$%.0f' % plan.price"/>
+                                            <span class="text-muted small">
+                                                / <t t-esc="plan.billing_period"/>
+                                            </span>
+                                            <t t-if="plan.initial_fee">
+                                                <div class="text-muted small mt-1">
+                                                    + $<t t-esc="'%.0f' % plan.initial_fee"/> enrollment fee
+                                                </div>
+                                            </t>
+                                        </div>
+                                        <a t-attf-href="/checkout/plan/#{plan.id}"
+                                           class="btn btn-primary w-100 fw-semibold">
+                                            <t t-esc="cfg.cta_label if cfg else 'Join Now'"/>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</template>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     STEP 1 — Plan Detail + Member Info Form
+════════════════════════════════════════════════════════════════════════════ -->
+<template id="checkout_plan" name="Checkout: Your Details">
+    <t t-call="website.layout">
+        <div class="dojo-checkout-page container py-5" style="max-width:900px;">
+            <t t-call="dojo_checkout.checkout_progress">
+                <t t-set="step" t-value="1"/>
+            </t>
+
+            <div class="row g-5">
+                <!-- Left: plan summary -->
+                <div class="col-md-4 order-md-2">
+                    <div class="dojo-plan-sidebar card border-0 shadow-sm p-4">
+                        <t t-if="config and config.hero_image_1920">
+                            <img t-att-src="'/web/image/dojo.checkout.config/' + str(config.id) + '/hero_image_1920'"
+                                 class="img-fluid rounded mb-3" alt=""/>
+                        </t>
+                        <h5 class="fw-bold mb-1" t-esc="plan.name"/>
+                        <p class="text-muted small mb-3" t-esc="plan.program_id.name or ''"/>
+                        <div class="dojo-price-summary">
+                            <div class="d-flex justify-content-between">
+                                <span>Recurring</span>
+                                <strong><t t-esc="'$%.2f' % plan.price"/>/<t t-esc="plan.billing_period"/></strong>
+                            </div>
+                            <t t-if="plan.initial_fee">
+                                <div class="d-flex justify-content-between mt-1">
+                                    <span>Enrollment fee</span>
+                                    <strong><t t-esc="'$%.2f' % plan.initial_fee"/></strong>
+                                </div>
+                            </t>
+                        </div>
+                        <t t-if="plan.description">
+                            <hr/>
+                            <p class="small text-muted mb-0" t-esc="plan.description"/>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- Right: member form + upsells -->
+                <div class="col-md-8 order-md-1">
+                    <h2 class="fw-bold mb-4">Your Details</h2>
+                    <form t-attf-action="/checkout/plan/#{plan.id}/start" method="post">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold" for="member_name">Full Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="member_name" name="member_name" required="required" placeholder="Jane Smith"/>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-semibold" for="member_email">Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="member_email" name="member_email" required="required" placeholder="jane@example.com"/>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-semibold" for="member_phone">Phone</label>
+                                <input type="tel" class="form-control" id="member_phone" name="member_phone" placeholder="555-0100"/>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-semibold" for="date_of_birth" id="label_date_of_birth">Date of Birth</label>
+                                <input type="date" class="form-control" id="date_of_birth" name="date_of_birth"/>
+                            </div>
+                        </div>
+
+                        <!-- ── Enrollment type ─────────────────────────────────────── -->
+                        <div class="mt-4 mb-2">
+                            <p class="fw-semibold mb-2">Who is enrolling? <span class="text-danger">*</span></p>
+                            <div class="d-flex flex-column gap-2" id="dojo-enroll-type">
+                                <label class="dojo-enroll-option card border p-3 d-flex flex-row align-items-start gap-3"
+                                       style="cursor:pointer;border-radius:10px;">
+                                    <input type="radio" name="enrollment_type" value="adult"
+                                           id="enroll_adult" class="mt-1 flex-shrink-0" checked="checked"/>
+                                    <div>
+                                        <div class="fw-semibold">Adult Student — I'm signing up for myself</div>
+                                        <div class="text-muted small">One account. You train. You receive the invoice.</div>
+                                    </div>
+                                </label>
+                                <label class="dojo-enroll-option card border p-3 d-flex flex-row align-items-start gap-3"
+                                       style="cursor:pointer;border-radius:10px;">
+                                    <input type="radio" name="enrollment_type" value="family"
+                                           id="enroll_family" class="mt-1 flex-shrink-0"/>
+                                    <div>
+                                        <div class="fw-semibold">Parent / Guardian — I'm enrolling my child</div>
+                                        <div class="text-muted small">Separate child profile created. Invoice sent to you.</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- ── Family extra fields (hidden until family is selected) ── -->
+                        <div id="dojo-family-fields" style="display:none;">
+                            <div class="card border-0 bg-light rounded-3 p-4 mt-3">
+                                <h6 class="fw-bold mb-3">Child's Information</h6>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold" for="child_name">Child's Full Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="child_name" name="child_name"
+                                               placeholder="Alex Smith"/>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label class="form-label fw-semibold" for="child_dob">Child's Date of Birth</label>
+                                        <input type="date" class="form-control" id="child_dob" name="child_dob"/>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label class="form-label fw-semibold" for="child_phone">Child's Phone</label>
+                                        <input type="tel" class="form-control" id="child_phone" name="child_phone"
+                                               placeholder="555-0101"/>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold" for="child_email">Child's Email</label>
+                                        <input type="email" class="form-control" id="child_email" name="child_email"
+                                               placeholder="alex@example.com"/>
+                                        <div class="form-text">Used to create a separate portal login for your child.</div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox"
+                                                   id="child_portal_access" name="child_portal_access"
+                                                   value="on" checked="checked"/>
+                                            <label class="form-check-label" for="child_portal_access">
+                                                Create a portal login for my child
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr class="my-3"/>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox"
+                                           id="parent_also_trains" name="parent_also_trains" value="on"/>
+                                    <label class="form-check-label fw-semibold" for="parent_also_trains">
+                                        I also train at this dojo
+                                    </label>
+                                    <div class="form-text">Check this if you participate as a student too — your account will be marked as Student &amp; Parent.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upsells -->
+                        <t t-if="upsells">
+                            <hr class="my-4"/>
+                            <h5 class="fw-semibold mb-3">Add to your order</h5>
+                            <div class="row g-3 mb-4" id="dojo-upsells">
+                                <t t-foreach="upsells" t-as="upsell">
+                                    <div class="col-sm-6 col-lg-4">
+                                        <label t-attf-for="upsell_#{upsell.id}"
+                                               class="dojo-upsell-card card border h-100 p-3 d-flex flex-column gap-2 cursor-pointer"
+                                               style="cursor:pointer;">
+                                            <input type="checkbox"
+                                                   t-attf-id="upsell_#{upsell.id}"
+                                                   t-attf-name="upsell_#{upsell.id}"
+                                                   class="dojo-upsell-check visually-hidden"/>
+                                            <t t-if="upsell.image_128">
+                                                <img t-att-src="'/web/image/dojo.checkout.upsell/' + str(upsell.id) + '/image_128'"
+                                                     class="img-fluid rounded mb-1" alt=""
+                                                     style="max-height:80px;object-fit:contain;"/>
+                                            </t>
+                                            <div class="fw-semibold small" t-esc="upsell.name"/>
+                                            <div class="text-muted small" t-esc="upsell.description or ''"/>
+                                            <div class="fw-bold mt-auto">
+                                                <t t-esc="'$%.2f' % upsell.price"/>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </t>
+                            </div>
+                        </t>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100 fw-semibold mt-2">
+                            Continue to Schedule →
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </t>
+</template>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     STEP 2 — Schedule / Day Picker
+════════════════════════════════════════════════════════════════════════════ -->
+<template id="checkout_schedule" name="Checkout: Preferred Schedule">
+    <t t-call="website.layout">
+        <div class="dojo-checkout-page container py-5" style="max-width:720px;">
+            <t t-call="dojo_checkout.checkout_progress">
+                <t t-set="step" t-value="2"/>
+            </t>
+
+            <div class="text-center mb-4">
+                <h2 class="fw-bold">When do you want to train?</h2>
+                <p class="text-muted">Pick one or more days. We'll automatically enrol you in sessions on those days.</p>
+            </div>
+
+            <form t-attf-action="/checkout/schedule/#{session.token}" method="post">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                <div class="row g-3 mb-5 justify-content-center">
+                    <t t-foreach="all_days" t-as="day">
+                        <div class="col-auto">
+                            <label t-attf-for="day_#{day}" class="dojo-day-card card border text-center px-4 py-3"
+                                   style="min-width:100px;cursor:pointer;">
+                                <input type="checkbox" name="preferred_days"
+                                       t-att-value="day"
+                                       t-attf-id="day_#{day}"
+                                       class="dojo-day-check visually-hidden"/>
+                                <div class="fw-bold fs-5" t-esc="day_labels[day][:3]"/>
+                                <div class="small text-muted" t-esc="day_labels[day]"/>
+                            </label>
+                        </div>
+                    </t>
+                </div>
+
+                <t t-if="templates">
+                    <div class="alert alert-info small mb-4">
+                        <strong>Your programme includes:</strong>
+                        <ul class="mb-0 mt-1">
+                            <t t-foreach="templates" t-as="tmpl">
+                                <li><t t-esc="tmpl.name"/></li>
+                            </t>
+                        </ul>
+                    </div>
+                </t>
+
+                <div class="d-flex gap-3">
+                    <a t-attf-href="/checkout/plan/#{session.plan_id.id}"
+                       class="btn btn-outline-secondary flex-shrink-0">← Back</a>
+                    <button type="submit" class="btn btn-primary flex-grow-1 fw-semibold">
+                        Continue to Review →
+                    </button>
+                </div>
+                <div class="text-center mt-3">
+                    <a t-attf-href="/checkout/summary/#{session.token}" class="text-muted small">
+                        Skip — I'll sort my schedule later
+                    </a>
+                </div>
+            </form>
+        </div>
+    </t>
+</template>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     STEP 3 — Order Summary + Payment Choice
+════════════════════════════════════════════════════════════════════════════ -->
+<template id="checkout_summary" name="Checkout: Review &amp; Pay">
+    <t t-call="website.layout">
+        <div class="dojo-checkout-page container py-5" style="max-width:640px;">
+            <t t-call="dojo_checkout.checkout_progress">
+                <t t-set="step" t-value="3"/>
+            </t>
+
+            <h2 class="fw-bold mb-4">Review your order</h2>
+
+            <!-- Member summary -->
+            <div class="card border-0 shadow-sm p-4 mb-4">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-muted small">
+                            <t t-if="session.enrollment_type == 'family'">Parent / Guardian</t>
+                            <t t-else="">Name</t>
+                        </div>
+                        <div class="fw-semibold" t-esc="session.member_name"/>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Email</div>
+                        <div class="fw-semibold" t-esc="session.member_email"/>
+                    </div>
+                </div>
+                <t t-if="session.enrollment_type == 'family' and session.child_name">
+                    <hr class="my-2"/>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="text-muted small">Child</div>
+                            <div class="fw-semibold" t-esc="session.child_name"/>
+                        </div>
+                        <t t-if="session.child_dob">
+                            <div class="col-6">
+                                <div class="text-muted small">Child's DOB</div>
+                                <div class="fw-semibold" t-esc="str(session.child_dob)"/>
+                            </div>
+                        </t>
+                    </div>
+                    <t t-if="session.parent_also_trains">
+                        <div class="mt-2">
+                            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle small">
+                                Parent also trains
+                            </span>
+                        </div>
+                    </t>
+                </t>
+                <t t-if="session.preferred_days">
+                    <div class="mt-2">
+                        <div class="text-muted small">Preferred days</div>
+                        <div class="fw-semibold" t-esc="session.preferred_days.upper()"/>
+                    </div>
+                </t>
+            </div>
+
+            <!-- Price breakdown -->
+            <div class="card border-0 shadow-sm p-4 mb-4">
+                <h6 class="fw-bold mb-3">Price Breakdown</h6>
+                <div class="d-flex justify-content-between mb-2">
+                    <span><t t-esc="session.plan_id.name"/> (recurring)</span>
+                    <strong><t t-esc="'$%.2f' % session.plan_id.price"/>/<t t-esc="session.plan_id.billing_period"/></strong>
+                </div>
+                <t t-if="session.plan_id.initial_fee">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Enrollment fee (one-time)</span>
+                        <strong><t t-esc="'$%.2f' % session.plan_id.initial_fee"/></strong>
+                    </div>
+                </t>
+                <t t-foreach="session.selected_upsell_ids" t-as="upsell">
+                    <div class="d-flex justify-content-between mb-2 text-muted">
+                        <span><t t-esc="upsell.name"/></span>
+                        <span><t t-esc="'$%.2f' % upsell.price"/></span>
+                    </div>
+                </t>
+                <hr/>
+                <div class="d-flex justify-content-between fw-bold fs-5">
+                    <span>Due today</span>
+                    <span><t t-esc="'$%.2f' % session.checkout_total"/></span>
+                </div>
+            </div>
+
+            <!-- Payment buttons -->
+            <div class="d-grid gap-3">
+                <t t-if="has_payment_provider">
+                    <form t-attf-action="/checkout/pay/#{session.token}" method="post">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <button type="submit" class="btn btn-primary btn-lg w-100 fw-semibold">
+                            💳 Pay Now
+                        </button>
+                    </form>
+                </t>
+                <form t-attf-action="/checkout/invoice/#{session.token}" method="post">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <button type="submit"
+                            t-attf-class="btn btn-lg w-100 fw-semibold #{has_payment_provider and 'btn-outline-secondary' or 'btn-primary'}">
+                        📧 Invoice Me
+                    </button>
+                </form>
+                <p class="text-muted text-center small">
+                    <t t-if="has_payment_provider">
+                        "Pay Now" captures payment immediately.
+                    </t>
+                    <t t-if="session.enrollment_type == 'family'">
+                        Invoice will be sent to <strong t-esc="session.member_name"/> (<t t-esc="session.member_email"/>) — your child's membership is activated immediately.
+                    </t>
+                    <t t-else="">
+                        "Invoice Me" sends an invoice to <strong t-esc="session.member_email"/> — your membership is activated right away.
+                    </t>
+                </p>
+            </div>
+
+            <div class="text-center mt-3">
+                <a t-attf-href="/checkout/schedule/#{session.token}" class="text-muted small">← Edit schedule</a>
+            </div>
+        </div>
+    </t>
+</template>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     STEP 4 — Confirmation / Thank You
+════════════════════════════════════════════════════════════════════════════ -->
+<template id="checkout_complete" name="Checkout: Welcome!">
+    <t t-call="website.layout">
+        <div class="dojo-checkout-page container py-5 text-center" style="max-width:640px;">
+            <t t-call="dojo_checkout.checkout_progress">
+                <t t-set="step" t-value="4"/>
+            </t>
+
+            <div class="dojo-complete-icon mb-4" style="font-size:4rem;">🥋</div>
+            <h1 class="fw-bold">Welcome to the dojo!</h1>
+            <p class="lead text-muted mt-2 mb-4">
+                Your membership is active. Check your email for your invoice and portal login link.
+            </p>
+
+            <t t-if="config and config.thank_you_html">
+                <div class="dojo-thank-you-html mb-4 text-start" t-raw="config.thank_you_html"/>
+            </t>
+
+            <t t-if="session.resulting_member_id">
+                <div class="mb-4">
+                    <a href="/my/dojo" class="btn btn-primary btn-lg px-5 fw-semibold me-2">
+                        Go to My Portal →
+                    </a>
+                </div>
+            </t>
+            <div>
+                <a href="/checkout" class="text-muted small">← View all plans</a>
+            </div>
+        </div>
+    </t>
+</template>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     ERROR PAGE
+════════════════════════════════════════════════════════════════════════════ -->
+<template id="checkout_error" name="Checkout: Error">
+    <t t-call="website.layout">
+        <div class="dojo-checkout-page container py-5 text-center" style="max-width:560px;">
+            <div style="font-size:3rem;" class="mb-3">⚠️</div>
+            <h2 class="fw-bold">Something went wrong</h2>
+            <p class="text-muted mb-4">
+                We couldn't complete your checkout. Please try again or contact us directly.
+            </p>
+            <t t-if="error">
+                <div class="alert alert-danger text-start small" t-esc="error"/>
+            </t>
+            <a href="/checkout" class="btn btn-primary">← Back to plans</a>
+        </div>
+    </t>
+</template>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     PORTAL UPGRADE — Plan picker for trial/lead members
+════════════════════════════════════════════════════════════════════════════ -->
+<template id="checkout_upgrade" name="Upgrade Your Membership">
+    <t t-call="website.layout">
+        <div class="dojo-checkout-page container py-5" style="max-width:800px;">
+            <div class="text-center mb-5">
+                <h1 class="fw-bold">Ready to become a full member?</h1>
+                <p class="text-muted lead">
+                    Hi <strong t-esc="member.display_name"/>! Pick a plan and we'll activate your membership instantly.
+                </p>
+            </div>
+
+            <div class="row g-4">
+                <t t-foreach="plans" t-as="plan">
+                    <t t-set="cfg" t-value="configs.get(plan.id)"/>
+                    <div class="col-sm-6 col-lg-4">
+                        <form action="/my/dojo/upgrade" method="post" class="h-100">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <input type="hidden" name="plan_id" t-att-value="plan.id"/>
+                            <div class="dojo-plan-card card h-100 shadow-sm border-0 p-4 d-flex flex-column">
+                                <h5 class="fw-bold mb-1" t-esc="plan.name"/>
+                                <p class="text-muted small mb-3" t-esc="plan.program_id.name or ''"/>
+                                <div class="dojo-price mb-3 mt-auto">
+                                    <span class="fs-3 fw-bold" t-esc="'$%.0f' % plan.price"/>
+                                    <span class="text-muted small">/<t t-esc="plan.billing_period"/></span>
+                                    <t t-if="plan.initial_fee">
+                                        <div class="text-muted small">+ $<t t-esc="'%.0f' % plan.initial_fee"/> enrollment fee</div>
+                                    </t>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                                    <t t-esc="cfg.cta_label if cfg else 'Join Now'"/>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </t>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="/my/dojo" class="text-muted small">← Back to my portal</a>
+            </div>
+        </div>
+    </t>
+</template>
+
+</odoo>

@@ -13,6 +13,9 @@ numpy
 reportlab[renderPM,pycairo]
 rlPyCairo
 
+# QR Code generation for marketing cards
+qrcode[pil]
+
 # Standard Odoo dependencies (if not already handled by the platform) 
 Pillow
 babel

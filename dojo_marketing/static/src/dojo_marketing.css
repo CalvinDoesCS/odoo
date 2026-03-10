@@ -1,0 +1,89 @@
+/* ── Dojo Marketing Banner Strip ─────────────────────────────────────────── */
+
+.dojo-marketing-banner {
+    width: 100%;
+    overflow: hidden;
+}
+
+.dojo-marketing-banner__track {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+}
+
+.dojo-marketing-banner__track::-webkit-scrollbar {
+    display: none;
+}
+
+/* Individual card pill */
+.dojo-marketing-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+    background: var(--bs-white, #fff);
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: 12px;
+    padding: 0.5rem 0.875rem 0.5rem 0.875rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    min-width: 160px;
+    max-width: 260px;
+}
+
+.dojo-marketing-pill__text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.dojo-marketing-pill__name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--bs-body-color, #212529);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dojo-marketing-pill__sub {
+    font-size: 0.75rem;
+    color: var(--bs-secondary, #6c757d);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* QR thumbnail */
+.dojo-marketing-pill__qr {
+    flex-shrink: 0;
+}
+
+.dojo-marketing-pill__qr-img {
+    width: 56px;
+    height: 56px;
+    border-radius: 6px;
+    object-fit: contain;
+    background: #fff;
+    border: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+/* Dark-mode aware tweaks */
+@media (prefers-color-scheme: dark) {
+    .dojo-marketing-pill {
+        background: var(--bs-dark, #212529);
+        border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .dojo-marketing-pill__name {
+        color: var(--bs-light, #f8f9fa);
+    }
+
+    .dojo-marketing-pill__qr-img {
+        background: #fff; /* keep QR readable */
+    }
+}

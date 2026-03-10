@@ -372,6 +372,20 @@ select { background: var(--k-surface-2); }
     color: var(--k-text-2);
     line-height: 1.6;
 }
+.k-idle-slide__subtitle {
+    font-size: 1.15rem;
+    color: var(--k-text-2);
+    margin-bottom: 8px;
+}
+.k-idle-slide__qr {
+    display: block;
+    width: 160px;
+    height: 160px;
+    margin: 16px auto 0;
+    border-radius: 8px;
+    background: #fff;
+    padding: 6px;
+}
 .k-idle-dots {
     display: flex;
     gap: 8px;

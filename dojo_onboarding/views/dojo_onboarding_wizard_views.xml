@@ -99,9 +99,15 @@
 
                     <!-- New household hint -->
                     <div class="alert alert-info small py-1 px-2"
-                         invisible="not create_new_household" role="alert">
+                         invisible="not create_new_household or role == 'both'" role="alert">
                         <i class="fa fa-arrow-right me-1"></i>
                         Click <b>Next</b> to enter the guardian's details and set up the household.
+                    </div>
+                    <div class="alert alert-info small py-1 px-2"
+                         invisible="not create_new_household or role != 'both'" role="alert">
+                        <i class="fa fa-home me-1"></i>
+                        A household will be created for you — you are your own guardian.
+                        Click <b>Next</b> to continue to program enrollment.
                     </div>
                 </group>
 
@@ -243,14 +249,14 @@
                         a user account is linked manually from their member profile.
                     </div>
 
-                    <!-- Guardian account (only shown when creating a new household) -->
-                    <group string="Guardian Account" invisible="not create_new_household">
+                    <!-- Guardian account (only shown when creating a new household AND member is not their own guardian) -->
+                    <group string="Guardian Account" invisible="not create_new_household or role == 'both'">
                         <field name="create_guardian_portal_login"/>
                         <field name="send_guardian_welcome_email"
                                invisible="not create_guardian_portal_login"/>
                     </group>
                     <div class="alert alert-info"
-                         invisible="not create_new_household or not create_guardian_portal_login"
+                         invisible="not create_new_household or role == 'both' or not create_guardian_portal_login"
                          role="alert">
                         A portal account will also be created for the guardian
                         <b><field name="new_guardian_name" readonly="1" nolabel="1"/></b>
@@ -258,7 +264,7 @@
                         track their children's attendance, and manage billing online.
                     </div>
                     <div class="alert alert-warning"
-                         invisible="not create_new_household or create_guardian_portal_login"
+                         invisible="not create_new_household or role == 'both' or create_guardian_portal_login"
                          role="alert">
                         No portal login will be created for the guardian. You can grant access
                         later from the guardian's member profile.

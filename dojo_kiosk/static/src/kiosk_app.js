@@ -194,18 +194,32 @@ class IdleScreen extends Component {
     static template = xml`
         <div class="k-idle-screen" t-on-click="wake" t-on-keydown="wake">
             <div class="k-idle-content">
-                <t t-if="props.announcements and props.announcements.length">
+                <t t-if="allSlides.length">
+                    <t t-set="slide" t-value="currentSlide()"/>
                     <div class="k-idle-slide">
-                        <div class="k-idle-slide__title" t-esc="currentAnnouncement().title"/>
-                        <t t-if="currentAnnouncement().body">
-                            <div class="k-idle-slide__body" t-esc="currentAnnouncement().body"/>
+                        <div class="k-idle-slide__title" t-esc="slide.title or slide.name"/>
+                        <t t-if="slide.subtitle">
+                            <div class="k-idle-slide__subtitle" t-esc="slide.subtitle"/>
+                        </t>
+                        <t t-if="slide.body">
+                            <div class="k-idle-slide__body" t-esc="slide.body"/>
+                        </t>
+                        <t t-if="slide.type === 'marketing'">
+                            <t t-if="slide.card_type === 'badge'">
+                                <div class="k-idle-slide__body">Scan your member badge at the front desk</div>
+                            </t>
+                            <t t-elif="slide.qr_url">
+                                <img t-att-src="slide.qr_url" class="k-idle-slide__qr" alt="QR Code"/>
+                            </t>
                         </t>
                     </div>
-                    <div class="k-idle-dots">
-                        <t t-foreach="props.announcements" t-as="a" t-key="a.id">
-                            <div t-attf-class="k-idle-dot #{state.idx === a_index ? 'k-idle-dot--active' : ''}"/>
-                        </t>
-                    </div>
+                    <t t-if="allSlides.length > 1">
+                        <div class="k-idle-dots">
+                            <t t-foreach="allSlides" t-as="s" t-key="s_index">
+                                <div t-attf-class="k-idle-dot #{state.idx === s_index ? 'k-idle-dot--active' : ''}"/>
+                            </t>
+                        </div>
+                    </t>
                 </t>
                 <t t-else="">
                     <div class="k-idle-slide">
@@ -219,7 +233,7 @@ class IdleScreen extends Component {
         </div>
     `;
 
-    static props = ["announcements", "onWake"];
+    static props = ["announcements", "marketing_cards", "onWake"];
 
     setup() {
         this.state = useState({ idx: 0 });
@@ -228,16 +242,23 @@ class IdleScreen extends Component {
         onWillUnmount(() => clearInterval(this._carouselTimer));
     }
 
-    currentAnnouncement() {
-        const ann = this.props.announcements;
-        if (!ann || !ann.length) return { title: "Welcome", body: "Tap to check in" };
-        return ann[this.state.idx % ann.length];
+    get allSlides() {
+        const anns = (this.props.announcements || []).map(a => ({ ...a, type: "announcement" }));
+        const cards = (this.props.marketing_cards || []).map(c => ({ ...c, type: "marketing" }));
+        return [...anns, ...cards];
+    }
+
+    currentSlide() {
+        const slides = this.allSlides;
+        if (!slides.length) return { type: "default", title: "Welcome", body: "Tap to check in" };
+        return slides[this.state.idx % slides.length];
     }
 
     _startCarousel() {
-        if (!this.props.announcements || this.props.announcements.length <= 1) return;
+        const slides = this.allSlides;
+        if (slides.length <= 1) return;
         this._carouselTimer = setInterval(() => {
-            this.state.idx = (this.state.idx + 1) % this.props.announcements.length;
+            this.state.idx = (this.state.idx + 1) % this.allSlides.length;
         }, 5000);
     }
 
@@ -1390,6 +1411,7 @@ class KioskApp extends Component {
             <t t-if="state.idle">
                 <IdleScreen
                     announcements="state.announcements"
+                    marketing_cards="state.marketing_cards"
                     onWake="() => this.wakeFromIdle()"/>
             </t>
 
@@ -1642,6 +1664,7 @@ class KioskApp extends Component {
             // Misc
             idle: false,
             announcements: [],
+            marketing_cards: [],
             fontSize: "normal",
             theme: "dark",
             idleMinutes: 3,
@@ -1699,6 +1722,7 @@ class KioskApp extends Component {
             const data = await jsonPost("/kiosk/api/bootstrap");
             if (data && !data.error) {
                 this.state.announcements = data.announcements || [];
+                this.state.marketing_cards = data.marketing_cards || [];
                 this.state.sessions = data.sessions || [];
                 this.state.showTitle = data.show_title !== false;
                 if (data.theme_mode && data.theme_mode !== this.state.theme) {

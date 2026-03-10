@@ -82,6 +82,11 @@
                         <div class="flex-grow-1 min-w-0">
                             <div class="d-flex align-items-center gap-2 flex-wrap">
                                 <h4 class="mb-0 fw-bold lh-1 text-truncate" t-out="member.name"/>
+                                <t t-if="member.member_number">
+                                    <a href="/my/dojo/badge/print" target="_blank" class="btn btn-outline-secondary btn-sm ms-2" title="View &amp; Print Badge">
+                                        <i class="fa fa-id-card me-1"/> View Badge
+                                    </a>
+                                </t>
                                 <t t-if="member.role == 'parent'">
                                     <span class="badge bg-primary">Parent / Guardian</span>
                                 </t>

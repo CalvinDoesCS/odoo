@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+<!-- Inject "Upgrade your membership" CTA on the portal home page
+     for members whose state is lead or trial. -->
+<template id="portal_upgrade_cta_inject"
+          inherit_id="dojo_members_portal.portal_dojo_home"
+          name="Checkout: Upgrade CTA">
+
+    <!-- Inject immediately after the dojo-hero card -->
+    <xpath expr="//div[hasclass('card') and hasclass('dojo-hero')]" position="after">
+        <t t-if="member and member.membership_state in ('lead', 'trial')">
+            <div class="alert dojo-upgrade-cta d-flex align-items-center gap-3 flex-wrap mb-4" role="alert"
+                 style="background:linear-gradient(135deg,#0d6efd 0%,#0dcaf0 100%);color:#fff;border:none;border-radius:12px;padding:1.25rem 1.5rem;">
+                <div class="flex-grow-1">
+                    <div class="fw-bold fs-5 mb-1">
+                        <t t-if="member.membership_state == 'trial'">
+                            👋 Enjoying your trial?
+                        </t>
+                        <t t-else="">
+                            🥋 Ready to start training?
+                        </t>
+                    </div>
+                    <div class="small opacity-90">
+                        <t t-if="member.membership_state == 'trial'">
+                            Upgrade to a full membership — keep your progress and unlock all benefits.
+                        </t>
+                        <t t-else="">
+                            Choose a membership plan and activate your account in seconds.
+                        </t>
+                    </div>
+                </div>
+                <a href="/my/dojo/upgrade"
+                   class="btn btn-light fw-semibold flex-shrink-0"
+                   style="color:#0d6efd;">
+                    View Plans →
+                </a>
+            </div>
+        </t>
+    </xpath>
+
+</template>
+
+</odoo>

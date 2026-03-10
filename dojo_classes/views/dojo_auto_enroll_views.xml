@@ -89,7 +89,7 @@
         parent="menu_dojo_classes_root"
         action="action_dojo_auto_enroll"
         sequence="40"
-        groups="dojo_base.group_dojo_admin"/>
+        groups="dojo_base.group_dojo_admin,dojo_base.group_dojo_instructor"/>
 
     <!-- ================================================================
          Class Template form extension — "Auto-Enroll Preferences" tab

@@ -1,5 +1,9 @@
+import logging
+
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 
 class DojoMember(models.Model):
@@ -138,6 +142,15 @@ class DojoMember(models.Model):
                 "name": partner.name,
                 "groups_id": [(4, group_parent.id)],
             })
+            # Send "Set your password" email via auth_signup token mechanism.
+            try:
+                user.sudo().action_reset_password()
+            except Exception:
+                _logger.warning(
+                    "Could not send password-set email for new portal user %s",
+                    user.login,
+                    exc_info=True,
+                )
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",

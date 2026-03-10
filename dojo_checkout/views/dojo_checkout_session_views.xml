@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ── List (funnel monitoring, read-only) ─────────────────────── -->
+    <record id="view_dojo_checkout_session_list" model="ir.ui.view">
+        <field name="name">dojo.checkout.session.list</field>
+        <field name="model">dojo.checkout.session</field>
+        <field name="arch" type="xml">
+            <list string="Checkout Sessions" create="false" delete="false"
+                  decoration-muted="state == 'abandoned'"
+                  decoration-success="state == 'completed'"
+                  decoration-warning="state == 'pending_payment'">
+                <field name="create_date" string="Started"/>
+                <field name="member_name"/>
+                <field name="member_email"/>
+                <field name="plan_id"/>
+                <field name="payment_mode"/>
+                <field name="state"/>
+                <field name="checkout_total" string="Total"/>
+                <field name="resulting_member_id"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ── Form (read-only detail) ──────────────────────────────────── -->
+    <record id="view_dojo_checkout_session_form" model="ir.ui.view">
+        <field name="name">dojo.checkout.session.form</field>
+        <field name="model">dojo.checkout.session</field>
+        <field name="arch" type="xml">
+            <form string="Checkout Session" create="false">
+                <header>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,pending_payment,completed"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Enrollment">
+                            <field name="enrollment_type"/>
+                            <field name="parent_also_trains" invisible="enrollment_type != 'family'"/>
+                        </group>
+                        <group string="Primary Registrant">
+                            <field name="member_name"/>
+                            <field name="member_email"/>
+                            <field name="member_phone"/>
+                            <field name="date_of_birth"/>
+                        </group>
+                    </group>
+                    <group string="Child Info" invisible="enrollment_type != 'family'">
+                        <group>
+                            <field name="child_name"/>
+                            <field name="child_dob"/>
+                        </group>
+                        <group>
+                            <field name="child_email"/>
+                            <field name="child_phone"/>
+                            <field name="child_portal_access"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Plan &amp; Payment">
+                            <field name="plan_id"/>
+                            <field name="payment_mode"/>
+                            <field name="preferred_days"/>
+                            <field name="checkout_total"/>
+                        </group>
+                        <group string="Results">
+                            <field name="resulting_member_id"/>
+                            <field name="resulting_child_member_id"/>
+                            <field name="resulting_subscription_id"/>
+                        </group>
+                    </group>
+                    <group string="Upsells Selected">
+                        <field name="selected_upsell_ids" widget="many2many_tags" readonly="1"/>
+                    </group>
+                    <group string="Token">
+                        <field name="token" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── Action ──────────────────────────────────────────────────── -->
+    <record id="action_dojo_checkout_session" model="ir.actions.act_window">
+        <field name="name">Checkout Sessions</field>
+        <field name="res_model">dojo.checkout.session</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No checkout sessions yet.</p>
+            <p>Sessions appear here when someone starts the public checkout flow.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_dojo_checkout_sessions"
+        name="Sessions"
+        parent="dojo_checkout.menu_dojo_checkout_root"
+        action="action_dojo_checkout_session"
+        sequence="30"
+        groups="dojo_base.group_dojo_admin"/>
+
+    <!-- ── Cron ─────────────────────────────────────────────────────── -->
+    <record id="ir_cron_gc_checkout_sessions" model="ir.cron">
+        <field name="name">Dojo: Garbage-collect abandoned checkout sessions</field>
+        <field name="model_id" ref="model_dojo_checkout_session"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_gc_abandoned_sessions()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+
+</odoo>
