@@ -172,12 +172,13 @@ class DojoCheckout(http.Controller):
         if not session or session.state == "completed":
             return request.redirect("/checkout")
 
-        providers = request.env["payment.provider"].sudo().search(
-            [("state", "in", ["enabled", "test"])], limit=1
-        )
+        ICP = request.env["ir.config_parameter"].sudo()
+        stripe_pk = ICP.get_param("stripe.publishable_key", "")
         return request.render("dojo_checkout.checkout_summary", {
             "session": session,
-            "has_payment_provider": bool(providers),
+            "stripe_publishable_key": stripe_pk,
+            # kept for backward-compat with invoice-button class toggle
+            "has_payment_provider": bool(stripe_pk),
         })
 
     @http.route(
@@ -208,14 +209,16 @@ class DojoCheckout(http.Controller):
         auth="public", website=True, methods=["POST"], csrf=True
     )
     def checkout_pay(self, token, **kw):
-        """Step 4b — Pay now: creates member + subscription, marks as online payment.
+        """Step 4b — Pay now with Stripe: collects PM from Elements, charges immediately.
 
-        TODO: Integrate with Odoo payment.provider for live card capture.
-        Currently falls through to the same invoice flow.
+        Expects POST field ``payment_method_id`` (pm_…) produced by Stripe.js.
+        If missing or Stripe is not configured, falls through to the invoice path.
         """
         session = self._get_session(token)
         if not session or session.state == "completed":
             return request.redirect("/checkout")
+
+        payment_method_id = (kw.get("payment_method_id") or "").strip()
 
         session.sudo().write({"payment_mode": "online"})
         try:
@@ -228,6 +231,55 @@ class DojoCheckout(http.Controller):
                 "error": str(exc),
                 "token": token,
             })
+
+        # Stripe charge — only when a PaymentMethod ID was submitted
+        if payment_method_id.startswith("pm_"):
+            household = session.sudo().resulting_member_id.household_id
+            if household:
+                try:
+                    household.sudo().action_save_payment_method(payment_method_id)
+                    invoice = session.sudo().resulting_subscription_id.last_invoice_id
+                    if invoice:
+                        pi = household.sudo().action_charge_invoice(invoice)
+                        status = (
+                            pi.get("status") if isinstance(pi, dict)
+                            else getattr(pi, "status", "")
+                        )
+                        if status == "requires_action":
+                            pi_id = (
+                                pi.get("id") if isinstance(pi, dict)
+                                else getattr(pi, "id", "")
+                            )
+                            return request.redirect(
+                                f"/checkout/pay-confirm/{token}?pi={pi_id}"
+                            )
+                except Exception as exc:
+                    _logger.error(
+                        "Checkout Stripe charge error (token=%s): %s",
+                        token, exc, exc_info=True,
+                    )
+                    # Membership already created — show error without destroying it
+                    return request.render("dojo_checkout.checkout_error", {
+                        "error": "Your membership was created but payment failed: " + str(exc),
+                        "token": token,
+                    })
+
+        return request.redirect(f"/checkout/complete/{token}")
+
+    @http.route(
+        "/checkout/pay-confirm/<string:token>",
+        auth="public", website=True, methods=["GET"],
+    )
+    def checkout_pay_confirm(self, token, pi=None, **kw):
+        """Step 4c — Stripe 3DS return URL.
+
+        Stripe redirects here after the customer completes 3D Secure with
+        ?payment_intent=pi_xxx. The actual payment outcome is handled by the
+        Stripe → NestJS → /bridge/v1/webhooks/event webhook pipeline.
+        We simply redirect to the completion page.
+        """
+        if not self._get_session(token):
+            return request.redirect("/checkout")
         return request.redirect(f"/checkout/complete/{token}")
 
     @http.route("/checkout/complete/<string:token>", auth="public", website=True)

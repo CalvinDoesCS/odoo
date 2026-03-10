@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         HOUSEHOLD — Stripe Billing Customer card-on-file section
+         Replaces the old dojo_subscriptions Stripe Issuing block.
+    ══════════════════════════════════════════════════════════════════════════ -->
+    <record id="view_dojo_household_form_stripe_billing_inherit" model="ir.ui.view">
+        <field name="name">dojo.household.form.stripe.billing.inherit</field>
+        <field name="model">dojo.household</field>
+        <field name="inherit_id" ref="dojo_base.view_dojo_household_form"/>
+        <field name="arch" type="xml">
+            <!-- Stripe Billing card indicator on household form -->
+            <xpath expr="//sheet" position="before">
+                <div name="stripe_button_box" class="oe_button_box">
+                    <button type="object"
+                            class="oe_stat_button"
+                            icon="fa-check-circle"
+                            invisible="not stripe_payment_method_id">
+                        <div class="o_stat_info">
+                            <span class="o_stat_value">&#8226;&#8226;&#8226;&#8226;&#160;<field name="payment_card_last4" nolabel="1"/></span>
+                            <span class="o_stat_text">Billing Card</span>
+                        </div>
+                    </button>
+                </div>
+            </xpath>
+            <!-- Payment method section on household form -->
+            <xpath expr="//sheet/group[last()]" position="after">
+                <group string="Stripe Billing" name="stripe_billing_group">
+                    <group>
+                        <field name="payment_card_brand" readonly="1"/>
+                        <field name="payment_card_last4" readonly="1"/>
+                        <field name="payment_card_expiry" readonly="1"/>
+                    </group>
+                    <group groups="dojo_base.group_dojo_admin">
+                        <field name="stripe_billing_customer_id" readonly="1"/>
+                        <field name="stripe_payment_method_id" readonly="1"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         HR.EMPLOYEE — Stripe Issuing Cardholder + virtual card section
+    ══════════════════════════════════════════════════════════════════════════ -->
+    <record id="view_hr_employee_form_stripe_issuing_inherit" model="ir.ui.view">
+        <field name="name">hr.employee.form.stripe.issuing.inherit</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <!-- Issue Card stat button -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_issue_card_button"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-credit-card"
+                        invisible="stripe_card_id"
+                        groups="dojo_base.group_dojo_admin">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Issue Stripe Card</span>
+                    </div>
+                </button>
+                <button type="object"
+                        class="oe_stat_button"
+                        icon="fa-check-circle"
+                        invisible="not stripe_card_id">
+                    <div class="o_stat_info">
+                        <span class="o_stat_value">&#8226;&#8226;&#8226;&#8226;&#160;<field name="issuing_card_last4" nolabel="1"/></span>
+                        <span class="o_stat_text">Virtual Card</span>
+                    </div>
+                </button>
+            </xpath>
+            <!-- Stripe Issuing section on employee form -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Stripe Issuing" name="stripe_issuing"
+                      groups="dojo_base.group_dojo_admin">
+                    <group>
+                        <group string="Card Details">
+                            <field name="issuing_card_brand" placeholder="e.g. Mastercard"
+                                   readonly="stripe_card_id"/>
+                            <field name="issuing_card_last4" placeholder="4242"
+                                   readonly="stripe_card_id"/>
+                            <field name="issuing_card_expiry" placeholder="MM/YY"
+                                   readonly="stripe_card_id"/>
+                            <field name="issuing_card_status" readonly="1"
+                                   invisible="not stripe_card_id"/>
+                        </group>
+                        <group string="Stripe IDs">
+                            <field name="stripe_cardholder_id"/>
+                            <field name="stripe_card_id"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

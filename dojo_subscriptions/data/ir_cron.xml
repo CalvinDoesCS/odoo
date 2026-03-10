@@ -9,4 +9,14 @@
         <field name="interval_type">days</field>
         <field name="active">True</field>
     </record>
+
+    <record id="ir_cron_dojo_watch_unpaid_invoices" model="ir.cron">
+        <field name="name">Dojo: Watch Unpaid Invoices (Dunning)</field>
+        <field name="model_id" ref="model_dojo_member_subscription"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_watch_unpaid_invoices()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
 </odoo>

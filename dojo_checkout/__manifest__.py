@@ -1,7 +1,7 @@
 {
     "name": "Dojo Checkout Pages",
     "summary": "Public checkout flow: plan selection, day picker, upsells, invoice or pay-now, portal upgrade",
-    "version": "19.0.1.0.0",
+    "version": "19.0.2.0.0",
     "category": "Services",
     "license": "LGPL-3",
     "author": "Dojo",

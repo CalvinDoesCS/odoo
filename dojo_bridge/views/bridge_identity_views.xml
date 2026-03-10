@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         x.bridge.identity — Admin list + form views
+         Allows dojo admins to inspect, manually link, or deactivate the
+         Firebase UID ↔ dojo.member identity records managed by the Control Plane.
+    ══════════════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_bridge_identity_list" model="ir.ui.view">
+        <field name="name">x.bridge.identity.list</field>
+        <field name="model">x.bridge.identity</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="not is_active">
+                <field name="firebase_uid"/>
+                <field name="firebase_display_name" string="Display Name"/>
+                <field name="firebase_email" string="Email"/>
+                <field name="member_id" string="Linked Member"/>
+                <field name="member_number" string="Member #"/>
+                <field name="granted_role" string="Role"/>
+                <field name="last_seen"/>
+                <field name="is_active" widget="boolean_toggle"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bridge_identity_form" model="ir.ui.view">
+        <field name="name">x.bridge.identity.form</field>
+        <field name="model">x.bridge.identity</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="is_active" widget="statusbar"
+                           statusbar_visible="True,False"
+                           string="Status"/>
+                </header>
+                <sheet>
+                    <group string="Identity">
+                        <group>
+                            <field name="firebase_uid" readonly="1"/>
+                            <field name="company_id" readonly="1"
+                                   groups="base.group_multi_company"/>
+                            <field name="is_active"/>
+                        </group>
+                        <group>
+                            <field name="member_id"
+                                   help="Manually override the linked dojo.member. The Control Plane auto-links by email on first login."/>
+                            <field name="member_number" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Last JWT Claims (informational)">
+                        <group>
+                            <field name="firebase_display_name" readonly="1"/>
+                            <field name="firebase_email" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="granted_role" readonly="1"/>
+                            <field name="granted_scope" readonly="1"/>
+                            <field name="last_seen" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bridge_identity_search" model="ir.ui.view">
+        <field name="name">x.bridge.identity.search</field>
+        <field name="model">x.bridge.identity</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="firebase_uid" string="Firebase UID"/>
+                <field name="firebase_email" string="Email"/>
+                <field name="firebase_display_name" string="Name"/>
+                <field name="member_id" string="Member"/>
+                <separator/>
+                <filter name="active_only" string="Active" domain="[('is_active', '=', True)]"/>
+                <filter name="unlinked" string="No Member Linked"
+                        domain="[('member_id', '=', False)]"/>
+                <filter name="admin_role" string="Admin Role"
+                        domain="[('granted_role', '=', 'admin')]"/>
+                <filter name="instructor_role" string="Instructor Role"
+                        domain="[('granted_role', '=', 'instructor')]"/>
+                <group>
+                    <filter name="group_role" string="Role"
+                            context="{'group_by': 'granted_role'}"/>
+                    <filter name="group_company" string="Company"
+                            context="{'group_by': 'company_id'}"
+                            groups="base.group_multi_company"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bridge_identities" model="ir.actions.act_window">
+        <field name="name">Bridge Identities</field>
+        <field name="res_model">x.bridge.identity</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_bridge_identity_search"/>
+        <field name="context">{'search_default_active_only': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No bridge identities yet.
+            </p>
+            <p>
+                Identities are created automatically when a Firebase user first
+                authenticates through the NestJS Control Plane. Link a record here
+                to manually associate a Firebase account with an existing member.
+            </p>
+        </field>
+    </record>
+
+    <menuitem
+        id="menu_bridge_root"
+        name="Bridge"
+        sequence="90"
+        groups="dojo_base.group_dojo_admin"
+    />
+    <menuitem
+        id="menu_bridge_identities"
+        name="Identities"
+        parent="menu_bridge_root"
+        action="action_bridge_identities"
+        sequence="10"
+        groups="dojo_base.group_dojo_admin"
+    />
+
+</odoo>

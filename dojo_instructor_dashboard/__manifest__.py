@@ -1,6 +1,6 @@
 {
     'name': 'Dojo Instructor Dashboard',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'summary': 'Instructor and admin backend dashboard with quick attendance, student roster, todos, and calendar',
     'description': """
         Provides a dedicated backend dashboard for Dojo instructors and admins:

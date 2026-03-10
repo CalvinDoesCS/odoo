@@ -2,6 +2,8 @@
 <odoo>
     <!-- Remove legacy view that added billing_partner_id (field now removed) -->
     <delete model="ir.ui.view" search="[('name', '=', 'dojo.household.form.billing')]"/>
+    <!-- Remove stale Stripe Issuing view (fields moved to dojo_stripe module) -->
+    <delete id="view_dojo_household_form_billing_inherit" model="ir.ui.view"/>
 
     <record id="action_dojo_subscription_plans" model="ir.actions.act_window">
         <field name="name">Subscription Plans</field>
@@ -123,6 +125,9 @@
                 <field name="start_date"/>
                 <field name="next_billing_date"/>
                 <field name="state"/>
+                <field name="billing_failure_count" string="Failures" optional="show"
+                       decoration-danger="billing_failure_count >= 3"
+                       decoration-warning="billing_failure_count == 2"/>
             </list>
         </field>
     </record>
@@ -168,8 +173,47 @@
                     <group>
                         <field name="note"/>
                     </group>
+                    <!-- Dunning / billing failures – hidden when all is well -->
+                    <group string="Billing Issues"
+                           name="billing_issues_group"
+                           invisible="billing_failure_count == 0">
+                        <group>
+                            <field name="billing_failure_count" readonly="1"
+                                   widget="integer"
+                                   string="Consecutive Failures"/>
+                            <field name="last_billing_failure_date" readonly="1"/>
+                            <field name="grace_period_end" readonly="1"
+                                   invisible="billing_failure_count &lt; 3"/>
+                        </group>
+                    </group>
                 </sheet>
             </form>
+        </field>
+    </record>
+
+    <record id="view_dojo_member_subscription_search" model="ir.ui.view">
+        <field name="name">dojo.member.subscription.search</field>
+        <field name="model">dojo.member.subscription</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="member_id" string="Member"/>
+                <field name="plan_id" string="Plan"/>
+                <separator/>
+                <filter name="active_subs" string="Active"
+                        domain="[('state', '=', 'active')]"/>
+                <filter name="paused_subs" string="Paused"
+                        domain="[('state', '=', 'paused')]"/>
+                <filter name="in_grace_period" string="In Grace Period"
+                        domain="[('billing_failure_count', '&gt;=', 3), ('state', '!=', 'expired')]"/>
+                <filter name="has_failures" string="Has Billing Failures"
+                        domain="[('billing_failure_count', '&gt;', 0)]"/>
+                <group>
+                    <filter name="group_state" string="State"
+                            context="{'group_by': 'state'}"/>
+                    <filter name="group_plan" string="Plan"
+                            context="{'group_by': 'plan_id'}"/>
+                </group>
+            </search>
         </field>
     </record>
 
@@ -220,52 +264,6 @@
         </field>
     </record>
 
-    <!-- ── Stripe Issuing button + payment method fields on Household form ── -->
-    <record id="view_dojo_household_form_billing_inherit" model="ir.ui.view">
-        <field name="name">dojo.household.form.billing.inherit</field>
-        <field name="model">dojo.household</field>
-        <field name="inherit_id" ref="dojo_base.view_dojo_household_form"/>
-        <field name="arch" type="xml">
-            <!-- Issue Card stat button -->
-            <xpath expr="//sheet" position="before">
-                <div name="button_box" class="oe_button_box">
-                    <button name="action_issue_card_button"
-                            type="object"
-                            class="oe_stat_button"
-                            icon="fa-credit-card"
-                            invisible="stripe_card_id">
-                        <div class="o_stat_info">
-                            <span class="o_stat_text">Issue Stripe Card</span>
-                        </div>
-                    </button>
-                    <button type="object"
-                            class="oe_stat_button"
-                            icon="fa-check-circle"
-                            invisible="not stripe_card_id">
-                        <div class="o_stat_info">
-                            <span class="o_stat_value">&#8226;&#8226;&#8226;&#8226;&#160;<field name="payment_card_last4" nolabel="1"/></span>
-                            <span class="o_stat_text">Virtual Card</span>
-                        </div>
-                    </button>
-                </div>
-            </xpath>
-            <!-- Payment method section -->
-            <xpath expr="//sheet/group[last()]" position="after">
-                <group string="Payment Method" name="payment_method_group">
-                    <group>
-                        <field name="payment_card_brand" placeholder="e.g. Mastercard" readonly="stripe_card_id"/>
-                        <field name="payment_card_last4" placeholder="4242" readonly="stripe_card_id"/>
-                        <field name="payment_card_expiry" placeholder="MM/YY" readonly="stripe_card_id"/>
-                        <field name="payment_card_status" readonly="1" invisible="not stripe_card_id"/>
-                    </group>
-                    <group>
-                        <field name="stripe_customer_id" groups="dojo_base.group_dojo_admin"/>
-                        <field name="stripe_card_id" groups="dojo_base.group_dojo_admin"/>
-                    </group>
-                </group>
-            </xpath>
-        </field>
-    </record>
     <!-- ── Subscription smart button + tab injected into Member form ──── -->
     <record id="view_dojo_member_form_subscription_inherit" model="ir.ui.view">
         <field name="name">dojo.member.form.subscription.inherit</field>

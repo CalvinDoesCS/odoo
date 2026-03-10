@@ -9,7 +9,7 @@ dojo.member identity resolution, and typed webhook ingestion.
 All routes use auth=none. Odoo session auth is never involved.
 The JWT issued by NestJS (after Firebase verification) is the sole gate.
 """,
-    "version": "19.0.1.0.0",
+    "version": "19.0.2.0.0",
     "author": "Dojo Platform",
     "category": "Hidden",
     "depends": [
@@ -22,6 +22,7 @@ The JWT issued by NestJS (after Firebase verification) is the sole gate.
     ],
     "data": [
         "security/ir.model.access.csv",
+        "views/bridge_identity_views.xml",
     ],
     "installable": True,
     "auto_install": False,

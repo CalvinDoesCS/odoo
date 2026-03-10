@@ -5,8 +5,15 @@ from odoo import api, fields, models
 
 class DojoMemberDashboard(models.Model):
     """Extends dojo.member with a belt rank stub and enrollment One2many for the
-    instructor dashboard.  When dojo_belt_progression is installed, the view
-    XPath in that module replaces current_belt_stub with current_rank_id."""
+    instructor dashboard.
+
+    ``current_belt_stub`` is an *intentional design shim*, not tech debt.
+    ``dojo_belt_progression`` depends on ``dojo_instructor_dashboard`` (not the
+    reverse), so adding ``dojo_belt_progression`` to this module's dependencies
+    would create a circular import.  The stub is a stable XPath target:
+    ``dojo_belt_progression/views/dojo_belt_views.xml`` replaces it with the
+    real ``current_rank_id`` Many2one once that module is installed.
+    """
 
     _inherit = 'dojo.member'
 
@@ -19,11 +26,12 @@ class DojoMemberDashboard(models.Model):
         string='Class Enrollments',
     )
 
-    # TODO: replace with Many2one('dojo.belt.rank') when dojo_belt_progression ships
+    # Stub XPath target — replaced by dojo_belt_progression when installed.
+    # Do NOT remove or add dojo_belt_progression to depends (circular dep).
     current_belt_stub = fields.Char(
         string='Belt Rank',
         compute='_compute_belt_stub',
-        help='Placeholder — full belt progression is available once dojo_belt_progression is installed.',
+        help='Replaced by current_rank_id when dojo_belt_progression is active.',
     )
 
     def _compute_belt_stub(self):

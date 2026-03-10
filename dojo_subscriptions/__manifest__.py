@@ -1,7 +1,7 @@
 {
     "name": "Dojo Subscriptions",
     "summary": "Membership plans and subscriptions",
-    "version": "19.0.1.0.0",
+    "version": "19.0.3.0.0",
     "category": "Services",
     "license": "LGPL-3",
     "author": "Dojo",
@@ -10,6 +10,7 @@
         "security/ir.model.access.csv",
         "security/dojo_subscriptions_security.xml",
         "data/membership_product.xml",
+        "data/mail_template_dunning.xml",
         "data/ir_cron.xml",
         "views/dojo_subscription_views.xml",
     ],

@@ -417,24 +417,41 @@
 
             <!-- Payment buttons -->
             <div class="d-grid gap-3">
-                <t t-if="has_payment_provider">
-                    <form t-attf-action="/checkout/pay/#{session.token}" method="post">
-                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                        <button type="submit" class="btn btn-primary btn-lg w-100 fw-semibold">
-                            💳 Pay Now
-                        </button>
-                    </form>
+                <t t-if="stripe_publishable_key">
+                    <!-- Stripe Elements card capture form -->
+                    <div id="stripe-payment-wrapper" class="mb-2"
+                         t-att-data-pk="stripe_publishable_key">
+                        <label class="form-label fw-semibold small text-muted mb-1">
+                            Card details
+                        </label>
+                        <div id="stripe-card-element" class="form-control"
+                             style="padding:12px 16px; min-height:44px;"/>
+                        <div id="stripe-card-errors" class="text-danger small mt-1 mb-2"
+                             role="alert"/>
+                        <form id="stripe-pay-form"
+                              t-attf-action="/checkout/pay/#{session.token}"
+                              method="post">
+                            <input type="hidden" name="csrf_token"
+                                   t-att-value="request.csrf_token()"/>
+                            <input type="hidden" name="payment_method_id"
+                                   id="stripe-pm-input" value=""/>
+                            <button type="submit" id="stripe-pay-btn"
+                                    class="btn btn-primary btn-lg w-100 fw-semibold mt-2">
+                                💳 Pay Now
+                            </button>
+                        </form>
+                    </div>
                 </t>
                 <form t-attf-action="/checkout/invoice/#{session.token}" method="post">
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                     <button type="submit"
-                            t-attf-class="btn btn-lg w-100 fw-semibold #{has_payment_provider and 'btn-outline-secondary' or 'btn-primary'}">
+                            t-attf-class="btn btn-lg w-100 fw-semibold #{stripe_publishable_key and 'btn-outline-secondary' or 'btn-primary'}">
                         📧 Invoice Me
                     </button>
                 </form>
                 <p class="text-muted text-center small">
-                    <t t-if="has_payment_provider">
-                        "Pay Now" captures payment immediately.
+                    <t t-if="stripe_publishable_key">
+                        "Pay Now" captures your card immediately.
                     </t>
                     <t t-if="session.enrollment_type == 'family'">
                         Invoice will be sent to <strong t-esc="session.member_name"/> (<t t-esc="session.member_email"/>) — your child's membership is activated immediately.
@@ -448,6 +465,46 @@
             <div class="text-center mt-3">
                 <a t-attf-href="/checkout/schedule/#{session.token}" class="text-muted small">← Edit schedule</a>
             </div>
+
+            <!-- Stripe.js card element initialisation -->
+            <t t-if="stripe_publishable_key">
+                <script src="https://js.stripe.com/v3/"/>
+                <script type="text/javascript">(function () {
+    'use strict';
+    var wrapper = document.getElementById('stripe-payment-wrapper');
+    if (!wrapper) { return; }
+    var pk = wrapper.dataset.pk;
+    if (!pk) { return; }
+    var stripe   = Stripe(pk);
+    var elements = stripe.elements();
+    var card = elements.create('card', {
+        style: {base: {fontSize: '16px', color: '#32325d', lineHeight: '24px'}}
+    });
+    card.mount('#stripe-card-element');
+    card.addEventListener('change', function (e) {
+        document.getElementById('stripe-card-errors').textContent =
+            e.error ? e.error.message : '';
+    });
+    var form = document.getElementById('stripe-pay-form');
+    var btn  = document.getElementById('stripe-pay-btn');
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        btn.disabled    = true;
+        btn.textContent = 'Processing\u2026';
+        stripe.createPaymentMethod({type: 'card', card: card}).then(function (r) {
+            if (r.error) {
+                document.getElementById('stripe-card-errors').textContent = r.error.message;
+                btn.disabled    = false;
+                btn.textContent = '\uD83D\uDCB3 Pay Now';
+            } else {
+                document.getElementById('stripe-pm-input').value = r.paymentMethod.id;
+                form.submit();
+            }
+        });
+    });
+})();
+                </script>
+            </t>
         </div>
     </t>
 </template>
