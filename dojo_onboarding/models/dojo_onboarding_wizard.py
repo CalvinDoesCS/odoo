@@ -413,13 +413,16 @@ class DojoOnboardingWizard(models.TransientModel):
                 pass  # Stripe not configured yet — admin can issue the card manually from the household form
 
         # ── Portal login — new member ─────────────────────────────────────────
+        portal_credentials = []
         if self.create_portal_login:
             if not member.email:
                 raise UserError(_(
                     'An email address is required to create a portal login. '
                     'Please add an email in Step 1.'
                 ))
-            member.action_grant_portal_access()  # sends "Set your password" email for new users
+            creds = member._grant_portal_access_credentials()
+            if creds:
+                portal_credentials.append(creds)
 
         # ── Portal login — guardian (new household path only) ─────────────────
         if self.create_new_household and guardian_member and self.create_guardian_portal_login:
@@ -428,7 +431,9 @@ class DojoOnboardingWizard(models.TransientModel):
                     'A guardian email address is required to create a guardian portal login. '
                     'Please go back to Step 3 and enter the guardian\'s email.'
                 ))
-            guardian_member.action_grant_portal_access()  # sends "Set your password" email for new users
+            creds = guardian_member._grant_portal_access_credentials()
+            if creds:
+                portal_credentials.append(creds)
 
         # ── Onboarding record ──────────────────────────────────────────────────
         self.env['dojo.onboarding.record'].create({
@@ -443,10 +448,31 @@ class DojoOnboardingWizard(models.TransientModel):
         })
 
         # Open the newly created member form
-        return {
+        member_form_action = {
             'type': 'ir.actions.act_window',
             'res_model': 'dojo.member',
             'res_id': member.id,
             'view_mode': 'form',
             'target': 'current',
         }
+
+        if portal_credentials:
+            lines = []
+            for c in portal_credentials:
+                lines.append(
+                    _('%(name)s\nUsername: %(login)s\nTemp Password: %(pw)s',
+                      name=c['name'], login=c['login'], pw=c['temp_password'])
+                )
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Portal Access Created'),
+                    'message': '\n\n'.join(lines),
+                    'type': 'success',
+                    'sticky': True,
+                    'next': member_form_action,
+                },
+            }
+
+        return member_form_action

@@ -5,5 +5,5 @@ access_dojo_subscription_plan_instructor,dojo.subscription.plan instructor,model
 access_dojo_subscription_plan_parent,dojo.subscription.plan parent,model_dojo_subscription_plan,dojo_base.group_dojo_parent_student,1,0,0,0
 access_dojo_member_subscription_user,dojo.member.subscription user,model_dojo_member_subscription,base.group_user,1,0,0,0
 access_dojo_member_subscription_admin,dojo.member.subscription admin,model_dojo_member_subscription,dojo_base.group_dojo_admin,1,1,1,1
-access_dojo_member_subscription_instructor,dojo.member.subscription instructor,model_dojo_member_subscription,dojo_base.group_dojo_instructor,1,0,0,0
+access_dojo_member_subscription_instructor,dojo.member.subscription instructor,model_dojo_member_subscription,dojo_base.group_dojo_instructor,1,1,1,1
 access_dojo_member_subscription_parent,dojo.member.subscription parent,model_dojo_member_subscription,dojo_base.group_dojo_parent_student,1,0,0,0

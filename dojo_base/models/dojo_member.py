@@ -1,4 +1,5 @@
 import logging
+import secrets
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
@@ -66,6 +67,13 @@ class DojoMember(models.Model):
 
     def action_set_cancelled(self):
         self.membership_state = "cancelled"
+        # Cancel any active class enrollments so the member no longer holds spots
+        if 'dojo.class.enrollment' in self.env:
+            enrollments = self.env['dojo.class.enrollment'].sudo().search([
+                ('member_id', 'in', self.ids),
+                ('status', 'in', ['registered', 'waitlist']),
+            ])
+            enrollments.write({'status': 'cancelled'})
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -77,7 +85,7 @@ class DojoMember(models.Model):
                         partner_vals[field_name] = vals.pop(field_name)
                 if not partner_vals.get("name"):
                     partner_vals["name"] = "New Member"
-                partner = self.env["res.partner"].create(partner_vals)
+                partner = self.env["res.partner"].sudo().create(partner_vals)
                 vals["partner_id"] = partner.id
         return super().create(vals_list)
 
@@ -118,10 +126,9 @@ class DojoMember(models.Model):
             },
         }
 
-    def action_grant_portal_access(self):
-        """Create or update the member's user account and ensure it belongs to
-        the dojo_base.group_dojo_parent_student group, which implies portal access
-        and grants the correct dojo-specific ACLs and record-rules."""
+    def _grant_portal_access_credentials(self):
+        """Grant portal access and return credentials dict for new users, or None
+        if the user already existed and just needed a group added."""
         self.ensure_one()
         partner = self.partner_id
         if not partner.email:
@@ -133,30 +140,50 @@ class DojoMember(models.Model):
             [("partner_id", "=", partner.id)], limit=1
         )
         if user:
-            if group_parent not in user.groups_id:
-                user.sudo().write({"groups_id": [(4, group_parent.id)]})
+            if group_parent not in user.group_ids:
+                user.sudo().write({"group_ids": [(4, group_parent.id)]})
+            return None  # existing user — no new credentials to show
         else:
+            temp_password = secrets.token_urlsafe(10)
             user = self.env["res.users"].sudo().create({
                 "partner_id": partner.id,
                 "login": partner.email,
                 "name": partner.name,
-                "groups_id": [(4, group_parent.id)],
+                "group_ids": [(4, group_parent.id)],
             })
-            # Send "Set your password" email via auth_signup token mechanism.
-            try:
-                user.sudo().action_reset_password()
-            except Exception:
-                _logger.warning(
-                    "Could not send password-set email for new portal user %s",
-                    user.login,
-                    exc_info=True,
-                )
+            user.sudo()._set_password(temp_password)
+            return {
+                "name": partner.name,
+                "login": partner.email,
+                "temp_password": temp_password,
+            }
+
+    def action_grant_portal_access(self):
+        """Create or update the member's user account and ensure it belongs to
+        the dojo_base.group_dojo_parent_student group, which implies portal access
+        and grants the correct dojo-specific ACLs and record-rules."""
+        self.ensure_one()
+        creds = self._grant_portal_access_credentials()
+        if creds:
+            message = _(
+                "%(name)s now has portal access.\n"
+                "Username: %(login)s\n"
+                "Temp Password: %(pw)s",
+                name=creds["name"],
+                login=creds["login"],
+                pw=creds["temp_password"],
+            )
+            sticky = True
+        else:
+            message = _("%s already has portal access.") % self.partner_id.name
+            sticky = False
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
             "params": {
-                "message": _("%s now has portal access.") % partner.name,
+                "message": message,
+                "title": _("Portal Access"),
                 "type": "success",
-                "sticky": False,
+                "sticky": sticky,
             },
         }

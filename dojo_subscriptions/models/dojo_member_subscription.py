@@ -10,7 +10,7 @@ class DojoMemberSubscription(models.Model):
     _name = "dojo.member.subscription"
     _description = "Dojo Member Subscription"
 
-    member_id = fields.Many2one("dojo.member", required=True, index=True, ondelete="restrict")
+    member_id = fields.Many2one("dojo.member", required=True, index=True, ondelete="cascade")
     household_id = fields.Many2one(
         "dojo.household", related="member_id.household_id", store=True, readonly=True
     )
