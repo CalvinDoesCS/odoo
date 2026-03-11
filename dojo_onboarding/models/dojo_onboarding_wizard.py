@@ -338,18 +338,11 @@ class DojoOnboardingWizard(models.TransientModel):
         # enrollments so the subscription constraint can validate new enrolments.
         # ─────────────────────────────────────────────────────────────────────
         sub_start = self.subscription_start_date or fields.Date.today()
-        period = self.plan_id.billing_period
-        if period == 'weekly':
-            next_billing = sub_start + relativedelta(weeks=1)
-        elif period == 'yearly':
-            next_billing = sub_start + relativedelta(years=1)
-        else:
-            next_billing = sub_start + relativedelta(months=1)
         self.env['dojo.member.subscription'].create({
             'member_id': member.id,
             'plan_id': self.plan_id.id,
             'start_date': sub_start,
-            'next_billing_date': next_billing,
+            'next_billing_date': sub_start,  # first invoice covers sub_start → sub_start+period
             'state': 'active',
             'company_id': self.env.company.id,
         })
@@ -447,12 +440,17 @@ class DojoOnboardingWizard(models.TransientModel):
             'company_id': self.env.company.id,
         })
 
+        # Store reference so bridge modules (e.g. dojo_onboarding_stripe) can
+        # access the newly created member after super().action_confirm() returns.
+        self.created_member_id = member.id
+
         # Open the newly created member form
         member_form_action = {
             'type': 'ir.actions.act_window',
             'res_model': 'dojo.member',
             'res_id': member.id,
             'view_mode': 'form',
+            'views': [(False, 'form')],
             'target': 'current',
         }
 

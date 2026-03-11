@@ -1026,24 +1026,9 @@ class DojoMemberPortal(CustomerPortal):
                 'state': sub.state,
                 'start_date': fields.Date.to_string(sub.start_date) if sub.start_date else None,
                 'next_billing_date': fields.Date.to_string(sub.next_billing_date) if sub.next_billing_date else None,
+                'billing_failure_count': sub.billing_failure_count or 0,
+                'grace_period_end': fields.Date.to_string(sub.grace_period_end) if sub.grace_period_end else None,
             }
-
-        # All invoices for household subscriptions
-        all_subs = env['dojo.member.subscription'].sudo().search([
-            ('member_id', 'in', member_ids),
-        ])
-        invoices_data = []
-        for inv in all_subs.mapped('invoice_ids').sorted(key=lambda i: i.invoice_date or i.create_date, reverse=True):
-            invoices_data.append({
-                'id': inv.id,
-                'name': inv.name or '',
-                'date': fields.Date.to_string(inv.invoice_date) if inv.invoice_date else None,
-                'due': fields.Date.to_string(inv.invoice_date_due) if inv.invoice_date_due else None,
-                'amount': inv.amount_total,
-                'state': inv.state,
-                'payment_state': inv.payment_state,  # not_paid / partial / in_payment / paid
-                'currency': inv.currency_id.name if inv.currency_id else 'USD',
-            })
 
         # Available plans (for plan-switch overlay)
         plans = env['dojo.subscription.plan'].sudo().search([('active', '=', True)])
@@ -1056,23 +1041,45 @@ class DojoMemberPortal(CustomerPortal):
             'description': p.description or '',
         } for p in plans]
 
-        # Payment method from household
-        household = env['dojo.household'].sudo().search(
-            [('member_ids', 'in', member_ids)], limit=1
-        )
-        if household and household.payment_card_last4:
-            payment_method = {
-                'has_card': True,
-                'brand': household.payment_card_brand or '',
-                'last4': household.payment_card_last4 or '',
-                'expiry': household.payment_card_expiry or '',
-                'stripe_customer_id': household.stripe_customer_id or '',
-            }
-        else:
-            payment_method = {'has_card': False, 'brand': '', 'last4': '', 'expiry': ''}
+        # Last 12 invoices for this household's subscriptions
+        invoices_data = []
+        if sub:
+            sorted_invoices = sub.invoice_ids.sorted(
+                key=lambda i: i.invoice_date or fields.Date.today(), reverse=True
+            )[:12]
+            for inv in sorted_invoices:
+                invoices_data.append({
+                    'id': inv.id,
+                    'date': fields.Date.to_string(inv.invoice_date) if inv.invoice_date else None,
+                    'amount': inv.amount_total,
+                    'currency': inv.currency_id.name if inv.currency_id else 'USD',
+                    'payment_state': inv.payment_state,
+                })
+
+        # Saved payment method (card-on-file) for the household
+        payment_method_data = None
+        household = member.household_id
+        if household and household.primary_guardian_id:
+            guardian = household.primary_guardian_id
+            provider = env['payment.provider'].sudo().search(
+                [('code', '=', 'stripe'), ('state', 'in', ('enabled', 'test'))], limit=1
+            )
+            if provider:
+                token = env['payment.token'].sudo().search([
+                    ('provider_id', '=', provider.id),
+                    ('partner_id', '=', guardian.partner_id.id),
+                    ('active', '=', True),
+                ], limit=1)
+                if token:
+                    payment_method_data = {'name': token.name or 'Card on file'}
 
         return request.make_response(
-            json.dumps({'subscription': sub_data, 'invoices': invoices_data, 'plans': plans_data, 'payment_method': payment_method}),
+            json.dumps({
+                'subscription': sub_data,
+                'plans': plans_data,
+                'invoices': invoices_data,
+                'payment_method': payment_method_data,
+            }),
             headers=[('Content-Type', 'application/json')],
         )
 
@@ -1154,163 +1161,6 @@ class DojoMemberPortal(CustomerPortal):
             headers=[('Content-Type', 'application/json')],
         )
 
-    @http.route('/my/dojo/billing/wallet-provision', type='http', auth='user', methods=['GET'])
-    def portal_billing_wallet_provision(self, **kwargs):
-        """Return a Stripe Ephemeral Key for Google Wallet push provisioning."""
-        member = self._get_current_member()
-        if not member or member.role not in ('parent', 'both'):
-            return request.make_response(
-                json.dumps({'error': 'Not authorised'}),
-                headers=[('Content-Type', 'application/json')],
-            )
-        member_ids = self._get_household_member_ids()
-        household = request.env['dojo.household'].sudo().search(
-            [('member_ids', 'in', member_ids)], limit=1
-        )
-        if not household or not household.stripe_card_id:
-            return request.make_response(
-                json.dumps({'error': 'No Stripe card on file for this household.'}),
-                headers=[('Content-Type', 'application/json')],
-            )
-        try:
-            result = household.action_get_wallet_ephemeral_key()
-            return request.make_response(
-                json.dumps(result),
-                headers=[('Content-Type', 'application/json')],
-            )
-        except Exception as e:
-            return request.make_response(
-                json.dumps({'error': str(e)}),
-                headers=[('Content-Type', 'application/json')],
-            )
-
-    # ── /my/dojo/invoices  (parents only) ────────────────────────────────
-    @http.route('/my/dojo/invoices', type='http', auth='user', website=True)
-    def portal_my_dojo_invoices(self, **kwargs):
-        member = self._get_current_member()
-        if not member or member.role not in ('parent', 'both'):
-            return request.render('dojo_members_portal.portal_no_member', {})
-        invoice_ids = self._get_household_invoice_ids()
-        invoices = request.env['account.move'].sudo().browse(invoice_ids).sorted(
-            key=lambda i: i.invoice_date or i.create_date, reverse=True
-        )
-        ICP = request.env['ir.config_parameter'].sudo()
-        stripe_pk = ICP.get_param('stripe.publishable_key', '')
-        paid_flash = request.httprequest.args.get('paid') == '1'
-        return request.render('dojo_members_portal.portal_my_dojo_invoices', {
-            'invoices': invoices,
-            'household': member.household_id,
-            'stripe_pk': stripe_pk,
-            'paid_flash': paid_flash,
-            'page_name': 'dojo_invoices',
-        })
-
-    # ── /my/dojo/invoices/<int:invoice_id>/pdf ────────────────────────────
-    @http.route(
-        '/my/dojo/invoices/<int:invoice_id>/pdf',
-        type='http', auth='user',
-    )
-    def portal_dojo_invoice_pdf(self, invoice_id, **kwargs):
-        member = self._get_current_member()
-        if not member or member.role not in ('parent', 'both'):
-            return request.not_found()
-        invoice_ids = self._get_household_invoice_ids()
-        if invoice_id not in invoice_ids:
-            return request.not_found()
-        invoice = request.env['account.move'].sudo().browse(invoice_id)
-        pdf_content, _ = request.env['ir.actions.report'].sudo()._render_qweb_pdf(
-            'account.account_invoices', invoice.ids
-        )
-        return request.make_response(
-            pdf_content,
-            headers=[
-                ('Content-Type', 'application/pdf'),
-                ('Content-Disposition', f'attachment; filename="invoice-{invoice.name}.pdf"'),
-            ],
-        )
-
-    # ── /my/dojo/billing  (parent: add/update Stripe card on file) ────────
-    @http.route(
-        '/my/dojo/billing',
-        type='http', auth='user', methods=['GET', 'POST'], website=True,
-    )
-    def portal_dojo_billing(self, payment_method_id='', **post):
-        member = self._get_current_member()
-        if not member or member.role not in ('parent', 'both'):
-            return request.render('dojo_members_portal.portal_no_member', {})
-        ICP = request.env['ir.config_parameter'].sudo()
-        stripe_pk = ICP.get_param('stripe.publishable_key', '')
-        household = member.sudo().household_id
-        card_error = ''
-        saved = False
-        if request.httprequest.method == 'POST':
-            pm_id = (payment_method_id or '').strip()
-            if not pm_id.startswith('pm_'):
-                card_error = 'Invalid card token. Please try again.'
-            elif not household:
-                card_error = 'No household linked to your account.'
-            else:
-                try:
-                    household.sudo().action_save_payment_method(pm_id)
-                    saved = True
-                except Exception as exc:
-                    card_error = str(exc)
-        return request.render('dojo_members_portal.portal_dojo_billing', {
-            'member': member,
-            'household': household,
-            'stripe_pk': stripe_pk,
-            'saved': saved,
-            'card_error': card_error,
-            'page_name': 'dojo_billing',
-        })
-
-    # ── /my/dojo/invoices/<id>/pay  (parent: pay open invoice via Stripe) ──
-    @http.route(
-        '/my/dojo/invoices/<int:invoice_id>/pay',
-        type='http', auth='user', methods=['GET', 'POST'], website=True,
-    )
-    def portal_dojo_invoice_pay(self, invoice_id, payment_method_id='', **kwargs):
-        member = self._get_current_member()
-        if not member or member.role not in ('parent', 'both'):
-            return request.not_found()
-        invoice_ids = self._get_household_invoice_ids()
-        if invoice_id not in invoice_ids:
-            return request.not_found()
-        invoice = request.env['account.move'].sudo().browse(invoice_id)
-        if invoice.payment_state in ('paid', 'in_payment'):
-            return request.redirect('/my/dojo/invoices')
-        household = member.sudo().household_id
-        ICP = request.env['ir.config_parameter'].sudo()
-        stripe_pk = ICP.get_param('stripe.publishable_key', '')
-        pay_error = ''
-        if request.httprequest.method == 'POST':
-            pm_id = (payment_method_id or '').strip()
-            if pm_id.startswith('pm_') and household:
-                try:
-                    household.sudo().action_save_payment_method(pm_id)
-                except Exception as exc:
-                    pay_error = str(exc)
-            if not pay_error and household and household.stripe_payment_method_id:
-                try:
-                    household.sudo().action_charge_invoice(invoice)
-                    sub = request.env['dojo.member.subscription'].sudo().search([
-                        ('member_id', 'in', self._get_household_member_ids()),
-                        ('last_invoice_id', '=', invoice.id),
-                    ], limit=1)
-                    if sub and sub.billing_failure_count:
-                        sub._reset_billing_failures()
-                    return request.redirect('/my/dojo/invoices?paid=1')
-                except Exception as exc:
-                    pay_error = str(exc)
-            elif not pay_error:
-                pay_error = 'No payment method saved. Please enter your card below.'
-        return request.render('dojo_members_portal.portal_invoice_pay', {
-            'invoice': invoice,
-            'household': household,
-            'stripe_pk': stripe_pk,
-            'pay_error': pay_error,
-            'page_name': 'dojo_invoices',
-        })
 
     # ── /my/dojo/household ────────────────────────────────────────────────
     @http.route(

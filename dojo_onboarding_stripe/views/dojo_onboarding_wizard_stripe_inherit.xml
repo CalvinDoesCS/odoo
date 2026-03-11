@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_dojo_onboarding_wizard_stripe_payment_inherit" model="ir.ui.view">
+        <field name="name">dojo.onboarding.wizard.form.stripe.payment.inherit</field>
+        <field name="model">dojo.onboarding.wizard</field>
+        <field name="inherit_id" ref="dojo_onboarding.view_dojo_onboarding_wizard_form"/>
+        <field name="arch" type="xml">
+
+            <!-- 1. Hidden fields so the OWL widget and Python can read/write them -->
+            <xpath expr="//field[@name='step']" position="after">
+                <field name="payment_captured" invisible="1"/>
+                <field name="skip_payment" invisible="1"/>
+                <field name="stripe_card_display" invisible="1"/>
+            </xpath>
+
+            <!-- 2. Breadcrumb spans for the payment step -->
+            <xpath expr="//div[hasclass('alert-info', 'mb-3')]" position="inside">
+                <span invisible="step != 'payment' or not create_new_household">
+                    &#x2713; Member Info > &#x2713; Household > &#x2713; Guardian Setup > &#x2713; Enrollment > &#x2713; Auto-Enroll > &#x2713; Subscription > <b>Step 6: Payment</b> > Portal Access
+                </span>
+                <span invisible="step != 'payment' or create_new_household">
+                    &#x2713; Member Info > &#x2713; Household > &#x2713; Enrollment > &#x2713; Auto-Enroll > &#x2713; Subscription > <b>Step 5: Payment</b> > Portal Access
+                </span>
+            </xpath>
+
+            <!-- 3. Payment step content block (inserted before the footer) -->
+            <xpath expr="//footer" position="before">
+                <group string="Payment Method" invisible="step != 'payment'">
+                    <div class="alert alert-info py-2 mb-2" invisible="not plan_id" role="alert">
+                        <i class="fa fa-tag me-2"/>
+                        Subscription plan: <b><field name="plan_id" readonly="1" nolabel="1"/></b>
+                        — the guardian's card will be charged immediately on completion.
+                    </div>
+                    <div colspan="2">
+                        <widget name="onboarding_stripe_payment"/>
+                    </div>
+                </group>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

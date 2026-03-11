@@ -151,12 +151,76 @@ class DojoMember(models.Model):
                 "name": partner.name,
                 "group_ids": [(4, group_parent.id)],
             })
-            user.sudo()._set_password(temp_password)
+            user.sudo().write({'password': temp_password})
             return {
                 "name": partner.name,
                 "login": partner.email,
                 "temp_password": temp_password,
             }
+
+    def unlink(self):
+        """Delete associated user accounts and res.partner contacts when a
+        member is removed.
+
+        Deletion order matters:
+        1. res.users   — has a RESTRICT FK on partner_id; must go first.
+        2. dojo.member — super().unlink() removes the member row.
+        3. res.partner — _inherits does NOT auto-delete the parent; we do it
+                         explicitly after the member row is gone.
+
+        Household handling:
+        - If the member is the only person in a household, the household is
+          deleted as well.
+        - If the household has other members and this member is the primary
+          guardian, deletion is blocked; staff must assign a new guardian first.
+        """
+        # Collect households that will become empty after this deletion, and
+        # block deletion if the member is the sole guardian of a non-empty one.
+        households_to_delete = self.env['dojo.household']
+        for member in self:
+            household = member.sudo().household_id
+            if not household:
+                continue
+            other_members = household.member_ids - self  # members NOT being deleted
+            if other_members:
+                if household.primary_guardian_id == member:
+                    raise UserError(_(
+                        'Cannot delete %s: they are the primary guardian of '
+                        '"%s" which still has other members. Please assign a '
+                        'new primary guardian to the household before deleting '
+                        'this member.',
+                        member.name, household.name,
+                    ))
+            else:
+                # This member is the last one — household can be cleaned up.
+                households_to_delete |= household
+
+        partners = self.sudo().mapped("partner_id")
+
+        # res.users — RESTRICT FK on partner_id; must go before the partner.
+        users = partners.mapped("user_ids")
+        if users:
+            users.sudo().unlink()
+
+        # payment.token — RESTRICT FK on partner_id; safe to delete.
+        if 'payment.token' in self.env:
+            tokens = self.env['payment.token'].sudo().search(
+                [('partner_id', 'in', partners.ids)]
+            )
+            if tokens:
+                tokens.unlink()
+
+        res = super().unlink()
+
+        # Archive the partner instead of deleting it: account_move, payment_transaction
+        # and many other tables have RESTRICT FKs on res_partner — deleting would
+        # orphan invoices and payment history.  Archiving hides the partner from
+        # all normal views while keeping the audit trail intact.
+        if partners:
+            partners.sudo().write({'active': False})
+        if households_to_delete:
+            households_to_delete.sudo().unlink()
+        return res
 
     def action_grant_portal_access(self):
         """Create or update the member's user account and ensure it belongs to

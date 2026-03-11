@@ -131,8 +131,7 @@
                     </group>
                     <div class="alert alert-info small py-1 px-2 mt-2" colspan="2" role="alert">
                         <i class="fa fa-credit-card me-1"></i>
-                        A <b>Stripe virtual card</b> will be issued to this household automatically
-                        when setup is complete. It will be used to charge subscription invoices.
+                        A payment method will be collected in the next steps to set up recurring billing.
                     </div>
                 </group>
 
@@ -229,8 +228,8 @@
                             on the subscription start date. The recurring fee begins from the same date.
                         </div>
                         <div class="alert alert-info small py-1 px-2" invisible="not plan_id" role="alert">
-                            Subscription invoices are charged to the household's Stripe virtual card.
-                            The card is issued automatically when a new household is set up.
+                            A payment method will be collected on the next step.
+                            The card will be charged for the initial fee and recurring invoices.
                         </div>
                     </group>
                 </group>

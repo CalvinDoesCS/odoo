@@ -29,3 +29,11 @@ class DojoMember(models.Model):
             "view_mode": "list,form",
             "domain": [("dojo_member_id", "=", self.id)],
         }
+
+    def unlink(self):
+        """Delete CRM leads that were linked to this member before removing
+        the member record itself."""
+        leads = self.sudo().mapped("crm_lead_ids")
+        if leads:
+            leads.unlink()
+        return super().unlink()

@@ -39,8 +39,27 @@ class HrEmployeeIssuing(models.Model):
     )
 
     # ── Internal helper ────────────────────────────────────────────────────
+    @staticmethod
+    def _read_docker_secret(name):
+        """Read a Docker secrets file at /run/secrets/<name>.
+
+        Returns the stripped file content, or an empty string if the file
+        does not exist (e.g. outside Docker or secret not mounted).
+        """
+        import os
+        try:
+            with open(f'/run/secrets/{name}', 'r') as fh:
+                return fh.read().strip()
+        except (IOError, OSError):
+            return ''
+
     def _get_stripe_api(self):
-        """Return (stripe_module, secret_key). Never sets the global api_key."""
+        """Return (stripe_module, secret_key). Never sets the global api_key.
+
+        Key resolution order:
+          1. Docker secret file  /run/secrets/stripe_secret_key
+          2. Odoo system parameter  stripe.secret_key  (fallback / dev)
+        """
         try:
             import stripe as stripe_lib
         except ImportError:
@@ -48,13 +67,16 @@ class HrEmployeeIssuing(models.Model):
                 'The stripe Python package is not installed. '
                 'Add "stripe" to requirements.txt and rebuild the container.'
             ))
-        ICP = self.env['ir.config_parameter'].sudo()
-        secret_key = ICP.get_param('stripe.secret_key', '')
+        secret_key = self._read_docker_secret('stripe_secret_key')
+        if not secret_key:
+            ICP = self.env['ir.config_parameter'].sudo()
+            secret_key = ICP.get_param('stripe.secret_key', '')
         if not secret_key:
             raise UserError(_(
                 'Stripe secret key is not configured. '
-                'Go to Settings \u2192 Technical \u2192 System Parameters '
-                'and set "stripe.secret_key".'
+                'Add it to the stripe_secret_key Docker secret file, or go to '
+                'Settings → Technical → System Parameters and set '
+                '"stripe.secret_key".'
             ))
         return stripe_lib, secret_key
 

@@ -1,176 +1,155 @@
 """
 dojo_household_billing.py
 ──────────────────────────
-Extends dojo.household with Stripe Billing Customer tracking.
+Extends dojo.household with Stripe payment token integration.
 
-Architecture
-────────────
-  dojo.household  ─►  stripe.Customer        (Billing, cus_…)
-                  ─►  stripe.PaymentMethod   (card-on-file, pm_…)
+Architecture (native payment_stripe)
+──────────────────────────────────────
+  dojo.household  ─►  payment.token  (via guardian partner_id)
+                      └► provider_ref         = Stripe Customer ID (cus_…)
+                      └► stripe_payment_method = Stripe PaymentMethod ID (pm_…)
 
-Stripe Issuing Cardholder / Card lives on hr.employee — see hr_employee_issuing.py.
-Note: dojo_subscriptions.dojo_household used to hold Issuing fields here.
-      Those have been removed; this module owns all Stripe fields now.
+  Charging:  payment.transaction (operation='offline')
+             └► _send_payment_request() → Stripe PaymentIntent (off-session)
+
+  The Stripe secret key is stored in payment.provider.stripe_secret_key
+  (Settings → Payments → Stripe).
 """
-from odoo import _, fields, models
+from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
 
-class DojoHouseholdBilling(models.Model):
+class DojoHousehold(models.Model):
     _inherit = "dojo.household"
 
-    # ── Stripe Billing ─────────────────────────────────────────────────────
-    stripe_billing_customer_id = fields.Char(
-        string="Stripe Customer ID",
-        copy=False,
-        help="Stripe Billing Customer ID (cus_…) for this household.",
-    )
-    stripe_payment_method_id = fields.Char(
-        string="Stripe Payment Method",
-        copy=False,
-        help="Default Stripe PaymentMethod ID (pm_…) attached to this household's customer.",
-    )
-    payment_card_brand = fields.Char(
-        string="Card Brand",
-        help="e.g. Visa, Mastercard (from Stripe)",
-    )
-    payment_card_last4 = fields.Char(
-        string="Last 4 Digits",
-        size=4,
-    )
-    payment_card_expiry = fields.Char(
-        string="Expiry (MM/YY)",
-        size=5,
+    # ── Computed: count of saved payment tokens for the primary guardian ──
+    payment_token_count = fields.Integer(
+        string="Saved Payment Methods",
+        compute="_compute_payment_token_count",
     )
 
-    # ── Internal helpers ───────────────────────────────────────────────────
-    def _get_stripe_api(self):
-        """Return (stripe_module, secret_key). Never sets the global api_key."""
-        try:
-            import stripe as stripe_lib
-        except ImportError:
-            raise UserError(_(
-                'The stripe Python package is not installed. '
-                'Add "stripe" to requirements.txt and rebuild the container.'
-            ))
-        ICP = self.env['ir.config_parameter'].sudo()
-        secret_key = ICP.get_param('stripe.secret_key', '')
-        if not secret_key:
-            raise UserError(_(
-                'Stripe secret key is not configured. '
-                'Go to Settings \u2192 Technical \u2192 System Parameters '
-                'and set "stripe.secret_key".'
-            ))
-        return stripe_lib, secret_key
+    @api.depends("primary_guardian_id.partner_id")
+    def _compute_payment_token_count(self):
+        for record in self:
+            guardian = record.primary_guardian_id
+            if not guardian or not guardian.partner_id:
+                record.payment_token_count = 0
+                continue
+            provider = self.env["payment.provider"].sudo().search(
+                [("code", "=", "stripe"), ("state", "in", ("enabled", "test"))],
+                limit=1,
+            )
+            if not provider:
+                record.payment_token_count = 0
+                continue
+            record.payment_token_count = self.env["payment.token"].sudo().search_count(
+                [
+                    ("provider_id", "=", provider.id),
+                    ("partner_id", "=", guardian.partner_id.id),
+                    ("active", "=", True),
+                ]
+            )
 
-    # ── Stripe Billing Customer ────────────────────────────────────────────
-    def action_create_stripe_customer(self):
-        """Create a Stripe Billing Customer for this household if not already present.
-
-        Returns the customer ID string (cus_…).
-        """
+    # ── Actions ──────────────────────────────────────────────────────────
+    def action_view_payment_tokens(self):
+        """Open payment tokens for the primary guardian of this household."""
         self.ensure_one()
-        if self.stripe_billing_customer_id:
-            return self.stripe_billing_customer_id
-
         guardian = self.primary_guardian_id
-        if not guardian:
-            raise UserError(_(
-                'A primary guardian must be set before creating a Stripe customer.'
-            ))
-
-        stripe, api_key = self._get_stripe_api()
-        customer = stripe.Customer.create(
-            name=guardian.name,
-            email=guardian.email or None,
-            phone=guardian.mobile or guardian.phone or None,
-            metadata={'odoo_household_id': str(self.id)},
-            api_key=api_key,
-        )
-        self.sudo().write({'stripe_billing_customer_id': customer['id']})
-        return customer['id']
-
-    def action_save_payment_method(self, payment_method_id):
-        """Attach a Stripe PaymentMethod to this household's Stripe Customer.
-
-        Creates the Stripe Customer first if necessary.
-        Sets payment_method_id as the customer's default for invoices.
-        Updates payment_card_* display fields from the PaymentMethod data.
-
-        Args:
-            payment_method_id (str): Stripe pm_… ID from Elements / checkout.
-        """
-        self.ensure_one()
-        stripe, api_key = self._get_stripe_api()
-        customer_id = (
-            self.stripe_billing_customer_id or self.action_create_stripe_customer()
-        )
-
-        # Attach PM to customer
-        pm = stripe.PaymentMethod.attach(
-            payment_method_id,
-            customer=customer_id,
-            api_key=api_key,
-        )
-        # Set as default payment method for future invoices
-        stripe.Customer.modify(
-            customer_id,
-            invoice_settings={'default_payment_method': payment_method_id},
-            api_key=api_key,
-        )
-
-        card = pm.get('card', {}) if isinstance(pm, dict) else getattr(pm, 'card', {})
-        if hasattr(card, 'to_dict'):
-            card = card.to_dict()
-
-        self.sudo().write({
-            'stripe_payment_method_id': payment_method_id,
-            'payment_card_brand': (card.get('brand') or '').capitalize(),
-            'payment_card_last4': card.get('last4') or '',
-            'payment_card_expiry': '{:02d}/{}'.format(
-                card.get('exp_month', 0),
-                str(card.get('exp_year', ''))[-2:],
-            ),
-        })
-        return True
+        if not guardian or not guardian.partner_id:
+            raise UserError(_("No primary guardian set on this household."))
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Payment Methods",
+            "res_model": "payment.token",
+            "view_mode": "list,form",
+            "domain": [("partner_id", "=", guardian.partner_id.id)],
+            "context": {"default_partner_id": guardian.partner_id.id},
+        }
 
     def action_charge_invoice(self, invoice):
-        """Charge an Odoo invoice against the household's saved Stripe PaymentMethod.
+        """Charge an open invoice using the guardian's saved Stripe payment token.
 
-        Creates a PaymentIntent in off_session mode and confirms it immediately.
-        Returns the stripe.PaymentIntent object (or dict).
-        Raises UserError if no Stripe customer / PM is configured.
+        Uses Odoo's native payment_stripe provider:
+          - payment.provider  (code='stripe')  holds the Stripe secret key.
+          - payment.token  holds cus_… (provider_ref) + pm_… (stripe_payment_method).
+          - payment.transaction with operation='offline' triggers off-session charge.
 
         Args:
             invoice (account.move): Posted Odoo invoice to charge.
+
+        Returns:
+            payment.transaction: The created transaction record.
         """
         self.ensure_one()
-        if not self.stripe_billing_customer_id:
-            raise UserError(_('No Stripe customer configured for this household.'))
-        if not self.stripe_payment_method_id:
-            raise UserError(_('No Stripe payment method saved for this household.'))
 
-        stripe, api_key = self._get_stripe_api()
-        currency = (invoice.currency_id.name or 'usd').lower()
-        # Stripe uses minor units (cents for USD, etc.)
-        amount_cents = int(round(invoice.amount_total * 100))
-
-        pi = stripe.PaymentIntent.create(
-            amount=amount_cents,
-            currency=currency,
-            customer=self.stripe_billing_customer_id,
-            payment_method=self.stripe_payment_method_id,
-            confirm=True,
-            off_session=True,
-            description='Dojo Subscription: {}'.format(
-                invoice.ref or invoice.name or str(invoice.id)
-            ),
-            metadata={
-                'odoo_invoice_id': str(invoice.id),
-                'odoo_subscription_id': str(
-                    invoice.subscription_id.id if invoice.subscription_id else ''
-                ),
-            },
-            api_key=api_key,
+        # ── Stripe provider ──────────────────────────────────────────────
+        provider = self.env["payment.provider"].sudo().search(
+            [("code", "=", "stripe"), ("state", "in", ("enabled", "test"))],
+            limit=1,
         )
-        return pi
+        if not provider:
+            raise UserError(_("No active Stripe payment provider configured."))
+
+        # ── Guardian ─────────────────────────────────────────────────────
+        guardian = self.primary_guardian_id
+        if not guardian:
+            raise UserError(_("No primary guardian set on this household."))
+
+        # ── Payment token ────────────────────────────────────────────────
+        token = self.env["payment.token"].sudo().search(
+            [
+                ("provider_id", "=", provider.id),
+                ("partner_id", "=", guardian.partner_id.id),
+                ("active", "=", True),
+            ],
+            limit=1,
+        )
+        if not token:
+            raise UserError(
+                _(
+                    "No saved Stripe payment method found for the guardian of this "
+                    "household. They can add one via My Account → Payment Methods, "
+                    "or use the 'Manage Payment Methods' button to send them a link."
+                )
+            )
+
+        # ── Amount guard ─────────────────────────────────────────────────
+        if invoice.amount_residual <= 0:
+            raise UserError(
+                _("Invoice %s has no outstanding balance.") % invoice.name
+            )
+
+        # ── Resolve payment_method (required NOT NULL in Odoo 19) ────────
+        payment_method = token.payment_method_id
+        if not payment_method:
+            payment_method = self.env["payment.method"].sudo().search(
+                [("code", "=", "card"), ("provider_ids", "in", [provider.id])],
+                limit=1,
+            )
+        if not payment_method:
+            raise UserError(
+                _("Could not find a 'card' payment method for the Stripe provider. "
+                  "Please check the Stripe provider configuration.")
+            )
+
+        # ── Create off-session transaction ───────────────────────────────
+        reference = self.env["payment.transaction"].sudo()._compute_reference(
+            provider.code,
+            prefix=invoice.name or "INV",
+        )
+        tx = self.env["payment.transaction"].sudo().create(
+            {
+                "provider_id": provider.id,
+                "payment_method_id": payment_method.id,
+                "token_id": token.id,
+                "operation": "offline",
+                "amount": invoice.amount_residual,
+                "currency_id": invoice.currency_id.id,
+                "partner_id": guardian.partner_id.id,
+                "invoice_ids": [(4, invoice.id)],
+                "reference": reference,
+            }
+        )
+        tx._send_payment_request()
+        return tx
+

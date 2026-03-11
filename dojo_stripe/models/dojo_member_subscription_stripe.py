@@ -1,15 +1,21 @@
 """
 dojo_member_subscription_stripe.py
 ────────────────────────────────────
-Extends dojo.member.subscription to charge via Stripe Billing immediately
-after posting the Odoo invoice, when the household has a saved payment method.
+Extends dojo.member.subscription to charge via Stripe immediately after
+posting the Odoo invoice, when the household has a saved native payment.token.
 
-Fallback: if no Stripe customer + PM is configured on the household, the base
-action_generate_invoice() result is returned unchanged (email-invoice path).
+Architecture (native payment_stripe):
+  - payment.token  (provider_ref = cus_xxx, stripe_payment_method = pm_xxx)
+    linked to the primary guardian's partner_id.
+  - action_charge_invoice() on dojo.household creates a payment.transaction
+    with operation='offline' and calls _send_payment_request().
+  - Odoo reconciles the invoice via Stripe webhook or status-check cron.
 
-The dunning escalation (_handle_billing_failure) defined in
-dojo_subscriptions is triggered on Stripe charge failure exactly as it
-would be on any other billing error.
+Fallback: if no payment.token is found for the household guardian, the base
+action_generate_invoice() result is returned unchanged (e-mail invoice path).
+
+Dunning (_handle_billing_failure) is called on immediate errors (tx.state
+becomes 'error' synchronously). Async failures are handled via webhooks.
 """
 import logging
 
@@ -23,17 +29,17 @@ class DojoMemberSubscriptionStripe(models.Model):
     _inherit = "dojo.member.subscription"
 
     def action_generate_invoice(self):
-        """Generate invoice, then charge via Stripe if Billing is configured.
+        """Generate invoice then immediately charge via saved payment.token.
 
-        When the household has both a stripe_billing_customer_id and a
-        stripe_payment_method_id, a Stripe PaymentIntent is created after
-        the Odoo invoice is posted.
+        If the household's primary guardian has an active Stripe payment.token,
+        household.action_charge_invoice(invoice) is called right after the
+        Odoo invoice is posted.
 
-        On success  → _reset_billing_failures() is called.
-        On failure  → _handle_billing_failure() is called (triggers dunning).
+        On tx.state == 'error'  → _handle_billing_failure() (triggers dunning).
+        On tx.state == 'done'   → _reset_billing_failures() (immediate success).
+        On tx.state == 'pending' → async; Stripe webhook / cron will reconcile.
 
-        Falls back silently to the email-invoice path when Stripe is not
-        configured for the household.
+        Falls back to email-invoice path when no token is configured.
         """
         invoice = super().action_generate_invoice()
 
@@ -41,36 +47,53 @@ class DojoMemberSubscriptionStripe(models.Model):
         if not household:
             return invoice
 
-        # Check whether Stripe Billing is configured for this household
-        if (not hasattr(household, 'stripe_billing_customer_id')
-                or not household.stripe_billing_customer_id
-                or not household.stripe_payment_method_id):
-            # No Stripe configured — invoice-by-email path already handled by super()
+        # Use the computed payment_token_count field from dojo_household_billing
+        # to determine whether a card is on file.  Attribute check required in
+        # case dojo_stripe is not installed (defensive programming).
+        if not getattr(household, 'payment_token_count', 0):
+            # No saved card — invoice-by-email path already handled by super()
             return invoice
 
         try:
-            pi = household.action_charge_invoice(invoice)
-            # stripe SDK returns either a dict or a StripeObject; normalise
-            status = pi.get('status') if isinstance(pi, dict) else getattr(pi, 'status', '')
-            pi_id = pi.get('id') if isinstance(pi, dict) else getattr(pi, 'id', '?')
-
-            if status == 'succeeded':
-                self._reset_billing_failures()
-                _logger.info(
-                    'Dojo Stripe: PaymentIntent %s succeeded for subscription %s.',
-                    pi_id, self.id,
-                )
-            elif status in ('requires_action', 'requires_payment_method'):
-                # Authentication or new-card required — treat as soft billing failure
-                exc = UserError(_(
-                    'Stripe payment requires further action: %s (pi=%s)'
-                ) % (status, pi_id))
-                self._handle_billing_failure(exc)
-        except Exception as exc:
-            _logger.error(
-                'Dojo Stripe: charge failed for subscription %s: %s',
-                self.id, exc, exc_info=True,
+            tx = household.action_charge_invoice(invoice)
+        except UserError as exc:
+            # e.g. "No saved Stripe payment method found" or "No active Stripe provider"
+            _logger.warning(
+                'Dojo Stripe: could not charge invoice %s for subscription %s: %s',
+                invoice.name, self.id, exc,
             )
             self._handle_billing_failure(exc)
+            return invoice
+        except Exception as exc:
+            _logger.error(
+                'Dojo Stripe: unexpected error charging invoice %s for subscription %s: %s',
+                invoice.name, self.id, exc, exc_info=True,
+            )
+            self._handle_billing_failure(exc)
+            return invoice
+
+        # tx.state is set synchronously by _send_payment_request()
+        state = tx.state if tx else ''
+        if state == 'done':
+            self._reset_billing_failures()
+            _logger.info(
+                'Dojo Stripe: PaymentIntent succeeded immediately for subscription %s.',
+                self.id,
+            )
+        elif state == 'error':
+            error_msg = getattr(tx, 'state_message', None) or 'Stripe payment failed'
+            exc = UserError(_(error_msg))
+            _logger.warning(
+                'Dojo Stripe: charge failed for subscription %s: %s',
+                self.id, error_msg,
+            )
+            self._handle_billing_failure(exc)
+        else:
+            # 'pending', 'draft', etc. — async resolution via Stripe webhook
+            _logger.info(
+                'Dojo Stripe: transaction %s in state %r for subscription %s — '
+                'awaiting Stripe webhook for reconciliation.',
+                tx.id, state, self.id,
+            )
 
         return invoice

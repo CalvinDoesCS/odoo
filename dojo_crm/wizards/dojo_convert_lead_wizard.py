@@ -216,21 +216,12 @@ class DojoConvertLeadWizard(models.TransientModel):
         if self.create_subscription and self.plan_id:
             plan = self.plan_id
             start = self.subscription_start_date or fields.Date.today()
-            # Compute next_billing_date (same logic as dojo_onboarding wizard)
-            period = plan.billing_period  # weekly / monthly / yearly
-            if period == "weekly":
-                next_billing = start + relativedelta(weeks=1)
-            elif period == "yearly":
-                next_billing = start + relativedelta(years=1)
-            else:
-                next_billing = start + relativedelta(months=1)
-
             self.env["dojo.member.subscription"].create(
                 {
                     "member_id": member.id,
                     "plan_id": plan.id,
                     "start_date": start,
-                    "next_billing_date": next_billing,
+                    "next_billing_date": start,  # first invoice covers start → start+period
                     "state": "active",
                 }
             )

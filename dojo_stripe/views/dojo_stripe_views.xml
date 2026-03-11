@@ -10,34 +10,20 @@
         <field name="model">dojo.household</field>
         <field name="inherit_id" ref="dojo_base.view_dojo_household_form"/>
         <field name="arch" type="xml">
-            <!-- Stripe Billing card indicator on household form -->
+            <!-- Payment token stat button -->
             <xpath expr="//sheet" position="before">
                 <div name="stripe_button_box" class="oe_button_box">
-                    <button type="object"
+                    <button name="action_view_payment_tokens"
+                            type="object"
                             class="oe_stat_button"
-                            icon="fa-check-circle"
-                            invisible="not stripe_payment_method_id">
-                        <div class="o_stat_info">
-                            <span class="o_stat_value">&#8226;&#8226;&#8226;&#8226;&#160;<field name="payment_card_last4" nolabel="1"/></span>
-                            <span class="o_stat_text">Billing Card</span>
-                        </div>
+                            icon="fa-credit-card"
+                            groups="dojo_base.group_dojo_admin">
+                        <field name="payment_token_count" widget="statinfo"
+                               string="Payment Methods"/>
                     </button>
                 </div>
             </xpath>
-            <!-- Payment method section on household form -->
-            <xpath expr="//sheet/group[last()]" position="after">
-                <group string="Stripe Billing" name="stripe_billing_group">
-                    <group>
-                        <field name="payment_card_brand" readonly="1"/>
-                        <field name="payment_card_last4" readonly="1"/>
-                        <field name="payment_card_expiry" readonly="1"/>
-                    </group>
-                    <group groups="dojo_base.group_dojo_admin">
-                        <field name="stripe_billing_customer_id" readonly="1"/>
-                        <field name="stripe_payment_method_id" readonly="1"/>
-                    </group>
-                </group>
-            </xpath>
+
         </field>
     </record>
 

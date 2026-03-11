@@ -18,13 +18,14 @@ Stripe keys are stored in ir.config_parameter:
   stripe.secret_key
   stripe.publishable_key
 """,
-    "version": "19.0.1.0.0",
+    "version": "19.0.2.0.0",
     "category": "Services",
     "license": "LGPL-3",
     "author": "Dojo Platform",
     "depends": [
         "dojo_subscriptions",
         "hr",
+        "payment_stripe",
     ],
     "data": [
         "security/ir.model.access.csv",

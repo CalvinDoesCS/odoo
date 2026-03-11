@@ -289,81 +289,119 @@
 
     /* ── Billing tab ─────────────────────────────────────────────────────── */
     function billingTabHtml(data, isParent) {
-        // ── Family Plan placeholder ───────────────────────────────────────
-        var html = '<div class="card mb-4" style="max-width:480px">';
-        html += '<div class="card-body p-4 text-center">';
-        html += '<i class="fa fa-credit-card fa-3x text-muted mb-3"></i>';
-        html += '<h5 class="fw-bold mb-1">Family Plan</h5>';
-        html += '<p class="text-muted mb-0">Family billing and plan management are coming soon.</p>';
-        html += '<span class="badge bg-secondary mt-2">Future Implementation</span>';
+        if (!isParent) {
+            return '<div class="alert alert-info"><i class="fa fa-info-circle me-2"></i>Billing is managed by your household guardian.</div>';
+        }
+        if (!data) {
+            return '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading…</span></div></div>';
+        }
+
+        var sub = data.subscription;
+        var html = '';
+
+        /* ── Billing failure alert ─────────────────────────────────────── */
+        if (sub && sub.billing_failure_count > 0) {
+            if (sub.grace_period_end) {
+                html += '<div class="alert alert-danger mb-4"><i class="fa fa-exclamation-triangle me-2"></i>' +
+                    '<strong>Membership suspended.</strong> Your membership will be permanently cancelled after ' +
+                    esc(fmtDate(sub.grace_period_end)) + ' if payment is not resolved.</div>';
+            } else if (sub.billing_failure_count >= 2) {
+                html += '<div class="alert alert-warning mb-4"><i class="fa fa-exclamation-triangle me-2"></i>' +
+                    '<strong>Payment issue.</strong> Your membership has been paused due to a failed payment.</div>';
+            } else {
+                html += '<div class="alert alert-warning mb-4"><i class="fa fa-exclamation-triangle me-2"></i>' +
+                    '<strong>Payment issue.</strong> A recent payment failed. Please ensure your payment method is up to date.</div>';
+            }
+        }
+
+        /* ── No subscription ───────────────────────────────────────────── */
+        if (!sub) {
+            html += '<div class="card mb-4"><div class="card-body p-4">' +
+                '<h5 class="fw-bold mb-1">No Active Subscription</h5>' +
+                '<p class="text-muted mb-0">No subscription found for your household. Please contact us to set up your membership.</p>' +
+                '</div></div>';
+            return html;
+        }
+
+        /* ── Subscription card ─────────────────────────────────────────── */
+        var STATE_LABELS = { active:'Active', paused:'Paused', cancelled:'Cancelled', draft:'Draft', expired:'Expired' };
+        var STATE_CLASSES = { active:'bg-success', paused:'bg-warning text-dark', cancelled:'bg-secondary', draft:'bg-info text-dark', expired:'bg-danger' };
+        var stateLabel = STATE_LABELS[sub.state] || sub.state;
+        var stateCls   = STATE_CLASSES[sub.state] || 'bg-secondary';
+        var periodLabel = sub.period === 'monthly' ? '/mo' : sub.period === 'yearly' ? '/yr' : '/wk';
+
+        html += '<div class="card mb-4">';
+        html += '<div class="card-header d-flex justify-content-between align-items-center">' +
+            '<span class="fw-semibold">Current Plan</span>' +
+            '<span class="badge ' + stateCls + '">' + esc(stateLabel) + '</span>' +
+            '</div>';
+        html += '<div class="card-body">';
+        html += '<h4 class="fw-bold mb-1">' + esc(sub.plan_name) + '</h4>';
+        html += '<p class="text-primary fw-semibold mb-2" style="font-size:1.15rem">' +
+            esc(fmtMoney(sub.price, sub.currency)) +
+            '<span class="text-muted fw-normal fs-6"> ' + esc(periodLabel) + '</span></p>';
+        if (sub.next_billing_date && sub.state === 'active') {
+            html += '<p class="text-muted small mb-1"><i class="fa fa-calendar me-1"></i>Next billing: <strong>' +
+                esc(fmtDate(sub.next_billing_date)) + '</strong></p>';
+        }
+        if (sub.start_date) {
+            html += '<p class="text-muted small mb-3"><i class="fa fa-clock-o me-1"></i>Member since: ' +
+                esc(fmtDate(sub.start_date)) + '</p>';
+        }
+        html += '<div class="d-flex flex-wrap gap-2 mt-3">';
+        if (sub.state === 'active') {
+            html += '<button class="btn btn-outline-warning btn-sm" id="dojoBillingPause">' +
+                '<i class="fa fa-pause me-1"></i>Pause</button>';
+        }
+        if (sub.state === 'paused') {
+            html += '<button class="btn btn-outline-success btn-sm" id="dojoBillingResume">' +
+                '<i class="fa fa-play me-1"></i>Resume</button>';
+        }
+        if (sub.state === 'active' || sub.state === 'paused') {
+            html += '<button class="btn btn-outline-danger btn-sm" id="dojoBillingCancel">' +
+                '<i class="fa fa-times me-1"></i>Cancel</button>';
+        }
+        html += '</div>';
         html += '</div></div>';
 
-        if (!data || data.error) return html;
-
-        // ── Payment method card ───────────────────────────────────────────
-        var pm = data.payment_method || {};
-        html += '<h6 class="fw-semibold mb-3">Payment Method</h6>';
-        if (pm.has_card) {
-            var brand = pm.brand || 'Card';
-            var last4 = pm.last4 || '0000';
-            html += '<div class="card mb-4" style="max-width:340px;background:linear-gradient(135deg,#243742 0%,#3a5c6e 100%);color:#fff;border:none">';
-            html += '<div class="card-body p-4">';
-            html += '<div class="d-flex justify-content-between align-items-start mb-4">';
-            html += '<span class="fw-bold fs-6">' + esc(brand) + '</span>';
-            html += '<i class="fa fa-credit-card fa-lg opacity-75"></i>';
-            html += '</div>';
-            html += '<div class="mb-3" style="letter-spacing:0.18em;font-size:1.05rem;font-family:monospace">';
-            html += '\u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 ' + esc(last4);
-            html += '</div>';
-            html += '<div class="d-flex justify-content-between">';
-            html += '<small class="opacity-75">Expires ' + esc(pm.expiry || '\u2014') + '</small>';
-            if (isParent) html += '<small class="opacity-75">Contact dojo to update</small>';
-            html += '</div>';
-            html += '</div></div>';
-            if (isParent) {
-                html += '<button class="btn btn-dark btn-sm mb-4" id="dojoAddToWallet" style="background:#000;border-radius:4px;padding:8px 16px">';
-                html += '<img src="https://pay.google.com/about/static/images/social/gp_logo.svg" height="18" style="vertical-align:middle;margin-right:6px" alt="">';
-                html += 'Add to Google Wallet</button>';
-            }
-        } else {
-            html += '<div class="alert alert-warning d-flex align-items-center gap-2 mb-4" style="max-width:340px">';
-            html += '<i class="fa fa-exclamation-triangle"></i>';
-            html += '<span>No payment method on file. Contact the dojo to set up billing.</span>';
+        /* ── Payment method ────────────────────────────────────────────── */
+        if (data.payment_method) {
+            html += '<div class="card mb-4">';
+            html += '<div class="card-header fw-semibold">Payment Method</div>';
+            html += '<div class="card-body d-flex align-items-center gap-3">' +
+                '<i class="fa fa-credit-card fa-2x text-muted"></i>' +
+                '<span>' + esc(data.payment_method.name) + '</span>' +
+                '</div>';
             html += '</div>';
         }
 
-        // ── Invoice history ───────────────────────────────────────────────
+        /* ── Invoice history ───────────────────────────────────────────── */
         var invoices = data.invoices || [];
-        html += '<h6 class="fw-semibold mb-3 mt-2">Invoice History</h6>';
+        html += '<div class="card">';
+        html += '<div class="card-header fw-semibold">Invoice History</div>';
         if (!invoices.length) {
-            html += '<div class="alert alert-info py-2">No invoices yet.</div>';
+            html += '<div class="card-body"><p class="text-muted mb-0">No invoices yet.</p></div>';
         } else {
-            html += '<div class="table-responsive"><table class="table table-sm table-hover">';
-            html += '<thead class="table-light"><tr><th>Invoice #</th><th>Date</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>';
+            html += '<div class="list-group list-group-flush">';
             invoices.forEach(function(inv) {
-                var ps = inv.payment_state || '';
-                var isPaid = ps === 'paid' || ps === 'in_payment';
-                var isPartial = ps === 'partial';
-                var isCancelled = inv.state === 'cancel';
-                var isDraft = inv.state === 'draft';
-                var bcls = isPaid ? 'bg-success' : isCancelled ? 'bg-danger' : isPartial ? 'bg-warning text-dark' : isDraft ? 'bg-secondary' : 'bg-primary';
-                var blbl = isPaid ? 'Paid' : isCancelled ? 'Cancelled' : isPartial ? 'Partial' : isDraft ? 'Draft' : 'Open';
-                var canPay = inv.state === 'posted' && !isPaid && !isCancelled;
-                html += '<tr>';
-                html += '<td class="small">' + esc(inv.name || '\u2014') + '</td>';
-                html += '<td class="small">' + esc(fmtDate(inv.date)) + '</td>';
-                html += '<td class="small fw-semibold">' + esc(fmtMoney(inv.amount, inv.currency)) + '</td>';
-                html += '<td><span class="badge ' + esc(bcls) + '">' + esc(blbl) + '</span></td>';
-                html += '<td class="d-flex gap-1">';
-                html += '<a href="/my/dojo/invoices/' + inv.id + '/pdf" class="btn btn-sm btn-outline-secondary py-0 px-2" title="PDF"><i class="fa fa-download"></i></a>';
-                if (canPay) {
-                    html += '<a href="/my/dojo/invoices/' + inv.id + '/pay" class="btn btn-sm btn-primary py-0 px-2">Pay</a>';
+                var payLabel, payCls;
+                if (inv.payment_state === 'paid' || inv.payment_state === 'in_payment') {
+                    payLabel = 'Paid';    payCls = 'text-success';
+                } else if (inv.payment_state === 'partial') {
+                    payLabel = 'Partial'; payCls = 'text-warning';
+                } else {
+                    payLabel = 'Unpaid';  payCls = 'text-danger';
                 }
-                html += '</td>';
-                html += '</tr>';
+                html += '<div class="list-group-item d-flex justify-content-between align-items-center">' +
+                    '<span class="text-muted small">' + esc(inv.date ? fmtDate(inv.date) : '\u2014') + '</span>' +
+                    '<span class="fw-semibold">' + esc(fmtMoney(inv.amount, inv.currency)) + '</span>' +
+                    '<span class="small ' + payCls + '">' + payLabel + '</span>' +
+                    '</div>';
             });
-            html += '</tbody></table></div>';
+            html += '</div>';
         }
+        html += '</div>';
+
         return html;
     }
 
@@ -1236,16 +1274,6 @@
             fetchJson("/my/dojo/json/billing").then(function(d){
                 state.billing = d;
                 render(root, state, isParent, members, students, isStudentOnly);
-            });
-        }
-        var changePlanBtn = document.getElementById("dojoBillingChangePlan");
-        if (changePlanBtn && state.billing && state.billing.plans) {
-            changePlanBtn.addEventListener("click", function(){
-                openBillingPlanOverlay(
-                    state.billing.plans,
-                    state.billing.subscription ? state.billing.subscription.plan_id : null,
-                    refreshBilling
-                );
             });
         }
         var pauseBtn = document.getElementById("dojoBillingPause");
