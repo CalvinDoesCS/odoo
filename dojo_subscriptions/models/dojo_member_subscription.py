@@ -44,7 +44,15 @@ class DojoMemberSubscription(models.Model):
     )
     last_invoice_id = fields.Many2one("account.move", string="Last Invoice")
     invoice_ids = fields.One2many("account.move", "subscription_id", string="Invoices")
-    invoice_count = fields.Integer(compute="_compute_invoice_count", store=True)
+    household_invoice_ids = fields.Many2many(
+        "account.move",
+        "dojo_invoice_sub_rel",
+        "subscription_id",
+        "invoice_id",
+        string="Household Invoices",
+        help="Consolidated invoices that cover this subscription along with sibling subscriptions.",
+    )
+    invoice_count = fields.Integer(compute="_compute_invoice_count", store=False)
     billing_reference = fields.Char(help="External billing system reference.")
     note = fields.Text()
 
@@ -67,10 +75,10 @@ class DojoMemberSubscription(models.Model):
     )
 
     # ── Computed ──────────────────────────────────────────────────────────
-    @api.depends("invoice_ids")
+    @api.depends("invoice_ids", "household_invoice_ids")
     def _compute_invoice_count(self):
         for rec in self:
-            rec.invoice_count = len(rec.invoice_ids)
+            rec.invoice_count = len(rec.invoice_ids | rec.household_invoice_ids)
 
     @api.depends('billing_failure_count', 'last_billing_failure_date')
     def _compute_grace_period_end(self):
@@ -102,37 +110,33 @@ class DojoMemberSubscription(models.Model):
         return from_date + relativedelta(months=1)
 
     # ── Invoice generation ────────────────────────────────────────────────
-    def action_generate_invoice(self):
-        """Create and post an Odoo invoice for this subscription billing cycle."""
-        self.ensure_one()
-        plan = self.plan_id
-        billing_partner = self._billing_partner()
-        if not billing_partner:
-            raise UserError(
-                _("No billing partner found for subscription of %s.", self.member_id.name)
-            )
+    def _build_invoice_lines(self, today=None):
+        """Build invoice line command vals for one billing period and advance next_billing_date.
 
-        today = fields.Date.today()
+        Returns (invoice_line_ids_vals, period_start) where invoice_line_ids_vals is
+        a list of (0, 0, {...}) tuples ready for account.move creation.
+        Side-effect: advances self.next_billing_date by one billing period.
+        """
+        self.ensure_one()
+        if today is None:
+            today = fields.Date.today()
+        plan = self.plan_id
         period_label = {"weekly": "Weekly", "monthly": "Monthly", "yearly": "Annual"}.get(
             plan.billing_period, plan.billing_period.capitalize()
         )
-        # Determine the billing period date range for the invoice description
         period_start = self.next_billing_date or today
         period_end = self._next_date_from(period_start) - relativedelta(days=1)
         date_range = "{} – {}".format(
             period_start.strftime("%-d %b %Y"),
             period_end.strftime("%-d %b %Y"),
         )
-        # Resolve the service product for the invoice line
         product = self.env.ref(
             'dojo_subscriptions.product_membership_subscription',
             raise_if_not_found=False,
         )
-
-        invoice_line_ids = []
-
-        # Initial / setup fee — only on the very first invoice
-        is_first_invoice = not bool(self.invoice_ids)
+        line_vals = []
+        # Enrollment fee on the very first invoice for this subscription
+        is_first_invoice = not bool(self.invoice_ids) and not bool(self.household_invoice_ids)
         if is_first_invoice and plan.initial_fee and plan.initial_fee > 0:
             fee_vals = {
                 'name': '{} – Enrollment Fee'.format(plan.name),
@@ -141,8 +145,7 @@ class DojoMemberSubscription(models.Model):
             }
             if product:
                 fee_vals['product_id'] = product.id
-            invoice_line_ids.append((0, 0, fee_vals))
-
+            line_vals.append((0, 0, fee_vals))
         recurring_vals = {
             'name': '{} – {} Membership ({})'.format(plan.name, period_label, date_range),
             'quantity': 1.0,
@@ -150,23 +153,38 @@ class DojoMemberSubscription(models.Model):
         }
         if product:
             recurring_vals['product_id'] = product.id
-        invoice_line_ids.append((0, 0, recurring_vals))
+        line_vals.append((0, 0, recurring_vals))
+        # Advance the billing date now so multi-sub grouped loops see unique dates
+        self.next_billing_date = self._next_date_from(period_start)
+        return line_vals, period_start
 
+    def action_generate_invoice(self):
+        """Create and post an Odoo invoice for this subscription billing cycle.
+
+        Used for manual/admin invoice generation and for single-occupant
+        households in the daily cron.  Multi-sub household cron uses
+        _generate_household_invoice() instead.
+        """
+        self.ensure_one()
+        billing_partner = self._billing_partner()
+        if not billing_partner:
+            raise UserError(
+                _("No billing partner found for subscription of %s.", self.member_id.name)
+            )
+        today = fields.Date.today()
+        invoice_line_ids, period_start = self._build_invoice_lines(today)
         invoice = self.env['account.move'].sudo().create({
             'move_type': 'out_invoice',
             'partner_id': billing_partner.id,
             'invoice_date': today,
-            'invoice_date_due': period_start,   # due same day as billing date
+            'invoice_date_due': period_start,
             'subscription_id': self.id,
             'company_id': (self.company_id or self.env.company).id,
             'invoice_line_ids': invoice_line_ids,
         })
         invoice.action_post()
         self.last_invoice_id = invoice
-        # Advance next billing date by one period
-        self.next_billing_date = self._next_date_from(period_start)
-
-        # Email the invoice PDF to the billing partner
+        plan = self.plan_id
         if plan.auto_send_invoice and billing_partner.email:
             try:
                 template = self.env.ref(
@@ -184,7 +202,63 @@ class DojoMemberSubscription(models.Model):
                     'Dojo billing: could not email invoice %s for subscription %s',
                     invoice.name, self.id, exc_info=True,
                 )
+        return invoice
 
+    def _generate_household_invoice(self, subs, today):
+        """Create ONE consolidated invoice for all subscriptions in a household billing group.
+
+        Called by _cron_generate_invoices() when 2+ subs share the same billing
+        partner and company.  Lines from every sub are combined on a single
+        account.move and linked to each sub via dojo_invoice_sub_rel (Many2many).
+
+        Returns the posted account.move record.
+        """
+        if not subs:
+            return None
+        first_sub = subs[0]
+        billing_partner = first_sub._billing_partner()
+        if not billing_partner:
+            raise UserError(_(
+                "No billing partner found for household billing group (first sub: %s).",
+                first_sub.member_id.name,
+            ))
+        company = first_sub.company_id or self.env.company
+        all_line_vals = []
+        period_starts = []
+        for sub in subs:
+            lines, period_start = sub._build_invoice_lines(today)
+            all_line_vals.extend(lines)
+            period_starts.append(period_start)
+        invoice = self.env['account.move'].sudo().create({
+            'move_type': 'out_invoice',
+            'partner_id': billing_partner.id,
+            'invoice_date': today,
+            'invoice_date_due': min(period_starts),
+            'company_id': company.id,
+            'invoice_line_ids': all_line_vals,
+            'dojo_subscription_ids': [(6, 0, subs.ids)],
+        })
+        invoice.action_post()
+        for sub in subs:
+            sub.last_invoice_id = invoice
+        auto_send = any(s.plan_id.auto_send_invoice for s in subs)
+        if auto_send and billing_partner.email:
+            try:
+                template = self.env.ref(
+                    'account.email_template_edi_invoice',
+                    raise_if_not_found=False,
+                )
+                if template:
+                    template.sudo().send_mail(
+                        invoice.id,
+                        force_send=True,
+                        raise_exception=False,
+                    )
+            except Exception:
+                _logger.warning(
+                    'Dojo billing: could not email consolidated invoice %s',
+                    invoice.name, exc_info=True,
+                )
         return invoice
 
     def action_view_invoices(self):
@@ -195,7 +269,11 @@ class DojoMemberSubscription(models.Model):
             "name": "Invoices",
             "res_model": "account.move",
             "view_mode": "list,form",
-            "domain": [("subscription_id", "=", self.id)],
+            "domain": [
+                "|",
+                ("subscription_id", "=", self.id),
+                ("dojo_subscription_ids", "in", [self.id]),
+            ],
             "context": {
                 "default_subscription_id": self.id,
                 "default_move_type": "out_invoice",
@@ -205,31 +283,71 @@ class DojoMemberSubscription(models.Model):
     # ── Daily cron ────────────────────────────────────────────────────────
     @api.model
     def _cron_generate_invoices(self):
-        """Generate invoices for all active subscriptions due today or earlier."""
+        """Generate consolidated household invoices for all active subscriptions due today.
+
+        Subscriptions sharing a billing partner+company are grouped and billed
+        on a single invoice.  Single-sub households fall through to
+        action_generate_invoice() for backward compatibility.
+        """
+        from collections import defaultdict
         today = fields.Date.today()
         due = self.search([
             ("state", "=", "active"),
             ("next_billing_date", "!=", False),
             ("next_billing_date", "<=", today),
         ])
+        # Idempotency: drop subs already invoiced today (handles cron restart).
+        filtered = self.env['dojo.member.subscription']
         for sub in due:
-            # Idempotency guard: skip if an invoice was already posted today
-            # for this subscription (handles cron crash-and-retry scenarios).
-            already_today = self.env['account.move'].search_count([
+            already_m2o = self.env['account.move'].search_count([
                 ('subscription_id', '=', sub.id),
                 ('invoice_date', '=', today),
                 ('move_type', '=', 'out_invoice'),
                 ('state', '!=', 'cancel'),
             ])
-            if already_today:
+            already_m2m = self.env['account.move'].search_count([
+                ('dojo_subscription_ids', 'in', [sub.id]),
+                ('invoice_date', '=', today),
+                ('move_type', '=', 'out_invoice'),
+                ('state', '!=', 'cancel'),
+            ])
+            if not already_m2o and not already_m2m:
+                filtered |= sub
+        # Group by (billing_partner_id, company_id) to consolidate households.
+        groups = defaultdict(lambda: self.env['dojo.member.subscription'])
+        for sub in filtered:
+            partner = sub._billing_partner()
+            if not partner:
+                _logger.warning(
+                    'Dojo billing: no billing partner for subscription %s — skipped.', sub.id
+                )
                 continue
-            try:
-                sub.action_generate_invoice()
-                # Reset transient failure count on successful billing
-                if sub.billing_failure_count:
-                    sub._reset_billing_failures()
-            except Exception as exc:
-                sub._handle_billing_failure(exc)
+            key = (partner.id, (sub.company_id or self.env.company).id)
+            groups[key] |= sub
+        for _key, group_subs in groups.items():
+            if len(group_subs) == 1:
+                # Single sub — use per-subscription invoice (M2o path).
+                sub = group_subs
+                try:
+                    sub.action_generate_invoice()
+                    if sub.billing_failure_count:
+                        sub._reset_billing_failures()
+                except Exception as exc:
+                    sub._handle_billing_failure(exc)
+            else:
+                # Multiple subs share a billing partner — consolidated invoice.
+                try:
+                    self._generate_household_invoice(group_subs, today)
+                    for sub in group_subs:
+                        if sub.billing_failure_count:
+                            sub._reset_billing_failures()
+                except Exception as exc:
+                    _logger.error(
+                        'Dojo billing: failed to generate consolidated invoice for group: %s',
+                        exc, exc_info=True,
+                    )
+                    for sub in group_subs:
+                        sub._handle_billing_failure(exc)
 
     # ── Dunning ───────────────────────────────────────────────────────────
     def _handle_billing_failure(self, exc):

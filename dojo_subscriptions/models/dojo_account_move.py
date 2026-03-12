@@ -11,3 +11,11 @@ class AccountMove(models.Model):
         ondelete="set null",
         help="Dojo membership subscription that generated this invoice.",
     )
+    dojo_subscription_ids = fields.Many2many(
+        "dojo.member.subscription",
+        "dojo_invoice_sub_rel",
+        "invoice_id",
+        "subscription_id",
+        string="Dojo Subscriptions",
+        help="All subscriptions included in this consolidated household invoice.",
+    )

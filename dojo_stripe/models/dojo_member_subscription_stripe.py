@@ -97,3 +97,62 @@ class DojoMemberSubscriptionStripe(models.Model):
             )
 
         return invoice
+
+    def _generate_household_invoice(self, subs, today):
+        """Create consolidated household invoice then charge via saved payment.token.
+
+        Overrides the base method so the single combined invoice gets charged
+        once through Stripe rather than triggering a charge per subscription.
+        """
+        invoice = super()._generate_household_invoice(subs, today)
+        if not invoice:
+            return invoice
+
+        # All subs in a billing group share the same household/billing partner.
+        household = subs[0].member_id.household_id if subs else None
+        if not household or not getattr(household, 'payment_token_count', 0):
+            return invoice
+
+        try:
+            tx = household.action_charge_invoice(invoice)
+        except UserError as exc:
+            _logger.warning(
+                'Dojo Stripe: could not charge consolidated invoice %s: %s',
+                invoice.name, exc,
+            )
+            for sub in subs:
+                sub._handle_billing_failure(exc)
+            return invoice
+        except Exception as exc:
+            _logger.error(
+                'Dojo Stripe: unexpected error charging consolidated invoice %s: %s',
+                invoice.name, exc, exc_info=True,
+            )
+            for sub in subs:
+                sub._handle_billing_failure(exc)
+            return invoice
+
+        state = tx.state if tx else ''
+        if state == 'done':
+            for sub in subs:
+                sub._reset_billing_failures()
+            _logger.info(
+                'Dojo Stripe: consolidated invoice %s charged successfully.', invoice.name
+            )
+        elif state == 'error':
+            error_msg = getattr(tx, 'state_message', None) or 'Stripe payment failed'
+            exc = UserError(_(error_msg))
+            _logger.warning(
+                'Dojo Stripe: consolidated charge failed for invoice %s: %s',
+                invoice.name, error_msg,
+            )
+            for sub in subs:
+                sub._handle_billing_failure(exc)
+        else:
+            _logger.info(
+                'Dojo Stripe: consolidated invoice %s pending (tx %s) — '
+                'awaiting Stripe webhook.',
+                invoice.name, tx.id if tx else 'N/A',
+            )
+
+        return invoice

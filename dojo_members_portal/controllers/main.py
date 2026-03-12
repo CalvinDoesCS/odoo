@@ -106,8 +106,10 @@ class DojoMemberPortal(CustomerPortal):
         subscriptions = request.env['dojo.member.subscription'].sudo().search([
             ('member_id', 'in', member_ids),
         ])
-        # Collect all historical invoices via the One2many, not just last_invoice_id
-        all_invoices = subscriptions.mapped('invoice_ids')
+        # Collect individual (M2o) invoices AND consolidated household (M2m) invoices.
+        # The | operator deduplicates so a consolidated invoice shared across subs
+        # appears only once in the result.
+        all_invoices = subscriptions.mapped('invoice_ids') | subscriptions.mapped('household_invoice_ids')
         return all_invoices.ids
 
     def _get_belt_context(self, member):
