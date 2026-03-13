@@ -185,8 +185,37 @@ class DojoAutoEnrollPreference(models.Model):
             ("start_datetime", ">=", now),
             ("state", "not in", ["done", "cancelled"]),
         ])
+
+        # Determine the billing period end for this member+template so we only
+        # enroll sessions within the current paid period.
+        _Sub = self.env["dojo.member.subscription"]
+        _tmpl_program = tmpl.program_id
+        _active_subs = _Sub.search([
+            ("member_id", "=", self.member_id.id),
+            ("state", "=", "active"),
+        ])
+        _matched_sub = None
+        for _sub in _active_subs:
+            _plan = _sub.plan_id
+            _ptype = getattr(_plan, "plan_type", False)
+            if _tmpl_program and _ptype == "program" and getattr(_plan, "program_id", False) == _tmpl_program:
+                _matched_sub = _sub
+                break
+            if _ptype == "course" and tmpl in getattr(_plan, "allowed_template_ids", _Sub.browse()):
+                _matched_sub = _sub
+                break
+        _period_end = None
+        if _matched_sub:
+            _cpp = getattr(_matched_sub.plan_id, "credits_per_period", 0)
+            if _cpp:
+                _nbd = _matched_sub.next_billing_date
+                _period_end = (_nbd - timedelta(days=1)) if _nbd else None
+
         Enrollment = self.env["dojo.class.enrollment"]
         for session in future_sessions:
+            # Defer enrollment for sessions outside the current billing period.
+            if _period_end is not None and session.start_datetime.date() > _period_end:
+                continue
             already = Enrollment.search([
                 ("session_id", "=", session.id),
                 ("member_id", "=", self.member_id.id),

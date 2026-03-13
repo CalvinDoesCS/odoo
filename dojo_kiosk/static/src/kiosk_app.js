@@ -874,9 +874,15 @@ class InstructorSessionCard extends Component {
                     t-on-click="() => props.onEdit(props.session)">
                     ✎ Edit
                 </button>
-                <button class="k-btn k-session-action k-session-action--done"
+                <button t-attf-class="k-btn k-session-action #{hasPending() ? 'k-session-action--done-blocked' : 'k-session-action--done'}"
+                    t-att-title="hasPending() ? 'All members must have attendance recorded before marking done' : 'Close this session'"
                     t-on-click="() => props.onClose(props.session.id)">
                     ✓ Mark Done
+                    <t t-if="hasPending()">
+                        <span class="k-session-action--done-pending-badge" title="Pending attendance remaining">
+                            <t t-esc="pendingCount()"/>
+                        </span>
+                    </t>
                 </button>
                 <button class="k-btn k-session-action k-session-action--delete"
                     t-on-click="() => props.onDelete(props.session.id)">
@@ -889,6 +895,15 @@ class InstructorSessionCard extends Component {
     static props = ["session", "roster", "loading", "onMark", "onProfile", "onRemoveAttendance", "onClose", "onDelete", "onEdit", "onAssignRoster"];
     static components = { InstructorRosterTile };
     formatTime(dt) { return formatTime(dt); }
+
+    hasPending() {
+        if (!this.props.roster.length) return false;
+        return this.props.roster.some(e => !e.attendance_state || e.attendance_state === "pending");
+    }
+
+    pendingCount() {
+        return this.props.roster.filter(e => !e.attendance_state || e.attendance_state === "pending").length;
+    }
 }
 
 // ─── AttendanceRemoveConfirm ──────────────────────────────────────────────────
@@ -1511,6 +1526,12 @@ class KioskApp extends Component {
                         </div>
                     </t>
                     <t t-else="">
+                        <t t-if="state.sessionDoneError">
+                            <div class="k-sessions-toast k-sessions-toast--error">
+                                <span t-esc="state.sessionDoneError"/>
+                                <button class="k-sessions-toast__dismiss" t-on-click="() => this.state.sessionDoneError = null">✕</button>
+                            </div>
+                        </t>
                         <div class="k-sessions-list">
                             <t t-foreach="filteredSessions()" t-as="session" t-key="session.id">
                                 <InstructorSessionCard
@@ -1651,6 +1672,7 @@ class KioskApp extends Component {
             // Instructor
             instructorMode: false,
             showPin: false,
+            sessionDoneError: null,
             profileMember: null,
             profileSessionId: null,
             removeAttendancePending: null,
@@ -1674,6 +1696,7 @@ class KioskApp extends Component {
         this._barcodeBuffer = "";
         this._barcodeTimer = null;
         this._idleTimer = null;
+        this._doneErrorTimer = null;
         this._interactionHandler = this._resetIdleTimer.bind(this);
 
         onMounted(() => {
@@ -2070,7 +2093,17 @@ class KioskApp extends Component {
 
     async closeSessionById(sessionId) {
         try {
-            await jsonPost("/kiosk/instructor/session/close", { session_id: sessionId });
+            const result = await jsonPost("/kiosk/instructor/session/close", { session_id: sessionId });
+            if (!result.success) {
+                const msg = result.error === "pending_attendance"
+                    ? (result.message || `${result.count || "Some"} member(s) still have attendance pending. Record all attendance before marking done.`)
+                    : (result.error || "Could not close session.");
+                this.state.sessionDoneError = msg;
+                clearTimeout(this._doneErrorTimer);
+                this._doneErrorTimer = setTimeout(() => { this.state.sessionDoneError = null; }, 6000);
+                return;
+            }
+            this.state.sessionDoneError = null;
             delete this.state.sessionRosters[sessionId];
             await this._loadSessions(this.state.filterDate || null);
         } catch (e) {
@@ -2132,6 +2165,10 @@ class KioskApp extends Component {
 
     onFontSize(size) {
         this.state.fontSize = size;
+        // Apply to <html> so all rem units scale correctly
+        const sizeMap = { normal: "16px", large: "18px", xl: "21px" };
+        document.documentElement.style.fontSize = sizeMap[size] || "16px";
+        // Keep body classes for any em-based inheritance
         document.body.classList.remove("kiosk-font-large", "kiosk-font-xl");
         if (size === "large") document.body.classList.add("kiosk-font-large");
         if (size === "xl") document.body.classList.add("kiosk-font-xl");

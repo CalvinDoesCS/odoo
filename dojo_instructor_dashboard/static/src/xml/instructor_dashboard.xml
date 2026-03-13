@@ -109,11 +109,11 @@
                     <span class="o_di_quick_label">Today's Classes</span>
                 </button>
 
-                <button class="o_di_quick_item" t-on-click="openMarkAttendance">
+                <button class="o_di_quick_item" t-on-click="openKiosk">
                     <div class="o_di_quick_icon o_di_quick_icon_green">
-                        <i class="fa fa-check-square-o"/>
+                        <i class="fa fa-tablet"/>
                     </div>
-                    <span class="o_di_quick_label">Mark Attendance</span>
+                    <span class="o_di_quick_label">Kiosk</span>
                 </button>
 
                 <button class="o_di_quick_item" t-on-click="openMyStudents">
@@ -178,7 +178,7 @@
                                         <span t-attf-class="o_di_badge {{ stateBadgeClass(s.state) }}">
                                             <t t-esc="stateLabel(s.state)"/>
                                         </span>
-                                        <t t-if="s.state === 'open' or s.state === 'in_progress'">
+                                        <t t-if="s.state !== 'cancelled'">
                                             <button class="o_di_attend_btn"
                                                     t-on-click="() => this.openQuickAttendance(s.id)">
                                                 <i class="fa fa-check me-1"/>Attendance
@@ -226,6 +226,39 @@
                                     <span t-attf-class="o_di_badge {{ stateBadgeClass(s.state) }}">
                                         <t t-esc="stateLabel(s.state)"/>
                                     </span>
+                                </div>
+                            </t>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- Kiosk — full width -->
+                <div class="o_di_card o_di_card_full">
+                    <div class="o_di_card_header">
+                        <div class="o_di_card_title">Kiosk</div>
+                        <button class="o_di_view_btn" t-on-click="openKiosk">Manage</button>
+                    </div>
+                    <div class="o_di_card_body">
+                        <t t-if="state.kiosks.length === 0">
+                            <div class="o_di_empty">
+                                <i class="fa fa-tablet fa-2x"/>
+                                <div>No kiosks configured</div>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <t t-foreach="state.kiosks" t-as="k" t-key="k.id">
+                                <div class="o_di_session_row">
+                                    <div class="o_di_session_info">
+                                        <div class="o_di_session_name" t-esc="k.name"/>
+                                        <div class="o_di_session_meta">
+                                            <i class="fa fa-link me-1"/>
+                                            <t t-esc="k.kiosk_url"/>
+                                        </div>
+                                    </div>
+                                    <button class="o_di_attend_btn"
+                                            t-on-click="() => this.launchKioskUrl(k.kiosk_url)">
+                                        <i class="fa fa-external-link me-1"/>Launch
+                                    </button>
                                 </div>
                             </t>
                         </t>

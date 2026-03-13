@@ -1,6 +1,24 @@
+import os
+import hashlib
+
 from odoo import http
 from odoo.http import request
 from odoo.exceptions import AccessError
+
+
+def _static_ver(*rel_paths):
+    """Return a short hash of the combined mtime of the given static file paths
+    (relative to the addons root). Used for cache-busting CSS/JS URLs."""
+    try:
+        base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        mtimes = "".join(
+            str(int(os.path.getmtime(os.path.join(base, p))))
+            for p in rel_paths
+            if os.path.exists(os.path.join(base, p))
+        )
+        return hashlib.md5(mtimes.encode()).hexdigest()[:8]
+    except Exception:
+        return "1"
 
 
 class KioskController(http.Controller):
@@ -61,7 +79,7 @@ class KioskController(http.Controller):
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
     <meta name="robots" content="noindex,nofollow"/>
     <title>Dojo Kiosk</title>
-    <link rel="stylesheet" href="/dojo_kiosk/static/src/kiosk.css"/>
+    <link rel="stylesheet" href="/dojo_kiosk/static/src/kiosk.css?v={_static_ver('static/src/kiosk.css')}"/>
 </head>
 <body class="dojo-kiosk-body {theme_class}">
     <div id="kiosk-root"></div>
@@ -75,7 +93,7 @@ class KioskController(http.Controller):
         }};
     </script>
     <script src="/web/static/lib/owl/owl.js"></script>
-    <script src="/dojo_kiosk/static/src/kiosk_app.js"></script>
+    <script src="/dojo_kiosk/static/src/kiosk_app.js?v={_static_ver('static/src/kiosk_app.js')}"></script>
 </body>
 </html>"""
         return request.make_response(

@@ -1,7 +1,7 @@
 from odoo import fields, http, _
 from odoo.http import request
 from odoo.addons.portal.controllers.portal import CustomerPortal, pager as portal_pager
-from odoo.exceptions import AccessError, MissingError, ValidationError
+from odoo.exceptions import AccessError, MissingError, ValidationError, UserError
 import json
 from datetime import datetime, timedelta
 
@@ -161,6 +161,11 @@ class DojoMemberPortal(CustomerPortal):
 
         belt = self._get_belt_context(member)
 
+        # Credit balance for the portal hero chip
+        active_sub = member.sudo().active_subscription_id
+        is_credit_plan = bool(getattr(getattr(active_sub, 'plan_id', None), 'credits_per_period', 0))
+        credit_balance = getattr(active_sub, 'credit_balance', 0) if active_sub else 0
+
         return request.render('dojo_members_portal.portal_dojo_home', {
             'member': member,
             'is_parent': is_parent,
@@ -174,6 +179,8 @@ class DojoMemberPortal(CustomerPortal):
             'invoice_warning': invoice_warning == '1',
             'members_json': members_json,
             'students_json': students_json,
+            'is_credit_plan': is_credit_plan,
+            'credit_balance': credit_balance,
             # Belt context: hide rank card for parents who have no rank of their own
             'show_belt_card': is_student_only or bool(belt.get('current_rank')),
             **belt,
@@ -240,17 +247,21 @@ class DojoMemberPortal(CustomerPortal):
         member = self._get_current_member()
         is_parent = member.role in ('parent', 'both') if member else True
         household_member_ids = self._resolve_view_member_ids(member_id)
-
-        # Build a map of member_id -> set of enrolled template_ids
         household_members = request.env['dojo.member'].sudo().browse(household_member_ids)
-        member_templates = {}
-        all_template_ids = set()
-        for m in household_members:
-            tmpl_ids = set(m.enrolled_template_ids.ids)
-            member_templates[m.id] = tmpl_ids
-            all_template_ids.update(tmpl_ids)
 
-        if not all_template_ids:
+        # Scope sessions to programs covered by each member's active subscription.
+        # Build: program_id -> [member_ids subscribed to it]
+        program_member_map = {}  # {program_id: [member_id, ...]}
+        for m in household_members.filtered(lambda x: x.role in ('student', 'both')):
+            sub = m.active_subscription_id
+            if not sub:
+                continue
+            plan = sub.plan_id
+            if getattr(plan, 'plan_type', '') == 'program' and plan.program_id:
+                prog_id = plan.program_id.id
+                program_member_map.setdefault(prog_id, []).append(m.id)
+
+        if not program_member_map:
             return request.make_response(
                 json.dumps({'sessions': [], 'can_enroll': is_parent}),
                 headers=[('Content-Type', 'application/json')],
@@ -259,22 +270,24 @@ class DojoMemberPortal(CustomerPortal):
         domain = [
             ('state', '=', 'open'),
             ('start_datetime', '>=', fields.Datetime.now()),
-            ('template_id', 'in', list(all_template_ids)),
+            ('template_id.program_id', 'in', list(program_member_map.keys())),
         ]
         sessions = request.env['dojo.class.session'].sudo().search(
             domain, order='start_datetime asc', limit=100
         )
         data = []
         for s in sessions:
-            # Find which household members are eligible (enrolled in this template's course)
-            eligible_member_ids = [
-                mid for mid, tmpl_ids in member_templates.items()
-                if s.template_id.id in tmpl_ids
-            ]
+            prog = s.template_id.program_id if s.template_id else False
+            prog_id = prog.id if prog else None
+            # Eligible = members subscribed to this session's program
+            eligible_member_ids = program_member_map.get(prog_id, [])
+            # Credit cost per class from the program model (default 1)
+            credits_per_class = getattr(prog, 'credits_per_class', 1) if prog else 1
             data.append({
                 'id': s.id,
                 'name': s.template_id.name or '',
                 'template_id': s.template_id.id,
+                'program_name': prog.name if prog else '',
                 'start_datetime': fields.Datetime.to_string(s.start_datetime) if s.start_datetime else None,
                 'end_datetime': fields.Datetime.to_string(s.end_datetime) if s.end_datetime else None,
                 'instructor': s.instructor_profile_id.name if s.instructor_profile_id else None,
@@ -285,6 +298,7 @@ class DojoMemberPortal(CustomerPortal):
                 'state': s.state,
                 'description': s.template_id.description or '',
                 'eligible_member_ids': eligible_member_ids,
+                'credits_per_class': credits_per_class,
             })
         return request.make_response(
             json.dumps({'sessions': data, 'can_enroll': is_parent}),
@@ -595,15 +609,14 @@ class DojoMemberPortal(CustomerPortal):
             plan_data = None
             if sub and sub.plan_id:
                 plan = sub.plan_id
+                credits_per_period = getattr(plan, 'credits_per_period', 0)
                 plan_data = {
                     'name': plan.name or '',
                     'state': sub.state or '',
                     'billing_period': plan.billing_period or '',
                     'price': plan.price,
                     'currency': plan.currency_id.name if plan.currency_id else 'USD',
-                    'unlimited_sessions': plan.unlimited_sessions,
-                    'sessions_per_period': plan.sessions_per_period,
-                    'max_sessions_per_week': plan.max_sessions_per_week,
+                    'credits_per_period': credits_per_period,
                 }
             members_data.append({
                 'id': m.id,
@@ -614,8 +627,9 @@ class DojoMemberPortal(CustomerPortal):
                     {'id': t.id, 'name': t.name, 'level': t.level or 'all'}
                     for t in m.enrolled_template_ids
                 ],
-                'sessions_used_this_week': m.sessions_used_this_week,
-                'sessions_allowed_per_week': m.sessions_allowed_per_week,
+                'credit_balance': getattr(sub, 'credit_balance', 0) if sub else 0,
+                'credit_pending': getattr(sub, 'credit_pending', 0) if sub else 0,
+                'credit_confirmed': getattr(sub, 'credit_confirmed', 0) if sub else 0,
                 'plan': plan_data,
             })
         return request.make_response(
@@ -653,14 +667,24 @@ class DojoMemberPortal(CustomerPortal):
         session = env['dojo.class.session'].sudo().browse(session_id)
         if not session.exists() or session.state not in ('open', 'draft'):
             return _err('Session is not available for enrollment.')
-        # Enforce course roster: member must be enrolled in the course
+        # Enforce course roster: auto-add if the member has a valid subscription
+        # for this session's program/template, otherwise block with a friendly error.
         if session.template_id.course_member_ids:
             if enroll_target.id not in session.template_id.course_member_ids.ids:
-                return _err(
-                    '%s is not enrolled in the course "%s". '
-                    'Ask an instructor to add them to the course roster first.' %
-                    (enroll_target.name, session.template_id.name)
+                sub = env['dojo.member.subscription']._find_subscription_for_session(
+                    enroll_target, session
                 )
+                if sub:
+                    # Auto-add to course roster so future auto-enroll picks them up too
+                    session.template_id.sudo().write(
+                        {'course_member_ids': [(4, enroll_target.id)]}
+                    )
+                else:
+                    return _err(
+                        '%s is not enrolled in the course "%s". '
+                        'Ask an instructor to add them to the course roster first.' %
+                        (enroll_target.name, session.template_id.name)
+                    )
         existing = env['dojo.class.enrollment'].sudo().search([
             ('session_id', '=', session_id),
             ('member_id', '=', member_id),
@@ -669,12 +693,22 @@ class DojoMemberPortal(CustomerPortal):
         if existing:
             return _err('Already enrolled in this session.')
         try:
-            env['dojo.class.enrollment'].sudo().create({
-                'session_id': session_id,
-                'member_id': member_id,
-                'status': 'registered',
-            })
-        except ValidationError as ve:
+            # If a cancelled enrollment record exists, reactivate it instead of
+            # creating a new one (DB has a unique constraint on session+member).
+            cancelled = env['dojo.class.enrollment'].sudo().search([
+                ('session_id', '=', session_id),
+                ('member_id', '=', member_id),
+                ('status', '=', 'cancelled'),
+            ], limit=1)
+            if cancelled:
+                cancelled.write({'status': 'registered'})
+            else:
+                env['dojo.class.enrollment'].sudo().create({
+                    'session_id': session_id,
+                    'member_id': member_id,
+                    'status': 'registered',
+                })
+        except (ValidationError, UserError) as ve:
             return _err(str(ve.args[0]) if ve.args else str(ve))
         return request.make_response(
             json.dumps({'ok': True}),
@@ -854,7 +888,7 @@ class DojoMemberPortal(CustomerPortal):
             students_data = []
             for mid in hm_ids:
                 m = request.env['dojo.member'].sudo().browse(mid)
-                if not m.exists() or m.role != 'student':
+                if not m.exists() or m.role not in ('student', 'both'):
                     continue
                 students_data.append({
                     'id': m.id,
@@ -956,6 +990,23 @@ class DojoMemberPortal(CustomerPortal):
         if getattr(target, 'test_invite_pending', False):
             return _err('A belt test request is already pending.')
         target.sudo().write({'test_invite_pending': True})
+
+        # ── Notify instructor(s) via their todo list ──────────────────────
+        try:
+            next_rank = target.sudo()._get_next_belt_rank()
+            rank_label = next_rank.name if next_rank else 'next rank'
+            users = target.sudo()._get_instructor_users_for_member()
+            request.env['dojo.member'].sudo()._create_instructor_todo(
+                users,
+                '🥋 Belt test requested: %s → %s' % (target.name, rank_label),
+                description=(
+                    '%s has requested a belt test via the member portal. '
+                    'Please review their eligibility and schedule the test.' % target.name
+                ),
+            )
+        except Exception:
+            pass  # Never block the portal response over a failed notification
+
         return request.make_response(
             json.dumps({'ok': True}),
             headers=[('Content-Type', 'application/json')],
@@ -1042,6 +1093,10 @@ class DojoMemberPortal(CustomerPortal):
                 'next_billing_date': fields.Date.to_string(sub.next_billing_date) if sub.next_billing_date else None,
                 'billing_failure_count': sub.billing_failure_count or 0,
                 'grace_period_end': fields.Date.to_string(sub.grace_period_end) if sub.grace_period_end else None,
+                'credits_per_period': getattr(plan, 'credits_per_period', 0),
+                'credit_balance': getattr(sub, 'credit_balance', 0),
+                'credit_pending': getattr(sub, 'credit_pending', 0),
+                'credit_confirmed': getattr(sub, 'credit_confirmed', 0),
             }
 
         # Available plans (for plan-switch overlay)

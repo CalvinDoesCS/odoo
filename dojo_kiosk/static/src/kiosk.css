@@ -11,6 +11,8 @@
      8. Assign Roster modal
      9. Other modals (PIN, edit session, settings, remove-confirm)
     10. Utilities — spinners, buttons, status pills, empty states
+    11. Industrial dark mode — component overrides (body.kiosk-theme-dark)
+    12. Industrial light mode — component overrides (body.kiosk-theme-light)
    ============================================================ */
 
 
@@ -35,25 +37,25 @@ body.kiosk-theme-light {
     --k-text-3:      #9ca3af;
     --k-text-inv:    #ffffff;
 
-    /* Accent */
-    --k-accent:      #4f6ef7;
-    --k-accent-dim:  #eef0fe;
+    /* Accent — MD3 Google Blue */
+    --k-accent:      #1a73e8;
+    --k-accent-dim:  #e8f0fe;
     --k-accent-text: #ffffff;
 
     /* Status */
-    --k-success:     #16a34a;
-    --k-success-dim: #dcfce7;
-    --k-warning:     #d97706;
-    --k-warning-dim: #fef3c7;
-    --k-danger:      #dc2626;
-    --k-danger-dim:  #fee2e2;
-    --k-info:        #0ea5e9;
-    --k-info-dim:    #e0f2fe;
+    --k-success:     #188038;
+    --k-success-dim: #e6f4ea;
+    --k-warning:     #e37400;
+    --k-warning-dim: #fef7e0;
+    --k-danger:      #d93025;
+    --k-danger-dim:  #fce8e6;
+    --k-info:        #1a73e8;
+    --k-info-dim:    #e8f0fe;
 
-    /* Instructor header */
-    --k-instr-bg:    #4338ca;
-    --k-instr-bg-2:  #3730a3;
-    --k-instr-text:  #e0e7ff;
+    /* Instructor header — Google Blue header */
+    --k-instr-bg:    #1a73e8;
+    --k-instr-bg-2:  #1557b0;
+    --k-instr-text:  #ffffff;
 
     /* Card header (member card green strip) */
     --k-card-header:      #16a34a;
@@ -62,10 +64,10 @@ body.kiosk-theme-light {
     /* Modal backdrop */
     --k-backdrop: rgba(0, 0, 0, 0.55);
 
-    /* Shape */
-    --k-radius-sm:   8px;
-    --k-radius:      14px;
-    --k-radius-lg:   20px;
+    /* Shape — industrial minimalism (tighter radii) */
+    --k-radius-sm:   4px;
+    --k-radius:      8px;
+    --k-radius-lg:   12px;
     --k-radius-pill: 999px;
 
     /* Shadow */
@@ -78,47 +80,58 @@ body.kiosk-theme-light {
 
     /* Typography */
     --k-font-base: 16px;
+    --k-font-mono: "Roboto Mono", "SF Mono", "Consolas", "Courier New", monospace;
+    --k-letter-spacing-label: 0.10em;
+    --k-letter-spacing-display: -0.025em;
 }
 
-/* — Dark theme — */
+/* — Dark theme (True Black · Industrial Minimalism) — */
 body.kiosk-theme-dark {
-    --k-bg:          #0d0d1a;
-    --k-surface:     #15152a;
-    --k-surface-2:   #1c1c35;
-    --k-surface-3:   #242444;
-    --k-border:      #2a2a4a;
-    --k-border-2:    #3a3a5c;
+    /* Surfaces — true black base */
+    --k-bg:          #000000;
+    --k-surface:     #0c0c0c;
+    --k-surface-2:   #141414;
+    --k-surface-3:   #1c1c1c;
+    --k-border:      #272727;
+    --k-border-2:    #383838;
 
-    --k-text:        #eef0f8;
-    --k-text-2:      #9ba3c8;
-    --k-text-3:      #5c6080;
-    --k-text-inv:    #0d0d1a;
+    /* Text */
+    --k-text:        #e8eaed;
+    --k-text-2:      #9aa0a6;
+    --k-text-3:      #4e5256;
+    --k-text-inv:    #000000;
 
-    --k-accent:      #6b86ff;
-    --k-accent-dim:  #1a1f44;
-    --k-accent-text: #ffffff;
+    /* Accent — MD3 steel blue / cyan */
+    --k-accent:      #29b6f6;
+    --k-accent-dim:  #001f32;
+    --k-accent-text: #000000;
 
-    --k-success:     #22c55e;
-    --k-success-dim: #052e16;
-    --k-warning:     #f59e0b;
-    --k-warning-dim: #261800;
-    --k-danger:      #f87171;
-    --k-danger-dim:  #1f0606;
-    --k-info:        #38bdf8;
-    --k-info-dim:    #082030;
+    /* Status */
+    --k-success:     #57bb8a;
+    --k-success-dim: #091a10;
+    --k-warning:     #ffb74d;
+    --k-warning-dim: #1a1000;
+    --k-danger:      #f28b82;
+    --k-danger-dim:  #1a0504;
+    --k-info:        #8ab4f8;
+    --k-info-dim:    #060d1f;
 
-    --k-instr-bg:    #4338ca;
-    --k-instr-bg-2:  #312e9e;
-    --k-instr-text:  #c7d2fe;
+    /* Instructor header — deep teal-dark */
+    --k-instr-bg:    #00111e;
+    --k-instr-bg-2:  #000b15;
+    --k-instr-text:  #bee3f8;
 
-    --k-card-header:      #166534;
-    --k-card-header-text: #dcfce7;
+    /* Card header */
+    --k-card-header:      #091a10;
+    --k-card-header-text: #57bb8a;
 
-    --k-backdrop: rgba(0, 0, 0, 0.72);
+    /* Modal backdrop — strong on true black */
+    --k-backdrop: rgba(0, 0, 0, 0.88);
 
-    --k-shadow-sm: 0 1px 4px rgba(0,0,0,.30);
-    --k-shadow:    0 4px 20px rgba(0,0,0,.45);
-    --k-shadow-lg: 0 8px 40px rgba(0,0,0,.65);
+    /* Elevation — border-based (shadows invisible on #000) */
+    --k-shadow-sm: 0 0 0 1px var(--k-border);
+    --k-shadow:    0 0 0 1px var(--k-border);
+    --k-shadow-lg: 0 0 0 1px var(--k-border-2);
 }
 
 
@@ -1712,3 +1725,996 @@ select { background: var(--k-surface-2); }
 }
 .k-empty__icon { font-size: 48px; opacity: 0.4; }
 .k-empty__text { font-size: 1rem; color: var(--k-text-2); }
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   11. INDUSTRIAL DARK MODE — COMPONENT OVERRIDES
+   Scoped to body.kiosk-theme-dark for non-destructive layering.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ── Header ── */
+body.kiosk-theme-dark .k-header {
+    background: #000000;
+    border-bottom: 1px solid var(--k-border);
+}
+
+/* Instructor mode: slim steel-blue top stripe + very subtle wash instead of full purple */
+body.kiosk-theme-dark .k-header--instructor {
+    background: var(--k-instr-bg);
+    border-bottom: 1px solid var(--k-border-2);
+    border-top: 3px solid var(--k-accent);
+}
+
+/* Logo — monospace uppercase industrial label */
+body.kiosk-theme-dark .k-header__logo {
+    font-family: var(--k-font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: var(--k-letter-spacing-label);
+    text-transform: uppercase;
+    color: var(--k-text-2);
+}
+body.kiosk-theme-dark .k-header--instructor .k-header__logo {
+    color: var(--k-instr-text);
+}
+
+/* Search — MD3 filled text field style: underline instead of rounded box */
+body.kiosk-theme-dark .k-header__search {
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid var(--k-border-2);
+    background: transparent;
+    padding-left: 36px;
+    padding-right: 36px;
+    font-size: 17px;
+    letter-spacing: 0.01em;
+}
+body.kiosk-theme-dark .k-header__search:focus {
+    border-bottom: 2px solid var(--k-accent);
+    box-shadow: none;
+}
+
+/* Icon buttons */
+body.kiosk-theme-dark .k-header__action-btn,
+body.kiosk-theme-dark .k-header__instructor-btn {
+    background: transparent;
+    border-color: var(--k-border-2);
+    color: var(--k-text-2);
+    border-radius: var(--k-radius-sm);
+}
+body.kiosk-theme-dark .k-header__action-btn:hover {
+    background: var(--k-surface-2);
+    border-color: var(--k-border-2);
+}
+body.kiosk-theme-dark .k-header--instructor .k-header__action-btn,
+body.kiosk-theme-dark .k-header--instructor .k-header__instructor-btn {
+    background: rgba(255,255,255,.06);
+    border-color: rgba(255,255,255,.14);
+}
+
+/* Instructor pill */
+body.kiosk-theme-dark .k-instructor-pill {
+    background: rgba(41,182,246,.12);
+    color: var(--k-accent);
+    font-family: var(--k-font-mono);
+    font-size: 12px;
+    letter-spacing: var(--k-letter-spacing-label);
+    border-radius: var(--k-radius-sm);
+    border: 1px solid rgba(41,182,246,.3);
+}
+
+/* Instructor date/session controls */
+body.kiosk-theme-dark .k-svh-select,
+body.kiosk-theme-dark .k-svh-date {
+    border-radius: var(--k-radius-sm);
+    border-color: rgba(255,255,255,.14);
+}
+
+/* ── Idle screen ── */
+body.kiosk-theme-dark .k-idle-screen {
+    background: #000000;
+}
+body.kiosk-theme-dark .k-idle-slide__title {
+    font-size: 3rem;
+    font-weight: 800;
+    letter-spacing: var(--k-letter-spacing-display);
+    color: var(--k-text);
+}
+body.kiosk-theme-dark .k-idle-slide__dojo {
+    font-size: 56px;
+    opacity: 0.5;
+}
+body.kiosk-theme-dark .k-idle-tap-hint {
+    font-family: var(--k-font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    color: var(--k-text-3);
+    text-transform: uppercase;
+}
+body.kiosk-theme-dark .k-idle-dot  { background: var(--k-border-2); }
+body.kiosk-theme-dark .k-idle-dot--active { background: var(--k-accent); }
+
+/* ── Home prompt ── */
+body.kiosk-theme-dark .k-home__prompt-title {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: var(--k-letter-spacing-display);
+}
+
+/* ── Member tile ── */
+body.kiosk-theme-dark .k-member-tile__avatar-wrap {
+    border-color: var(--k-border-2);
+    box-shadow: none;
+}
+body.kiosk-theme-dark .k-member-tile:hover .k-member-tile__avatar-wrap {
+    border-color: var(--k-accent);
+}
+
+/* ── Student check-in session buttons ── */
+body.kiosk-theme-dark .k-checkin-session-btn {
+    border-radius: var(--k-radius-sm);
+    border-color: var(--k-border-2);
+    background: var(--k-surface-2);
+}
+body.kiosk-theme-dark .k-checkin-session-btn:hover {
+    border-color: var(--k-accent);
+    background: var(--k-accent-dim);
+}
+body.kiosk-theme-dark .k-checkin-session-btn__program {
+    color: var(--k-accent);
+    letter-spacing: var(--k-letter-spacing-label);
+}
+
+/* ── Success view ── */
+body.kiosk-theme-dark .k-success-view {
+    background: #000000;
+}
+body.kiosk-theme-dark .k-success-view--error {
+    background: var(--k-danger-dim);
+}
+
+/* ── Session cards ── */
+body.kiosk-theme-dark .k-session-card {
+    border-radius: var(--k-radius);
+    border-color: var(--k-border-2);
+    box-shadow: none;
+}
+body.kiosk-theme-dark .k-session-card__header {
+    background: var(--k-surface-2);
+    border-bottom-color: var(--k-border);
+}
+body.kiosk-theme-dark .k-session-card__title {
+    letter-spacing: var(--k-letter-spacing-display);
+    font-weight: 700;
+}
+body.kiosk-theme-dark .k-session-card__time {
+    font-family: var(--k-font-mono);
+    font-size: 0.82rem;
+}
+body.kiosk-theme-dark .k-session-card__count {
+    color: var(--k-accent);
+    font-family: var(--k-font-mono);
+    font-size: 0.82rem;
+}
+body.kiosk-theme-dark .k-session-card__footer {
+    background: var(--k-surface);
+    border-top-color: var(--k-border);
+    gap: 6px;
+}
+
+/* ── Session action buttons (footer) ── */
+body.kiosk-theme-dark .k-session-action {
+    border-radius: var(--k-radius-sm);
+    font-family: var(--k-font-mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: transparent;
+    border-color: var(--k-border-2);
+    color: var(--k-text-2);
+}
+body.kiosk-theme-dark .k-session-action--assign {
+    background: transparent;
+    border-color: var(--k-accent);
+    color: var(--k-accent);
+}
+body.kiosk-theme-dark .k-session-action--assign:hover {
+    background: var(--k-accent-dim);
+}
+body.kiosk-theme-dark .k-session-action--done {
+    background: transparent;
+    border-color: var(--k-success);
+    color: var(--k-success);
+}
+body.kiosk-theme-dark .k-session-action--done:hover {
+    background: var(--k-success-dim);
+}
+body.kiosk-theme-dark .k-session-action--delete {
+    background: transparent;
+    border-color: var(--k-danger);
+    color: var(--k-danger);
+}
+body.kiosk-theme-dark .k-session-action--delete:hover {
+    background: var(--k-danger-dim);
+}
+
+/* Done button blocked state (pending attendance) */
+.k-session-action--done-blocked {
+    background: transparent !important;
+    border-color: var(--k-border-2) !important;
+    color: var(--k-text-3) !important;
+    cursor: not-allowed !important;
+    opacity: 0.55;
+    position: relative;
+}
+.k-session-action--done-pending-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: var(--k-radius-pill);
+    background: var(--k-warning);
+    color: #000;
+    font-size: 10px;
+    font-weight: 700;
+    margin-left: 4px;
+    vertical-align: middle;
+    line-height: 1;
+}
+
+/* ── Roster tiles — bottom-border state encoding ── */
+body.kiosk-theme-dark .k-roster-tile {
+    border-radius: var(--k-radius-sm);
+    border-color: var(--k-border);
+    border-width: 1px;
+    border-bottom-width: 3px;
+    background: var(--k-surface-2);
+}
+body.kiosk-theme-dark .k-roster-tile--present {
+    background: var(--k-surface-2);
+    border-color: var(--k-border);
+    border-bottom-color: var(--k-success);
+}
+body.kiosk-theme-dark .k-roster-tile--late {
+    background: var(--k-surface-2);
+    border-color: var(--k-border);
+    border-bottom-color: var(--k-warning);
+}
+body.kiosk-theme-dark .k-roster-tile--absent {
+    background: var(--k-surface-2);
+    border-color: var(--k-border);
+    border-bottom-color: var(--k-danger);
+    opacity: 0.75;
+}
+body.kiosk-theme-dark .k-roster-tile--checked_out {
+    background: var(--k-surface-2);
+    border-color: var(--k-border);
+    border-bottom-color: var(--k-info);
+    opacity: 0.75;
+}
+body.kiosk-theme-dark .k-roster-tile--pending {
+    background: var(--k-surface-2);
+    border-color: var(--k-border);
+    border-bottom-color: var(--k-border-2);
+}
+
+/* Make check/remove overlays square-ish */
+body.kiosk-theme-dark .k-roster-tile__check {
+    border-radius: var(--k-radius-sm);
+    width: 22px;
+    height: 22px;
+}
+body.kiosk-theme-dark .k-roster-tile__remove {
+    border-radius: var(--k-radius-sm);
+    width: 20px;
+    height: 20px;
+}
+body.kiosk-theme-dark .k-roster-tile__warn {
+    border-radius: var(--k-radius-sm);
+    background: transparent;
+    border: 1px solid var(--k-warning);
+    color: var(--k-warning);
+    font-size: 11px;
+    font-family: var(--k-font-mono);
+}
+
+/* ── Profile modal ── */
+body.kiosk-theme-dark .k-modal {
+    border-radius: var(--k-radius) var(--k-radius) 0 0;
+    border-color: var(--k-border-2);
+}
+@media (min-width: 600px) {
+    body.kiosk-theme-dark .k-modal { border-radius: var(--k-radius); }
+}
+body.kiosk-theme-dark .k-modal__header,
+body.kiosk-theme-dark .k-modal__footer,
+body.kiosk-theme-dark .k-profile__head {
+    background: var(--k-surface-2);
+    border-color: var(--k-border);
+}
+body.kiosk-theme-dark .k-modal__title {
+    font-family: var(--k-font-mono);
+    font-size: 0.78rem;
+    letter-spacing: var(--k-letter-spacing-label);
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--k-text-2);
+}
+body.kiosk-theme-dark .k-modal__close {
+    border-radius: var(--k-radius-sm);
+    background: var(--k-surface-3);
+}
+
+/* ── PIN modal ── */
+body.kiosk-theme-dark .k-pin-title {
+    font-family: var(--k-font-mono);
+    letter-spacing: var(--k-letter-spacing-label);
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    color: var(--k-text-2);
+}
+body.kiosk-theme-dark .k-pin-box {
+    border-radius: 0;
+    border-color: var(--k-border-2);
+    background: var(--k-surface-2);
+}
+body.kiosk-theme-dark .k-pin-box--active {
+    border-color: var(--k-accent);
+    background: var(--k-accent-dim);
+}
+body.kiosk-theme-dark .k-pin-key {
+    border-radius: 0;
+    border-color: var(--k-border-2);
+    background: var(--k-surface-2);
+    font-family: var(--k-font-mono);
+    font-size: 18px;
+}
+body.kiosk-theme-dark .k-pin-key:hover  { background: var(--k-surface-3); }
+body.kiosk-theme-dark .k-pin-key:active { background: var(--k-surface-3); }
+
+/* ── Buttons ── */
+body.kiosk-theme-dark .k-btn {
+    border-radius: var(--k-radius-sm);
+}
+body.kiosk-theme-dark .k-btn--primary {
+    background: var(--k-accent);
+    border-color: var(--k-accent);
+    color: #000000;
+    font-weight: 700;
+}
+body.kiosk-theme-dark .k-btn--secondary {
+    background: transparent;
+    border-color: var(--k-border-2);
+    color: var(--k-text-2);
+}
+body.kiosk-theme-dark .k-btn--secondary:hover {
+    background: var(--k-surface-2);
+}
+body.kiosk-theme-dark .k-btn--checkout {
+    background: transparent;
+    border-color: var(--k-info);
+    color: var(--k-info);
+}
+body.kiosk-theme-dark .k-btn--checkout:hover {
+    background: var(--k-info-dim);
+}
+
+/* Form fields */
+body.kiosk-theme-dark .k-field__input {
+    border-radius: var(--k-radius-sm);
+    border-color: var(--k-border-2);
+    background: var(--k-surface-2);
+}
+body.kiosk-theme-dark .k-field__input:focus {
+    border-color: var(--k-accent);
+    box-shadow: none;
+}
+body.kiosk-theme-dark .k-field__label {
+    font-family: var(--k-font-mono);
+    font-size: 11px;
+    letter-spacing: var(--k-letter-spacing-label);
+    color: var(--k-text-3);
+}
+
+/* ── Profile tabs ── */
+body.kiosk-theme-dark .k-profile-tab--active {
+    color: var(--k-accent);
+    border-bottom-color: var(--k-accent);
+}
+body.kiosk-theme-dark .k-profile__actions {
+    background: var(--k-surface-2);
+    border-top-color: var(--k-border);
+}
+
+/* ── Stats ── */
+body.kiosk-theme-dark .k-stat {
+    border-radius: var(--k-radius-sm);
+    background: var(--k-surface-2);
+    border-color: var(--k-border);
+}
+body.kiosk-theme-dark .k-stat__label {
+    font-family: var(--k-font-mono);
+    font-size: 10px;
+    letter-spacing: var(--k-letter-spacing-label);
+}
+
+/* ── Settings size buttons ── */
+body.kiosk-theme-dark .k-sz-btn {
+    border-radius: var(--k-radius-sm);
+    background: transparent;
+    border-color: var(--k-border-2);
+}
+body.kiosk-theme-dark .k-sz-btn--active {
+    background: var(--k-accent);
+    border-color: var(--k-accent);
+    color: #000000;
+}
+
+/* Enroll pills */
+body.kiosk-theme-dark .k-enroll-pill {
+    border-radius: var(--k-radius-sm);
+    background: transparent;
+    border-color: var(--k-border-2);
+}
+body.kiosk-theme-dark .k-enroll-pill--active {
+    background: var(--k-accent);
+    border-color: var(--k-accent);
+    color: #000;
+}
+
+/* ── Assignment modal select rows ── */
+body.kiosk-theme-dark .k-am-result {
+    border-radius: var(--k-radius-sm);
+    border-color: var(--k-border);
+    background: var(--k-surface-2);
+}
+body.kiosk-theme-dark .k-am-result:hover { background: var(--k-surface-3); }
+body.kiosk-theme-dark .k-am-result--selected {
+    border-color: var(--k-accent);
+    background: var(--k-accent-dim);
+}
+
+/* Chips */
+body.kiosk-theme-dark .k-chip {
+    background: var(--k-accent-dim);
+    border-color: var(--k-accent);
+    color: var(--k-accent);
+    border-radius: var(--k-radius-sm);
+}
+body.kiosk-theme-dark .k-chip__remove {
+    border-radius: var(--k-radius-sm);
+}
+
+/* ── Membership badges ── */
+body.kiosk-theme-dark .k-membership-badge {
+    border-radius: var(--k-radius-sm);
+}
+
+/* ── Appointment time / info rows ── */
+body.kiosk-theme-dark .k-appt-row__time {
+    font-family: var(--k-font-mono);
+    font-size: 12px;
+}
+
+/* ── Spinner ── */
+body.kiosk-theme-dark .k-spinner {
+    border-color: var(--k-border-2);
+    border-top-color: var(--k-accent);
+}
+
+/* ── Sessions error toast ── */
+.k-sessions-toast {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    border-bottom: 1px solid;
+    animation: k-toast-in 200ms ease;
+}
+.k-sessions-toast--error {
+    background: var(--k-danger-dim);
+    border-color: var(--k-danger);
+    color: var(--k-danger);
+}
+.k-sessions-toast__dismiss {
+    margin-left: auto;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    background: transparent;
+    color: currentColor;
+    opacity: 0.7;
+}
+.k-sessions-toast__dismiss:hover { opacity: 1; }
+
+@keyframes k-toast-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   12. INDUSTRIAL LIGHT MODE — COMPONENT OVERRIDES
+   Scoped to body.kiosk-theme-light for MD3 / Google-style layering.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ── Header ── */
+body.kiosk-theme-light .k-header {
+    background: #ffffff;
+    border-bottom: 1px solid var(--k-border);
+    box-shadow: none;
+}
+
+/* Instructor mode: top accent stripe + Google Blue bg */
+body.kiosk-theme-light .k-header--instructor {
+    background: var(--k-instr-bg);
+    border-bottom: 1px solid var(--k-instr-bg-2);
+    border-top: 3px solid rgba(255,255,255,.4);
+}
+
+/* Logo — monospace uppercase industrial label */
+body.kiosk-theme-light .k-header__logo {
+    font-family: var(--k-font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: var(--k-letter-spacing-label);
+    text-transform: uppercase;
+    color: var(--k-text-2);
+}
+body.kiosk-theme-light .k-header--instructor .k-header__logo {
+    color: var(--k-instr-text);
+}
+
+/* Search — MD3 underline style */
+body.kiosk-theme-light .k-header__search {
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid var(--k-border-2);
+    background: transparent;
+    padding-left: 36px;
+    padding-right: 36px;
+    font-size: 17px;
+    letter-spacing: 0.01em;
+    box-shadow: none;
+}
+body.kiosk-theme-light .k-header__search:focus {
+    border-bottom: 2px solid var(--k-accent);
+    box-shadow: none;
+}
+
+/* Icon buttons */
+body.kiosk-theme-light .k-header__action-btn,
+body.kiosk-theme-light .k-header__instructor-btn {
+    background: transparent;
+    border-color: var(--k-border);
+    color: var(--k-text-2);
+    border-radius: var(--k-radius-sm);
+    box-shadow: none;
+}
+body.kiosk-theme-light .k-header__action-btn:hover {
+    background: var(--k-surface-2);
+}
+body.kiosk-theme-light .k-header--instructor .k-header__action-btn,
+body.kiosk-theme-light .k-header--instructor .k-header__instructor-btn {
+    background: rgba(255,255,255,.15);
+    border-color: rgba(255,255,255,.3);
+    color: #ffffff;
+}
+body.kiosk-theme-light .k-header--instructor .k-header__action-btn:hover {
+    background: rgba(255,255,255,.25);
+}
+
+/* Instructor pill */
+body.kiosk-theme-light .k-instructor-pill {
+    background: rgba(26,115,232,.1);
+    color: var(--k-accent);
+    font-family: var(--k-font-mono);
+    font-size: 12px;
+    letter-spacing: var(--k-letter-spacing-label);
+    border-radius: var(--k-radius-sm);
+    border: 1px solid rgba(26,115,232,.25);
+}
+
+/* Instructor date/session controls */
+body.kiosk-theme-light .k-svh-select,
+body.kiosk-theme-light .k-svh-date {
+    border-radius: var(--k-radius-sm);
+    border-color: rgba(255,255,255,.35);
+    background: rgba(255,255,255,.15);
+    color: #ffffff;
+}
+
+/* ── Idle screen ── */
+body.kiosk-theme-light .k-idle-screen {
+    background: var(--k-bg);
+}
+body.kiosk-theme-light .k-idle-slide__title {
+    font-size: 3rem;
+    font-weight: 800;
+    letter-spacing: var(--k-letter-spacing-display);
+    color: var(--k-text);
+}
+body.kiosk-theme-light .k-idle-slide__dojo {
+    font-size: 56px;
+    opacity: 0.45;
+}
+body.kiosk-theme-light .k-idle-tap-hint {
+    font-family: var(--k-font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    color: var(--k-text-3);
+    text-transform: uppercase;
+}
+body.kiosk-theme-light .k-idle-dot  { background: var(--k-border-2); }
+body.kiosk-theme-light .k-idle-dot--active { background: var(--k-accent); }
+
+/* ── Home prompt ── */
+body.kiosk-theme-light .k-home__prompt-title {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: var(--k-letter-spacing-display);
+}
+
+/* ── Member tile ── */
+body.kiosk-theme-light .k-member-tile__avatar-wrap {
+    border-color: var(--k-border);
+    box-shadow: var(--k-shadow-sm);
+}
+body.kiosk-theme-light .k-member-tile:hover .k-member-tile__avatar-wrap {
+    border-color: var(--k-accent);
+    box-shadow: 0 0 0 3px var(--k-accent-dim);
+}
+
+/* ── Student check-in session buttons ── */
+body.kiosk-theme-light .k-checkin-session-btn {
+    border-radius: var(--k-radius-sm);
+    border-color: var(--k-border);
+    background: var(--k-surface);
+    box-shadow: none;
+}
+body.kiosk-theme-light .k-checkin-session-btn:hover {
+    border-color: var(--k-accent);
+    background: var(--k-accent-dim);
+}
+body.kiosk-theme-light .k-checkin-session-btn__program {
+    color: var(--k-accent);
+    letter-spacing: var(--k-letter-spacing-label);
+}
+
+/* ── Success view ── */
+body.kiosk-theme-light .k-success-view {
+    background: var(--k-surface);
+}
+body.kiosk-theme-light .k-success-view--error {
+    background: var(--k-danger-dim);
+}
+
+/* ── Session cards ── */
+body.kiosk-theme-light .k-session-card {
+    border-radius: var(--k-radius);
+    border-color: var(--k-border);
+    box-shadow: none;
+    border-width: 1px;
+    border-style: solid;
+}
+body.kiosk-theme-light .k-session-card__header {
+    background: var(--k-surface);
+    border-bottom-color: var(--k-border);
+}
+body.kiosk-theme-light .k-session-card__title {
+    letter-spacing: var(--k-letter-spacing-display);
+    font-weight: 700;
+    color: var(--k-text);
+}
+body.kiosk-theme-light .k-session-card__time {
+    font-family: var(--k-font-mono);
+    font-size: 0.82rem;
+    color: var(--k-text-2);
+}
+body.kiosk-theme-light .k-session-card__count {
+    color: var(--k-accent);
+    font-family: var(--k-font-mono);
+    font-size: 0.82rem;
+}
+body.kiosk-theme-light .k-session-card__footer {
+    background: var(--k-surface-2);
+    border-top-color: var(--k-border);
+    gap: 6px;
+}
+
+/* ── Session action buttons (footer) ── */
+body.kiosk-theme-light .k-session-action {
+    border-radius: var(--k-radius-sm);
+    font-family: var(--k-font-mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: transparent;
+    border-color: var(--k-border-2);
+    color: var(--k-text-2);
+    box-shadow: none;
+}
+body.kiosk-theme-light .k-session-action--assign {
+    background: transparent;
+    border-color: var(--k-accent);
+    color: var(--k-accent);
+}
+body.kiosk-theme-light .k-session-action--assign:hover {
+    background: var(--k-accent-dim);
+}
+body.kiosk-theme-light .k-session-action--done {
+    background: transparent;
+    border-color: var(--k-success);
+    color: var(--k-success);
+}
+body.kiosk-theme-light .k-session-action--done:hover {
+    background: var(--k-success-dim);
+}
+body.kiosk-theme-light .k-session-action--delete {
+    background: transparent;
+    border-color: var(--k-danger);
+    color: var(--k-danger);
+}
+body.kiosk-theme-light .k-session-action--delete:hover {
+    background: var(--k-danger-dim);
+}
+
+/* ── Roster tiles — bottom-border state encoding ── */
+body.kiosk-theme-light .k-roster-tile {
+    border-radius: var(--k-radius-sm);
+    border-color: var(--k-border);
+    border-width: 1px;
+    border-bottom-width: 3px;
+    background: var(--k-surface);
+    box-shadow: none;
+}
+body.kiosk-theme-light .k-roster-tile--present {
+    background: var(--k-surface);
+    border-color: var(--k-border);
+    border-bottom-color: var(--k-success);
+}
+body.kiosk-theme-light .k-roster-tile--late {
+    background: var(--k-surface);
+    border-color: var(--k-border);
+    border-bottom-color: var(--k-warning);
+}
+body.kiosk-theme-light .k-roster-tile--absent {
+    background: var(--k-surface);
+    border-color: var(--k-border);
+    border-bottom-color: var(--k-danger);
+    opacity: 0.75;
+}
+body.kiosk-theme-light .k-roster-tile--checked_out {
+    background: var(--k-surface);
+    border-color: var(--k-border);
+    border-bottom-color: var(--k-info);
+    opacity: 0.75;
+}
+body.kiosk-theme-light .k-roster-tile--pending {
+    background: var(--k-surface);
+    border-color: var(--k-border);
+    border-bottom-color: var(--k-border-2);
+}
+
+body.kiosk-theme-light .k-roster-tile__check {
+    border-radius: var(--k-radius-sm);
+    width: 22px;
+    height: 22px;
+}
+body.kiosk-theme-light .k-roster-tile__remove {
+    border-radius: var(--k-radius-sm);
+    width: 20px;
+    height: 20px;
+}
+body.kiosk-theme-light .k-roster-tile__warn {
+    border-radius: var(--k-radius-sm);
+    background: transparent;
+    border: 1px solid var(--k-warning);
+    color: var(--k-warning);
+    font-size: 11px;
+    font-family: var(--k-font-mono);
+}
+
+/* ── Profile modal ── */
+body.kiosk-theme-light .k-modal {
+    border-radius: var(--k-radius) var(--k-radius) 0 0;
+    border-color: var(--k-border);
+    box-shadow: var(--k-shadow-lg);
+}
+@media (min-width: 600px) {
+    body.kiosk-theme-light .k-modal { border-radius: var(--k-radius); }
+}
+body.kiosk-theme-light .k-modal__header,
+body.kiosk-theme-light .k-modal__footer,
+body.kiosk-theme-light .k-profile__head {
+    background: var(--k-surface-2);
+    border-color: var(--k-border);
+}
+body.kiosk-theme-light .k-modal__title {
+    font-family: var(--k-font-mono);
+    font-size: 0.78rem;
+    letter-spacing: var(--k-letter-spacing-label);
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--k-text-2);
+}
+body.kiosk-theme-light .k-modal__close {
+    border-radius: var(--k-radius-sm);
+    background: var(--k-surface-3);
+}
+
+/* ── PIN modal ── */
+body.kiosk-theme-light .k-pin-title {
+    font-family: var(--k-font-mono);
+    letter-spacing: var(--k-letter-spacing-label);
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    color: var(--k-text-2);
+}
+body.kiosk-theme-light .k-pin-box {
+    border-radius: 0;
+    border-color: var(--k-border-2);
+    background: var(--k-surface-2);
+}
+body.kiosk-theme-light .k-pin-box--active {
+    border-color: var(--k-accent);
+    background: var(--k-accent-dim);
+}
+body.kiosk-theme-light .k-pin-key {
+    border-radius: 0;
+    border-color: var(--k-border);
+    background: var(--k-surface);
+    font-family: var(--k-font-mono);
+    font-size: 18px;
+    box-shadow: none;
+}
+body.kiosk-theme-light .k-pin-key:hover  { background: var(--k-surface-2); }
+body.kiosk-theme-light .k-pin-key:active { background: var(--k-surface-3); }
+
+/* ── Buttons ── */
+body.kiosk-theme-light .k-btn {
+    border-radius: var(--k-radius-sm);
+    box-shadow: none;
+}
+body.kiosk-theme-light .k-btn--primary {
+    background: var(--k-accent);
+    border-color: var(--k-accent);
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: none;
+}
+body.kiosk-theme-light .k-btn--primary:hover {
+    background: var(--k-instr-bg-2);
+    border-color: var(--k-instr-bg-2);
+}
+body.kiosk-theme-light .k-btn--secondary {
+    background: transparent;
+    border-color: var(--k-border-2);
+    color: var(--k-text-2);
+}
+body.kiosk-theme-light .k-btn--secondary:hover {
+    background: var(--k-surface-2);
+}
+body.kiosk-theme-light .k-btn--checkout {
+    background: transparent;
+    border-color: var(--k-info);
+    color: var(--k-info);
+}
+body.kiosk-theme-light .k-btn--checkout:hover {
+    background: var(--k-info-dim);
+}
+
+/* Form fields */
+body.kiosk-theme-light .k-field__input {
+    border-radius: var(--k-radius-sm);
+    border-color: var(--k-border-2);
+    background: var(--k-surface);
+    box-shadow: none;
+}
+body.kiosk-theme-light .k-field__input:focus {
+    border-color: var(--k-accent);
+    box-shadow: none;
+}
+body.kiosk-theme-light .k-field__label {
+    font-family: var(--k-font-mono);
+    font-size: 11px;
+    letter-spacing: var(--k-letter-spacing-label);
+    color: var(--k-text-3);
+}
+
+/* ── Profile tabs ── */
+body.kiosk-theme-light .k-profile-tab--active {
+    color: var(--k-accent);
+    border-bottom-color: var(--k-accent);
+}
+body.kiosk-theme-light .k-profile__actions {
+    background: var(--k-surface-2);
+    border-top-color: var(--k-border);
+}
+
+/* ── Stats ── */
+body.kiosk-theme-light .k-stat {
+    border-radius: var(--k-radius-sm);
+    background: var(--k-surface-2);
+    border-color: var(--k-border);
+    box-shadow: none;
+}
+body.kiosk-theme-light .k-stat__label {
+    font-family: var(--k-font-mono);
+    font-size: 10px;
+    letter-spacing: var(--k-letter-spacing-label);
+}
+
+/* ── Settings size buttons ── */
+body.kiosk-theme-light .k-sz-btn {
+    border-radius: var(--k-radius-sm);
+    background: transparent;
+    border-color: var(--k-border-2);
+    box-shadow: none;
+}
+body.kiosk-theme-light .k-sz-btn--active {
+    background: var(--k-accent);
+    border-color: var(--k-accent);
+    color: #ffffff;
+}
+
+/* Enroll pills */
+body.kiosk-theme-light .k-enroll-pill {
+    border-radius: var(--k-radius-sm);
+    background: transparent;
+    border-color: var(--k-border-2);
+}
+body.kiosk-theme-light .k-enroll-pill--active {
+    background: var(--k-accent);
+    border-color: var(--k-accent);
+    color: #ffffff;
+}
+
+/* ── Assignment modal select rows ── */
+body.kiosk-theme-light .k-am-result {
+    border-radius: var(--k-radius-sm);
+    border-color: var(--k-border);
+    background: var(--k-surface);
+    box-shadow: none;
+}
+body.kiosk-theme-light .k-am-result:hover { background: var(--k-surface-2); }
+body.kiosk-theme-light .k-am-result--selected {
+    border-color: var(--k-accent);
+    background: var(--k-accent-dim);
+}
+
+/* Chips */
+body.kiosk-theme-light .k-chip {
+    background: var(--k-accent-dim);
+    border-color: var(--k-accent);
+    color: var(--k-accent);
+    border-radius: var(--k-radius-sm);
+}
+body.kiosk-theme-light .k-chip__remove {
+    border-radius: var(--k-radius-sm);
+}
+
+/* ── Membership badges ── */
+body.kiosk-theme-light .k-membership-badge {
+    border-radius: var(--k-radius-sm);
+}
+
+/* ── Appointment time / info rows ── */
+body.kiosk-theme-light .k-appt-row__time {
+    font-family: var(--k-font-mono);
+    font-size: 12px;
+}
+
+/* ── Spinner ── */
+body.kiosk-theme-light .k-spinner {
+    border-color: var(--k-border);
+    border-top-color: var(--k-accent);
+}

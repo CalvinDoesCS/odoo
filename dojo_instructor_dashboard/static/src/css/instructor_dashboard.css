@@ -540,3 +540,316 @@ html .o_web_client > .o_action_manager {
 .o_mp_emergency_text { font-size: 0.875rem; color: #a50e0e; white-space: pre-wrap; }
 .o_mp_hh_header { padding: 12px 20px 6px; font-size: 1rem; color: #202124; display: flex; align-items: center; }
 .o_mp_hh_guardian { padding: 4px 20px 10px; font-size: 0.875rem; color: #5f6368; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   MEMBER PROFILE V2 — Extended dashboard redesign
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Hero v2: added stats panel on right ─────────────────────── */
+.o_di_card_dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.o_mp_hero_info { flex: 1; min-width: 0; }
+
+.o_mp_member_number {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.55);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+}
+
+.o_mp_belt_badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    background: rgba(0,0,0,0.35);
+}
+
+.o_mp_test_badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: rgba(255,193,7,0.35);
+    color: #ffe083;
+    border: 1.5px solid rgba(255,193,7,0.5);
+}
+
+/* Hero stats (right side) */
+.o_mp_hero_stats {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 16px 24px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.o_mp_hero_stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 0 20px;
+}
+
+.o_mp_hero_stat_divider {
+    width: 1px;
+    height: 36px;
+    background: rgba(255,255,255,0.15);
+    flex-shrink: 0;
+}
+
+.o_mp_hero_stat_value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+}
+
+.o_mp_hero_stat_label {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.55);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+    .o_mp_hero_body { flex-wrap: wrap; }
+    .o_mp_hero_stats { margin-left: 0; width: 100%; justify-content: center; margin-top: 16px; }
+}
+
+/* ── KPI chip row inside member profile ──────────────────────── */
+.o_mp_stat_row {
+    padding: 16px 28px 4px;
+    flex-wrap: wrap;
+}
+
+.o_mp_rank_chip_value {
+    font-size: 1.2rem !important;
+}
+
+/* ── Section label + quick actions wrapper ───────────────────── */
+.o_mp_section_wrap {
+    padding: 0;
+}
+.o_mp_section_label {
+    padding: 16px 28px 2px;
+    font-size: 0.70rem;
+    font-weight: 600;
+    color: #9aa0a6;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+}
+
+.o_mp_quick_grid {
+    padding: 4px 20px 12px;
+}
+
+/* ── Content grid for member profile ─────────────────────────── */
+.o_mp_content_grid {
+    padding: 8px 28px 40px;
+}
+
+/* ── Subscription card ───────────────────────────────────────── */
+.o_mp_billing_warn {
+    margin: 10px 16px 6px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: #fef3cd;
+    border: 1px solid #fadb8b;
+    color: #b45309;
+    font-size: 0.83rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.o_mp_credits_summary {
+    display: flex;
+    gap: 10px;
+    padding: 14px 20px 6px;
+    flex-wrap: wrap;
+}
+
+.o_mp_credit_pill {
+    flex: 1;
+    min-width: 110px;
+    border-radius: 12px;
+    padding: 12px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.o_mp_credit_balance {
+    background: #e6f4ea;
+}
+
+.o_mp_credit_hold {
+    background: #fef3cd;
+}
+
+.o_mp_credit_num {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.o_mp_credit_balance .o_mp_credit_num { color: #1e8e3e; }
+.o_mp_credit_hold    .o_mp_credit_num { color: #b45309; }
+
+.o_mp_credit_lbl {
+    font-size: 0.69rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.o_mp_credit_balance .o_mp_credit_lbl { color: #1e8e3e; }
+.o_mp_credit_hold    .o_mp_credit_lbl { color: #b45309; }
+
+/* ── Belt progression card ───────────────────────────────────── */
+.o_mp_current_rank {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.o_mp_rank_dot {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+
+.o_mp_rank_info { flex: 1; }
+
+.o_mp_rank_name {
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.o_mp_rank_sub {
+    font-size: 0.72rem;
+    color: #9aa0a6;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.o_mp_bar_label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px 4px;
+    font-size: 0.78rem;
+    color: #5f6368;
+    font-weight: 500;
+}
+
+/* ── Credits ledger card ─────────────────────────────────────── */
+.o_mp_ledger_balance {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.o_mp_ledger_num {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #e8710a;
+    line-height: 1;
+}
+
+.o_mp_ledger_unit {
+    font-size: 0.75rem;
+    color: #9aa0a6;
+    font-weight: 500;
+}
+
+.o_mp_txn_ref {
+    font-size: 0.75rem;
+    font-family: monospace;
+}
+
+.o_mp_credit_amount {
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.o_mp_credit_pos { color: #1e8e3e; }
+.o_mp_credit_neg { color: #d93025; }
+
+/* ── Medical / Allergy boxes ─────────────────────────────────── */
+.o_mp_medical_box {
+    margin: 8px 16px 4px;
+    border-radius: 8px;
+    background: #fff8e1;
+    border: 1px solid #ffe082;
+    padding: 10px 16px;
+}
+
+.o_mp_allergy_box {
+    background: #fce8e6;
+    border-color: #f5c6cb;
+}
+
+.o_mp_medical_title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #b45309;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+}
+
+.o_mp_allergy_box .o_mp_medical_title { color: #d93025; }
+
+.o_mp_medical_text {
+    font-size: 0.875rem;
+    color: #3c4043;
+    white-space: pre-wrap;
+}
+
+/* ── Legacy info_body cleanup for new grid ───────────────────── */
+.o_mp_v2 .o_mp_info_body {
+    max-height: none !important;
+    padding: 0;
+}
+
+.o_mp_v2 .o_di_card_body {
+    max-height: 440px;
+}
+
+.o_mp_v2 .o_di_card_full .o_di_card_body {
+    max-height: 360px;
+}
+

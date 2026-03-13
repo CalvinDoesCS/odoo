@@ -30,10 +30,26 @@ class DojoClassEnrollmentCreditExtend(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
+        auto_enroll = self.env.context.get("skip_subscription_check", False)
         for enrollment in records:
             if enrollment.status != "registered":
                 continue
-            self._place_credit_hold(enrollment)
+            try:
+                self._place_credit_hold(enrollment)
+            except UserError as e:
+                if auto_enroll:
+                    # Auto-enroll (cron) context: log and cancel rather than
+                    # crashing the entire session-generation transaction.
+                    _logger.warning(
+                        "Auto-enroll: insufficient credits for %s in session %s — "
+                        "enrollment cancelled. (%s)",
+                        enrollment.member_id.display_name,
+                        enrollment.session_id.id,
+                        e,
+                    )
+                    enrollment.write({"status": "cancelled"})
+                else:
+                    raise
         return records
 
     def _place_credit_hold(self, enrollment):
@@ -63,6 +79,33 @@ class DojoClassEnrollmentCreditExtend(models.Model):
         # Thread-safe row lock
         sub._lock_for_credit_write()
 
+        # Check for an existing hold transaction for this enrollment
+        # (unique constraint on enrollment_id + transaction_type prevents duplicates)
+        existing_hold = self.env["dojo.credit.transaction"].search([
+            ("enrollment_id", "=", enrollment.id),
+            ("transaction_type", "=", "hold"),
+        ], limit=1)
+
+        if existing_hold:
+            if existing_hold.status == "pending":
+                # Already a live hold — nothing to do
+                return
+            # Cancelled hold exists — reactivate it
+            # Re-read balance inside the lock
+            balance = sub.credit_balance
+            if balance < cost:
+                raise UserError(
+                    f"Insufficient credits. You have {balance} credit(s) but this "
+                    f"class costs {cost}. Please contact the front desk."
+                )
+            existing_hold.write({
+                "status": "pending",
+                "amount": -cost,
+                "subscription_id": sub.id,
+                "note": f"Hold — {session.display_name or session.id}",
+            })
+            return
+
         # Re-read balance inside the lock
         balance = sub.credit_balance
         if balance < cost:
@@ -88,10 +131,31 @@ class DojoClassEnrollmentCreditExtend(models.Model):
         if vals.get("status") == "cancelled":
             cancelling = self.filtered(lambda e: e.status != "cancelled")
 
+        # Capture records that are being reactivated (cancelled → registered)
+        reactivating = self.browse()
+        if vals.get("status") == "registered":
+            reactivating = self.filtered(lambda e: e.status == "cancelled")
+
         result = super().write(vals)
 
         for enrollment in cancelling:
             self._handle_cancel_credit(enrollment)
+
+        # Place a fresh hold for any reactivated enrollment
+        auto_enroll = self.env.context.get("skip_subscription_check", False)
+        for enrollment in reactivating:
+            try:
+                self._place_credit_hold(enrollment)
+            except UserError as e:
+                if auto_enroll:
+                    _logger.warning(
+                        "Auto-enroll reactivation: insufficient credits for %s — "
+                        "re-cancelling. (%s)",
+                        enrollment.member_id.display_name, e,
+                    )
+                    enrollment.write({"status": "cancelled"})
+                else:
+                    raise
 
         return result
 

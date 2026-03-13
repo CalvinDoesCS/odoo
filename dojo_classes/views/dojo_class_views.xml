@@ -207,6 +207,13 @@
         <field name="model">dojo.class.session</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <button name="action_open_attendance_wizard"
+                            type="object"
+                            string="Mark Attendance"
+                            class="btn-primary"
+                            invisible="state not in ('open', 'done') or attendance_complete == True"/>
+                </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <!-- Roster stat button: shows enrolled / capacity -->

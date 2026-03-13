@@ -3,35 +3,35 @@
 
     /* ── Constants ──────────────────────────────────────────────────────── */
     var LEVEL = {
-        beginner:     { label: "Beginner",     cls: "bg-success" },
-        intermediate: { label: "Intermediate", cls: "bg-warning text-dark" },
-        advanced:     { label: "Advanced",     cls: "bg-danger" },
-        all:          { label: "All Levels",   cls: "bg-secondary" },
+        beginner:     { label: "Beginner",     cls: "dojo-chip dojo-chip--success" },
+        intermediate: { label: "Intermediate", cls: "dojo-chip dojo-chip--warning" },
+        advanced:     { label: "Advanced",     cls: "dojo-chip dojo-chip--danger"  },
+        all:          { label: "All Levels",   cls: "dojo-chip dojo-chip--neutral" },
     };
     var STATUS = {
-        registered: { label: "Registered", cls: "bg-success" },
-        waitlist:   { label: "Waitlist",    cls: "bg-warning text-dark" },
-        cancelled:  { label: "Cancelled",   cls: "bg-secondary" },
+        registered: { label: "Registered", cls: "dojo-chip dojo-chip--success" },
+        waitlist:   { label: "Waitlist",    cls: "dojo-chip dojo-chip--warning" },
+        cancelled:  { label: "Cancelled",   cls: "dojo-chip dojo-chip--neutral" },
     };
     var ATT_STATE = {
-        pending: { label: "Pending", cls: "bg-secondary" },
-        present: { label: "Present", cls: "bg-success" },
-        absent:  { label: "Absent",  cls: "bg-danger" },
-        excused: { label: "Excused", cls: "bg-warning text-dark" },
+        pending: { label: "Pending", cls: "dojo-chip dojo-chip--neutral" },
+        present: { label: "Present", cls: "dojo-chip dojo-chip--success" },
+        absent:  { label: "Absent",  cls: "dojo-chip dojo-chip--danger"  },
+        excused: { label: "Excused", cls: "dojo-chip dojo-chip--warning" },
     };
     var LOG_STATUS = {
-        present: { label: "Present", cls: "bg-success" },
-        late:    { label: "Late",    cls: "bg-warning text-dark" },
-        absent:  { label: "Absent",  cls: "bg-danger" },
-        excused: { label: "Excused", cls: "bg-secondary" },
+        present: { label: "Present", cls: "dojo-chip dojo-chip--success" },
+        late:    { label: "Late",    cls: "dojo-chip dojo-chip--warning" },
+        absent:  { label: "Absent",  cls: "dojo-chip dojo-chip--danger"  },
+        excused: { label: "Excused", cls: "dojo-chip dojo-chip--neutral" },
     };
-    var LEVEL_CLR  = { beginner:"#198754", intermediate:"#ffc107", advanced:"#dc3545", all:"#6c757d" };
-    var STATUS_CLR = { registered:"#198754", waitlist:"#ffc107", cancelled:"#6c757d" };
-    var LOG_CLR    = { present:"#198754", late:"#ffc107", absent:"#dc3545", excused:"#6c757d" };
+    var LEVEL_CLR  = { beginner:"#188038", intermediate:"#e37400", advanced:"#d93025", all:"#5f6368" };
+    var STATUS_CLR = { registered:"#188038", waitlist:"#e37400", cancelled:"#5f6368" };
+    var LOG_CLR    = { present:"#188038", late:"#e37400", absent:"#d93025", excused:"#5f6368" };
 
     var TAB_TITLES = { programs:"Programs", classes:"Classes", attendance:"Attendance History", household:"My Household", billing:"Billing" };
 
-    function b(map, key)  { return map[key] || { label: key || "\u2014", cls: "bg-secondary" }; }
+    function b(map, key)  { return map[key] || { label: key || '—', cls: 'dojo-chip dojo-chip--neutral' }; }
     function esc(s)       { return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
     function getCsrfToken() {
         var el = document.getElementById('dojo_activities_mount');
@@ -63,27 +63,29 @@
     /* ── Card builders ──────────────────────────────────────────────────── */
     function sessionCard(s) {
         var lvl = b(LEVEL, s.level);
-        var clr = LEVEL_CLR[s.level] || "#6c757d";
+        var clr = LEVEL_CLR[s.level] || "#5f6368";
         var pct = s.capacity ? Math.round(s.seats_taken / s.capacity * 100) : 0;
         return '<div class="col">' +
-          '<div class="card dojo-activity-card h-100" data-type="session" data-id="' + s.id + '">' +
-            '<div class="dojo-card-accent" style="background:' + esc(clr) + '"></div>' +
-            '<div class="card-body d-flex flex-column p-3">' +
+          '<div class="dojo-md3-card dojo-md3-card--clickable h-100" style="border-left:3px solid ' + esc(clr) + '" data-type="session" data-id="' + s.id + '">' +
+            '<div class="d-flex flex-column p-3" style="height:100%">' +
               '<div class="d-flex justify-content-between align-items-center mb-2">' +
-                '<span class="badge ' + esc(lvl.cls) + '">' + esc(lvl.label) + '</span>' +
-                (s.duration_minutes ? '<small class="text-muted fw-semibold">' + esc(s.duration_minutes) + '&nbsp;min</small>' : '') +
+                '<span class="' + esc(lvl.cls) + '">' + esc(lvl.label) + '</span>' +
+                '<div class="d-flex align-items-center gap-2">' +
+                  (s.credits_per_class ? '<span class="dojo-chip dojo-chip--info"><i class="fa fa-circle-o me-1"></i>' + esc(s.credits_per_class) + ' cr</span>' : '<span class="dojo-chip dojo-chip--success"><i class="fa fa-unlock me-1"></i>Unlimited</span>') +
+                  (s.duration_minutes ? '<small style="color:#5f6368;font-weight:600">' + esc(s.duration_minutes) + '&nbsp;min</small>' : '') +
+                '</div>' +
               '</div>' +
-              '<h6 class="card-title fw-bold mb-2 lh-sm">' + esc(s.name) + '</h6>' +
-              '<div class="vstack gap-1 text-muted small mb-3">' +
+              '<h6 class="fw-bold mb-2 lh-sm" style="color:#202124">' + esc(s.name) + '</h6>' +
+              '<div class="vstack gap-1 mb-3" style="color:#5f6368;font-size:.85rem">' +
                 '<div><i class="fa fa-calendar-o me-1"></i>' + esc(fmtDt(s.start_datetime)) + '</div>' +
                 (s.instructor ? '<div><i class="fa fa-user me-1"></i>' + esc(s.instructor) + '</div>' : '') +
               '</div>' +
               '<div class="mt-auto">' +
                 '<div class="d-flex justify-content-between mb-1">' +
-                  '<small class="text-muted">Seats</small>' +
-                  '<small class="text-muted fw-semibold">' + esc(s.seats_taken) + '/' + esc(s.capacity) + '</small>' +
+                  '<small style="color:#5f6368">Seats</small>' +
+                  '<small style="color:#5f6368;font-weight:600">' + esc(s.seats_taken) + '/' + esc(s.capacity) + '</small>' +
                 '</div>' +
-                '<div class="progress" style="height:5px;"><div class="progress-bar bg-primary" role="progressbar" style="width:' + pct + '%"></div></div>' +
+                '<div class="dojo-progress"><div class="dojo-progress-bar" role="progressbar" style="width:' + pct + '%;background:' + esc(clr) + '"></div></div>' +
               '</div>' +
             '</div>' +
           '</div>' +
@@ -93,17 +95,16 @@
     function enrollmentCard(e) {
         var st  = b(STATUS, e.status);
         var at  = b(ATT_STATE, e.attendance_state);
-        var clr = STATUS_CLR[e.status] || "#6c757d";
+        var clr = STATUS_CLR[e.status] || "#5f6368";
         return '<div class="col">' +
-          '<div class="card dojo-activity-card h-100" data-type="enrollment" data-id="' + e.id + '">' +
-            '<div class="dojo-card-accent" style="background:' + esc(clr) + '"></div>' +
-            '<div class="card-body p-3">' +
+          '<div class="dojo-md3-card dojo-md3-card--clickable h-100" style="border-left:3px solid ' + esc(clr) + '" data-type="enrollment" data-id="' + e.id + '">' +
+            '<div class="p-3">' +
               '<div class="d-flex justify-content-between align-items-start mb-2">' +
-                '<span class="badge ' + esc(st.cls) + '">' + esc(st.label) + '</span>' +
-                '<span class="badge ' + esc(at.cls) + '">' + esc(at.label) + '</span>' +
+                '<span class="' + esc(st.cls) + '">' + esc(st.label) + '</span>' +
+                '<span class="' + esc(at.cls) + '">' + esc(at.label) + '</span>' +
               '</div>' +
-              '<h6 class="card-title fw-bold mb-2 lh-sm">' + esc(e.session_name) + '</h6>' +
-              '<div class="vstack gap-1 text-muted small">' +
+              '<h6 class="fw-bold mb-2 lh-sm" style="color:#202124">' + esc(e.session_name) + '</h6>' +
+              '<div class="vstack gap-1" style="color:#5f6368;font-size:.85rem">' +
                 '<div><i class="fa fa-calendar-o me-1"></i>' + esc(fmtDt(e.start_datetime)) + '</div>' +
                 (e.instructor  ? '<div><i class="fa fa-user me-1"></i>'           + esc(e.instructor)  + '</div>' : '') +
                 (e.member_name ? '<div><i class="fa fa-graduation-cap me-1"></i>' + esc(e.member_name) + '</div>' : '') +
@@ -115,14 +116,13 @@
 
     function attendanceCard(log) {
         var ls  = b(LOG_STATUS, log.status);
-        var clr = LOG_CLR[log.status] || "#6c757d";
+        var clr = LOG_CLR[log.status] || "#5f6368";
         return '<div class="col">' +
-          '<div class="card dojo-activity-card h-100" data-type="attendance" data-id="' + log.id + '">' +
-            '<div class="dojo-card-accent" style="background:' + esc(clr) + '"></div>' +
-            '<div class="card-body p-3">' +
-              '<div class="mb-2"><span class="badge ' + esc(ls.cls) + '">' + esc(ls.label) + '</span></div>' +
-              '<h6 class="card-title fw-bold mb-2 lh-sm">' + esc(log.session_name || "Session") + '</h6>' +
-              '<div class="vstack gap-1 text-muted small">' +
+          '<div class="dojo-md3-card dojo-md3-card--clickable h-100" style="border-left:3px solid ' + esc(clr) + '" data-type="attendance" data-id="' + log.id + '">' +
+            '<div class="p-3">' +
+              '<div class="mb-2"><span class="' + esc(ls.cls) + '">' + esc(ls.label) + '</span></div>' +
+              '<h6 class="fw-bold mb-2 lh-sm" style="color:#202124">' + esc(log.session_name || "Session") + '</h6>' +
+              '<div class="vstack gap-1" style="color:#5f6368;font-size:.85rem">' +
                 '<div><i class="fa fa-clock-o me-1"></i>' + esc(fmtDt(log.checkin_datetime)) + '</div>' +
                 (log.member_name ? '<div><i class="fa fa-graduation-cap me-1"></i>' + esc(log.member_name) + '</div>' : '') +
                 (log.note        ? '<div class="fst-italic"><i class="fa fa-comment-o me-1"></i>' + esc(log.note) + '</div>' : '') +
@@ -152,71 +152,84 @@
         }
         html += '<div class="row row-cols-1 row-cols-md-2 g-3">';
         data.members.forEach(function(m) {
-            html += '<div class="col"><div class="card h-100">';
-            html += '<div class="card-header d-flex justify-content-between align-items-center">';
-            html += '<strong>' + esc(m.name) + '</strong>';
-            html += '<span class="badge bg-secondary small text-capitalize">' + esc(m.role || '') + '</span>';
-            html += '</div><div class="card-body p-3">';
+            html += '<div class="col"><div class="dojo-member-card h-100">';
+            html += '<div class="dojo-member-card-hd">';
+            html += '<div class="dojo-member-avatar">' + esc((m.name || '?')[0].toUpperCase()) + '</div>';
+            html += '<div class="flex-grow-1">';
+            html += '<div class="fw-semibold" style="color:#202124;font-size:.9rem">' + esc(m.name) + '</div>';
+            html += '<div class="text-capitalize" style="color:#5f6368;font-size:.75rem">' + esc(m.role || '') + '</div>';
+            html += '</div></div>';
+            html += '<div class="p-3">';
             // ── Subscription plan ──────────────────────────────────────────────
             var plan = m.plan;
-            html += '<p class="text-muted small fw-semibold mb-1">Membership Plan</p>';
+            html += '<p class="dojo-field-lbl mb-1">Membership Plan</p>';
             if (plan) {
-                var PLAN_STATE = { active:'bg-success', paused:'bg-warning text-dark', cancelled:'bg-secondary', draft:'bg-info text-dark', expired:'bg-danger' };
-                html += '<div class="d-flex align-items-center gap-2 mb-3">';
-                html += '<span class="fw-semibold small">' + esc(plan.name) + '</span>';
-                html += '<span class="badge ' + esc(PLAN_STATE[plan.state] || 'bg-secondary') + ' small">' + esc((plan.state || '').replace(/_/g,' ')) + '</span>';
+                var PLAN_STATE_CLS = { active:'dojo-chip--success', paused:'dojo-chip--warning', cancelled:'dojo-chip--neutral', draft:'dojo-chip--info', expired:'dojo-chip--danger' };
+                html += '<div class="d-flex align-items-center gap-2 mb-3 flex-wrap">';
+                html += '<span class="fw-semibold" style="font-size:.875rem;color:#202124">' + esc(plan.name) + '</span>';
+                html += '<span class="dojo-chip ' + esc(PLAN_STATE_CLS[plan.state] || 'dojo-chip--neutral') + '">' + esc((plan.state || '').replace(/_/g,' ')) + '</span>';
                 if (plan.billing_period) {
-                    html += '<span class="text-muted small">' + esc(fmtMoney(plan.price, plan.currency)) + ' / ' + esc(plan.billing_period) + '</span>';
+                    html += '<span style="color:#5f6368;font-size:.8rem">' + esc(fmtMoney(plan.price, plan.currency)) + ' / ' + esc(plan.billing_period) + '</span>';
                 }
                 html += '</div>';
             } else {
-                html += '<p class="text-muted small fst-italic mb-3">No active plan.</p>';
+                html += '<p style="color:#5f6368;font-size:.85rem;font-style:italic;margin-bottom:.75rem">No active plan.</p>';
             }
-            // ── Sessions-per-week counter ──────────────────────────────────
-            var used    = m.sessions_used_this_week    || 0;
-            var allowed = m.sessions_allowed_per_week  || 0;
-            html += '<p class="text-muted small fw-semibold mb-1">Sessions This Week</p>';
-            if (allowed === 0) {
-                html += '<span class="badge bg-success mb-3">Unlimited</span>';
-            } else {
-                var pct  = Math.min(100, Math.round(used / allowed * 100));
-                var clr  = pct >= 100 ? 'bg-danger' : pct >= 75 ? 'bg-warning text-dark' : 'bg-success';
-                html += '<div class="d-flex align-items-center gap-2 mb-1">';
-                html += '<span class="badge ' + clr + '">' + used + ' / ' + allowed + '</span>';
-                html += '<div class="progress flex-grow-1" style="height:6px"><div class="progress-bar ' + clr + '" role="progressbar" style="width:' + pct + '%"></div></div>';
+            // ── Credit balance ─────────────────────────────────────────────
+            var creditsPerPeriod = (plan && plan.credits_per_period) || 0;
+            if (plan && creditsPerPeriod === 0) {
+                html += '<p class="dojo-field-lbl mb-1">Credits</p>';
+                html += '<div class="d-flex align-items-center gap-2 mb-3">';
+                html += '<span class="dojo-chip dojo-chip--success"><i class="fa fa-unlock me-1"></i>Unlimited</span>';
+                html += '<small style="color:#5f6368">No credit gate on this plan.</small>';
                 html += '</div>';
-                if (pct >= 100) {
-                    html += '<small class="text-danger d-block mb-2"><i class="fa fa-exclamation-triangle me-1"></i>Weekly limit reached</small>';
+            } else if (creditsPerPeriod > 0) {
+                var balance  = m.credit_balance  || 0;
+                var pending  = m.credit_pending  || 0;  // already negative
+                var confirmed = m.credit_confirmed || 0;
+                html += '<p class="dojo-field-lbl mb-1">Credits Remaining</p>';
+                var chipCls = balance <= 0 ? 'dojo-chip--danger' : balance <= 2 ? 'dojo-chip--warning' : 'dojo-chip--success';
+                var barClr  = balance <= 0 ? '#d93025' : balance <= 2 ? '#e37400' : '#188038';
+                html += '<div class="d-flex align-items-center gap-2 mb-1">';
+                html += '<span class="dojo-chip ' + chipCls + '">' + balance + ' / ' + creditsPerPeriod + '</span>';
+                var pct = Math.min(100, Math.round(balance / creditsPerPeriod * 100));
+                html += '<div class="dojo-progress flex-grow-1"><div class="dojo-progress-bar" role="progressbar" style="width:' + pct + '%;background:' + barClr + '"></div></div>';
+                html += '</div>';
+                if (pending < 0) {
+                    html += '<small style="color:#5f6368;display:block;margin-bottom:.5rem"><i class="fa fa-clock-o me-1"></i>' + Math.abs(pending) + ' held for upcoming sessions</small>';
+                }
+                if (balance <= 0) {
+                    html += '<small style="color:#d93025;display:block;margin-bottom:.5rem"><i class="fa fa-exclamation-triangle me-1"></i>No credits remaining</small>';
                 }
             }
 
             // ── Enrolled courses ──────────────────────────────────────────
             if (m.courses && m.courses.length) {
-                html += '<p class="text-muted small fw-semibold mb-1 mt-2">Enrolled Courses</p>';
+                html += '<p class="dojo-field-lbl mb-1 mt-2">Enrolled Courses</p>';
                 html += '<div class="d-flex flex-wrap gap-1 mb-3">';
                 m.courses.forEach(function(c) {
                     var lvl = b(LEVEL, c.level);
-                    html += '<span class="badge ' + esc(lvl.cls) + '" title="' + esc(lvl.label) + '">' + esc(c.name) + '</span>';
+                    html += '<span class="' + esc(lvl.cls) + '" title="' + esc(lvl.label) + '">' + esc(c.name) + '</span>';
                 });
                 html += '</div>';
             } else {
-                html += '<p class="text-muted small fst-italic mb-2">Not enrolled in any courses yet.</p>';
+                html += '<p style="color:#5f6368;font-size:.85rem;font-style:italic;margin-bottom:.5rem">Not enrolled in any courses yet.</p>';
             }
 
             // ── Emergency contacts ────────────────────────────────────────
             if (m.emergency_contacts && m.emergency_contacts.length) {
-                html += '<p class="text-muted small fw-semibold mb-2">Emergency Contacts</p>';
+                html += '<p class="dojo-field-lbl mb-2 mt-2">Emergency Contacts</p>';
                 m.emergency_contacts.forEach(function(ec) {
                     html += '<div class="mb-2">';
-                    html += '<div class="fw-semibold small">' + esc(ec.name);
-                    if (ec.is_primary) html += ' <span class="badge bg-success" style="font-size:0.6rem">Primary</span>';
+                    html += '<div class="fw-semibold" style="font-size:.85rem">' + esc(ec.name);
+                    if (ec.is_primary) html += ' <span class="dojo-chip dojo-chip--success">Primary</span>';
                     html += '</div>';
-                    html += '<div class="text-muted small">' + esc(ec.relationship || '') + (ec.relationship && ec.phone ? ' &bull; ' : '') + esc(ec.phone || '') + '</div>';
-                    if (ec.email) html += '<div class="text-muted small">' + esc(ec.email) + '</div>';
+                    html += '<div style="color:#5f6368;font-size:.8rem">' + esc(ec.relationship || '') + (ec.relationship && ec.phone ? ' &bull; ' : '') + esc(ec.phone || '') + '</div>';
+                    if (ec.email) html += '<div style="color:#5f6368;font-size:.8rem">' + esc(ec.email) + '</div>';
                     html += '</div>';
                 });
             } else {
-                html += '<p class="text-muted small mb-0">No emergency contacts on file.</p>';
+                html += '<p style="color:#5f6368;font-size:.85rem;margin-bottom:0">No emergency contacts on file.</p>';
             }
             html += '</div></div></div>';
         });
@@ -316,39 +329,46 @@
 
         /* ── No subscription ───────────────────────────────────────────── */
         if (!sub) {
-            html += '<div class="card mb-4"><div class="card-body p-4">' +
-                '<h5 class="fw-bold mb-1">No Active Subscription</h5>' +
-                '<p class="text-muted mb-0">No subscription found for your household. Please contact us to set up your membership.</p>' +
-                '</div></div>';
+            html += '<div class="dojo-billing-card mb-4 p-4">' +
+                '<h5 class="fw-bold mb-1" style="color:#202124">No Active Subscription</h5>' +
+                '<p style="color:#5f6368;margin-bottom:0">No subscription found for your household. Please contact us to set up your membership.</p>' +
+                '</div>';
             return html;
         }
 
         /* ── Subscription card ─────────────────────────────────────────── */
         var STATE_LABELS = { active:'Active', paused:'Paused', cancelled:'Cancelled', draft:'Draft', expired:'Expired' };
-        var STATE_CLASSES = { active:'bg-success', paused:'bg-warning text-dark', cancelled:'bg-secondary', draft:'bg-info text-dark', expired:'bg-danger' };
+        var STATE_CHIP_CLS = { active:'dojo-chip--success', paused:'dojo-chip--warning', cancelled:'dojo-chip--neutral', draft:'dojo-chip--info', expired:'dojo-chip--danger' };
         var stateLabel = STATE_LABELS[sub.state] || sub.state;
-        var stateCls   = STATE_CLASSES[sub.state] || 'bg-secondary';
+        var stateCls   = STATE_CHIP_CLS[sub.state] || 'dojo-chip--neutral';
         var periodLabel = sub.period === 'monthly' ? '/mo' : sub.period === 'yearly' ? '/yr' : '/wk';
 
-        html += '<div class="card mb-4">';
-        html += '<div class="card-header d-flex justify-content-between align-items-center">' +
-            '<span class="fw-semibold">Current Plan</span>' +
-            '<span class="badge ' + stateCls + '">' + esc(stateLabel) + '</span>' +
+        html += '<div class="dojo-billing-card mb-4">';
+        html += '<div class="dojo-billing-card-hd d-flex justify-content-between align-items-center">' +
+            '<span>Current Plan</span>' +
+            '<span class="dojo-chip ' + stateCls + '">' + esc(stateLabel) + '</span>' +
             '</div>';
-        html += '<div class="card-body">';
-        html += '<h4 class="fw-bold mb-1">' + esc(sub.plan_name) + '</h4>';
-        html += '<p class="text-primary fw-semibold mb-2" style="font-size:1.15rem">' +
-            esc(fmtMoney(sub.price, sub.currency)) +
-            '<span class="text-muted fw-normal fs-6"> ' + esc(periodLabel) + '</span></p>';
+        html += '<div class="dojo-billing-field-row">';
+        html += '<span class="dojo-billing-field-lbl">Plan</span>';
+        html += '<span class="fw-semibold" style="color:#202124">' + esc(sub.plan_name) + '</span>';
+        html += '</div>';
+        html += '<div class="dojo-billing-field-row">';
+        html += '<span class="dojo-billing-field-lbl">Price</span>';
+        html += '<span class="fw-semibold" style="color:#1a73e8">' + esc(fmtMoney(sub.price, sub.currency)) + '<span style="color:#5f6368;font-weight:normal"> ' + esc(periodLabel) + '</span></span>';
+        html += '</div>';
         if (sub.next_billing_date && sub.state === 'active') {
-            html += '<p class="text-muted small mb-1"><i class="fa fa-calendar me-1"></i>Next billing: <strong>' +
-                esc(fmtDate(sub.next_billing_date)) + '</strong></p>';
+            html += '<div class="dojo-billing-field-row">';
+            html += '<span class="dojo-billing-field-lbl"><i class="fa fa-calendar me-1"></i>Next billing</span>';
+            html += '<span>' + esc(fmtDate(sub.next_billing_date)) + '</span>';
+            html += '</div>';
         }
         if (sub.start_date) {
-            html += '<p class="text-muted small mb-3"><i class="fa fa-clock-o me-1"></i>Member since: ' +
-                esc(fmtDate(sub.start_date)) + '</p>';
+            html += '<div class="dojo-billing-field-row">';
+            html += '<span class="dojo-billing-field-lbl"><i class="fa fa-clock-o me-1"></i>Member since</span>';
+            html += '<span>' + esc(fmtDate(sub.start_date)) + '</span>';
+            html += '</div>';
         }
-        html += '<div class="d-flex flex-wrap gap-2 mt-3">';
+        html += '<div class="d-flex flex-wrap gap-2 p-3">';
         if (sub.state === 'active') {
             html += '<button class="btn btn-outline-warning btn-sm" id="dojoBillingPause">' +
                 '<i class="fa fa-pause me-1"></i>Pause</button>';
@@ -362,14 +382,14 @@
                 '<i class="fa fa-times me-1"></i>Cancel</button>';
         }
         html += '</div>';
-        html += '</div></div>';
+        html += '</div>';
 
         /* ── Payment method ────────────────────────────────────────────── */
         if (data.payment_method) {
-            html += '<div class="card mb-4">';
-            html += '<div class="card-header fw-semibold">Payment Method</div>';
-            html += '<div class="card-body d-flex align-items-center gap-3">' +
-                '<i class="fa fa-credit-card fa-2x text-muted"></i>' +
+            html += '<div class="dojo-billing-card mb-4">';
+            html += '<div class="dojo-billing-card-hd">Payment Method</div>';
+            html += '<div class="dojo-billing-field-row">' +
+                '<span class="dojo-billing-field-lbl"><i class="fa fa-credit-card me-1"></i>Card</span>' +
                 '<span>' + esc(data.payment_method.name) + '</span>' +
                 '</div>';
             html += '</div>';
@@ -377,28 +397,26 @@
 
         /* ── Invoice history ───────────────────────────────────────────── */
         var invoices = data.invoices || [];
-        html += '<div class="card">';
-        html += '<div class="card-header fw-semibold">Invoice History</div>';
+        html += '<div class="dojo-billing-card">';
+        html += '<div class="dojo-billing-card-hd">Invoice History</div>';
         if (!invoices.length) {
-            html += '<div class="card-body"><p class="text-muted mb-0">No invoices yet.</p></div>';
+            html += '<div class="p-3" style="color:#5f6368;font-size:.875rem">No invoices yet.</div>';
         } else {
-            html += '<div class="list-group list-group-flush">';
             invoices.forEach(function(inv) {
-                var payLabel, payCls;
+                var payLabel, payChipCls;
                 if (inv.payment_state === 'paid' || inv.payment_state === 'in_payment') {
-                    payLabel = 'Paid';    payCls = 'text-success';
+                    payLabel = 'Paid';    payChipCls = 'dojo-chip--success';
                 } else if (inv.payment_state === 'partial') {
-                    payLabel = 'Partial'; payCls = 'text-warning';
+                    payLabel = 'Partial'; payChipCls = 'dojo-chip--warning';
                 } else {
-                    payLabel = 'Unpaid';  payCls = 'text-danger';
+                    payLabel = 'Unpaid';  payChipCls = 'dojo-chip--danger';
                 }
-                html += '<div class="list-group-item d-flex justify-content-between align-items-center">' +
-                    '<span class="text-muted small">' + esc(inv.date ? fmtDate(inv.date) : '\u2014') + '</span>' +
-                    '<span class="fw-semibold">' + esc(fmtMoney(inv.amount, inv.currency)) + '</span>' +
-                    '<span class="small ' + payCls + '">' + payLabel + '</span>' +
+                html += '<div class="dojo-billing-field-row">' +
+                    '<span style="color:#5f6368;font-size:.8rem">' + esc(inv.date ? fmtDate(inv.date) : '\u2014') + '</span>' +
+                    '<span class="fw-semibold" style="color:#202124">' + esc(fmtMoney(inv.amount, inv.currency)) + '</span>' +
+                    '<span class="dojo-chip ' + payChipCls + '">' + payLabel + '</span>' +
                     '</div>';
             });
-            html += '</div>';
         }
         html += '</div>';
 
@@ -485,39 +503,113 @@
 
 
     /* ── Enrollment section (inside session overlay) ─────────────────────── */
-    function enrollSection(session, isParent, members) {
-        // Filter to household students who are in this session's course roster
+    function enrollSection(session, isParent, members, hhMembers) {
+        // Filter to household students who are in this session's eligible list
         var eligibleIds = session.eligible_member_ids || [];
         var enrollable = members.filter(function(m) {
             var isStudent = m.role === 'student' || m.role === 'both';
             if (!isStudent) return false;
-            // If the server provided an eligible list, enforce it
-            if (eligibleIds.length > 0) {
-                return eligibleIds.indexOf(m.id) !== -1;
-            }
+            if (eligibleIds.length > 0) return eligibleIds.indexOf(m.id) !== -1;
             return true;
         });
         var full = session.capacity > 0 && session.seats_taken >= session.capacity;
+        var cost = session.credits_per_class || 0;  // 0 = unlimited plan
+
+        // Build credit info map from household data
+        var creditMap = {};
+        (hhMembers || []).forEach(function(hm) {
+            var cpp = (hm.plan && hm.plan.credits_per_period) || 0;
+            creditMap[hm.id] = {
+                balance: hm.credit_balance || 0,
+                unlimited: cpp === 0 && !!hm.plan,
+            };
+        });
+
         var html = '<div class="border-top pt-3 mt-3" id="dojoEnrollSection">';
-        html += '<h6 class="fw-semibold mb-2">Enroll</h6>';
+        html += '<h6 class="fw-semibold mb-2">Reserve &amp; Enroll</h6>';
+
+        // Credit cost chip
+        if (cost > 0) {
+            html += '<div class="mb-3"><span class="badge rounded-pill" style="background:#0dcaf0;color:#000"><i class="fa fa-circle-o me-1"></i>' + cost + ' credit' + (cost !== 1 ? 's' : '') + ' per session</span></div>';
+        } else {
+            html += '<div class="mb-3"><span class="dojo-chip dojo-chip--success"><i class="fa fa-unlock me-1"></i>Unlimited plan — no credits used</span></div>';
+        }
+
         if (full) {
-            html += '<span class="text-muted small">Session is full.</span>';
+            html += '<span style="color:#5f6368;font-size:.85rem">Session is full.</span>';
         } else if (!enrollable.length) {
             var hasStudents = members.some(function(m){ return m.role === 'student' || m.role === 'both'; });
             if (hasStudents) {
-                html += '<span class="text-muted small">No household students are enrolled in this course. Ask an instructor to add them to the course roster.</span>';
+                html += '<span style="color:#5f6368;font-size:.85rem">No household students are subscribed to this program. Ask an instructor for help.</span>';
             } else {
-                html += '<span class="text-muted small">No students in your household to enroll.</span>';
+                html += '<span style="color:#5f6368;font-size:.85rem">No students in your household to enroll.</span>';
             }
         } else if (enrollable.length > 1) {
+            // Multi-member: show per-member credit previews + select
+            html += '<div class="mb-3">';
+            enrollable.forEach(function(m) {
+                var cr = creditMap[m.id];
+                var bal = cr ? cr.balance : null;
+                var unl = cr ? cr.unlimited : false;
+                html += '<div class="d-flex align-items-center gap-2 mb-1 small">';
+                html += '<span class="fw-semibold" style="min-width:120px">' + esc(m.name) + '</span>';
+                if (unl) {
+                    html += '<span class="dojo-chip dojo-chip--success"><i class="fa fa-unlock me-1"></i>Unlimited</span>';
+                } else if (bal !== null && cost > 0) {
+                    var after = bal - cost;
+                    var balCls = bal <= 0 ? 'dojo-chip--danger' : bal <= 2 ? 'dojo-chip--warning' : 'dojo-chip--success';
+                    var aftCls = after < 0 ? 'dojo-chip--danger' : after <= 2 ? 'dojo-chip--warning' : 'dojo-chip--success';
+                    html += '<span class="dojo-chip ' + balCls + '">' + bal + '</span>';
+                    html += '<span style="color:#5f6368">&#8594;</span>';
+                    html += '<span class="dojo-chip ' + aftCls + '">' + after + '</span>';
+                    if (bal < cost) {
+                        html += '<span style="color:#d93025;font-size:.8rem"><i class="fa fa-exclamation-triangle me-1"></i>Insufficient</span>';
+                    }
+                }
+                html += '</div>';
+            });
+            html += '</div>';
             var opts = enrollable.map(function(m){ return '<option value="' + m.id + '">' + esc(m.name) + '</option>'; }).join('');
             html += '<div class="d-flex gap-2 align-items-center flex-wrap">';
             html += '<select id="dojoEnrollMemberSel" class="form-select form-select-sm" style="max-width:200px">' + opts + '</select>';
-            html += '<button class="btn btn-primary btn-sm" id="dojoEnrollBtn" data-session-id="' + session.id + '">Enroll</button>';
+            // Set initial button state based on first enrollable member
+            var firstCr = creditMap[enrollable[0].id];
+            var firstNoCredits = firstCr && !firstCr.unlimited && cost > 0 && firstCr.balance < cost;
+            if (firstNoCredits) {
+                html += '<button class="btn btn-sm btn-danger" disabled id="dojoEnrollBtn" data-session-id="' + session.id + '" data-cost="' + cost + '"><i class="fa fa-times me-1"></i>No Credits Remaining</button>';
+            } else {
+                html += '<button class="btn btn-primary btn-sm" id="dojoEnrollBtn" data-session-id="' + session.id + '" data-cost="' + cost + '">Reserve &amp; Enroll</button>';
+            }
             html += '</div>';
         } else {
-            var mid = enrollable[0].id;
-            html += '<button class="btn btn-primary btn-sm" id="dojoEnrollBtn" data-session-id="' + session.id + '" data-member-id="' + mid + '">Enroll ' + esc(enrollable[0].name) + '</button>';
+            // Single member: inline credit preview + button
+            var m0 = enrollable[0];
+            var mid = m0.id;
+            var cr0 = creditMap[mid];
+            var bal0 = cr0 ? cr0.balance : null;
+            var unl0 = cr0 ? cr0.unlimited : false;
+            var noCredits = !unl0 && cost > 0 && bal0 !== null && bal0 < cost;
+
+            if (!unl0 && bal0 !== null && cost > 0) {
+                var after0 = bal0 - cost;
+                var b0Cls = bal0 <= 0 ? 'dojo-chip--danger' : bal0 <= 2 ? 'dojo-chip--warning' : 'dojo-chip--success';
+                var a0Cls = after0 < 0 ? 'dojo-chip--danger' : after0 <= 2 ? 'dojo-chip--warning' : 'dojo-chip--success';
+                html += '<div class="d-flex align-items-center gap-2 mb-3">';
+                html += '<span class="fw-semibold" style="font-size:.85rem">' + esc(m0.name) + '</span>';
+                html += '<span class="dojo-chip ' + b0Cls + '">' + bal0 + '</span>';
+                html += '<span style="color:#5f6368">&#8594;</span>';
+                html += '<span class="dojo-chip ' + a0Cls + '">' + after0 + '</span>';
+                html += '<span style="color:#5f6368;font-size:.8rem">credits after enrollment</span>';
+                html += '</div>';
+            }
+
+            if (noCredits) {
+                html += '<button class="btn btn-sm btn-danger" disabled id="dojoEnrollBtn" data-session-id="' + session.id + '" data-member-id="' + mid + '"><i class="fa fa-times me-1"></i>No Credits Remaining</button>';
+            } else {
+                html += '<button class="btn btn-primary btn-sm" id="dojoEnrollBtn" data-session-id="' + session.id + '" data-member-id="' + mid + '">' +
+                    (unl0 ? '<i class="fa fa-unlock me-1"></i>' : '<i class="fa fa-calendar-check-o me-1"></i>') +
+                    'Reserve &amp; Enroll ' + esc(m0.name) + '</button>';
+            }
         }
         html += '<div id="dojoEnrollMsg" class="mt-2 small"></div></div>';
         return html;
@@ -528,8 +620,8 @@
         if (type === "session") {
             var lvl = b(LEVEL, item.level);
             return '<div class="d-flex align-items-center gap-2 mb-3 mt-1">' +
-                '<span class="badge fs-6 ' + esc(lvl.cls) + '">' + esc(lvl.label) + '</span>' +
-                (item.duration_minutes ? '<small class="text-muted fw-semibold">' + esc(item.duration_minutes) + '&nbsp;min</small>' : '') +
+                '<span class="' + esc(lvl.cls) + '">' + esc(lvl.label) + '</span>' +
+                (item.duration_minutes ? '<small style="color:#5f6368;font-weight:600">' + esc(item.duration_minutes) + '&nbsp;min</small>' : '') +
                 '</div>' +
                 '<h4 class="fw-bold mb-3">' + esc(item.name) + '</h4>' +
                 '<dl class="row g-2 mb-0">' +
@@ -560,12 +652,13 @@
             '</dl>';
     }
 
-    function openOverlay(type, item, isParent, members, state) {
+    function openOverlay(type, item, isParent, members, state, onUpdate) {
         var old = document.getElementById("dojoOverlay");
         if (old) old.remove();
         var body = overlayBody(type, item);
         // Enrollment section is only available for parents/guardians
-        if (type === "session" && isParent) body += enrollSection(item, isParent, members);
+        var hhMembers = (state.household && state.household.members) || [];
+        if (type === "session" && isParent) body += enrollSection(item, isParent, members, hhMembers);
         var el = document.createElement("div");
         el.id = "dojoOverlay"; el.className = "dojo-overlay-backdrop";
         el.innerHTML = '<div class="dojo-overlay-panel" role="dialog" aria-modal="true">' +
@@ -578,6 +671,34 @@
 
         var enrollBtn = document.getElementById("dojoEnrollBtn");
         if (enrollBtn) {
+            // Multi-member dropdown: update button state when selection changes
+            var selEl = document.getElementById("dojoEnrollMemberSel");
+            if (selEl) {
+                var _hhCreditMap = {};
+                (hhMembers || []).forEach(function(hm) {
+                    var cpp = (hm.plan && hm.plan.credits_per_period) || 0;
+                    _hhCreditMap[hm.id] = {
+                        balance: hm.credit_balance || 0,
+                        unlimited: cpp === 0 && !!hm.plan,
+                    };
+                });
+                var _enrollCost = parseInt(enrollBtn.dataset.cost, 10) || 0;
+                selEl.addEventListener("change", function() {
+                    var selectedId = parseInt(selEl.value, 10);
+                    var cr = _hhCreditMap[selectedId];
+                    var noCredits = cr && !cr.unlimited && _enrollCost > 0 && cr.balance < _enrollCost;
+                    if (noCredits) {
+                        enrollBtn.disabled = true;
+                        enrollBtn.className = 'btn btn-sm btn-danger';
+                        enrollBtn.innerHTML = '<i class="fa fa-times me-1"></i>No Credits Remaining';
+                    } else {
+                        enrollBtn.disabled = false;
+                        enrollBtn.className = 'btn btn-primary btn-sm';
+                        enrollBtn.innerHTML = 'Reserve &amp; Enroll';
+                    }
+                });
+            }
+            var origBtnText = enrollBtn.textContent;
             enrollBtn.addEventListener("click", function() {
                 var sid = parseInt(enrollBtn.dataset.sessionId, 10);
                 var sel = document.getElementById("dojoEnrollMemberSel");
@@ -589,21 +710,28 @@
                 fetch('/my/dojo/enroll', { method:'POST', credentials:'same-origin', body:form })
                     .then(function(r){ return r.json(); })
                     .then(function(res){
-                        var msg = document.getElementById("dojoEnrollMsg");
                         if (res.ok) {
-                            if (msg) msg.innerHTML = '<span class="text-success fw-semibold"><i class="fa fa-check me-1"></i>Enrolled successfully!</span>';
-                            enrollBtn.classList.replace("btn-primary","btn-success");
-                            enrollBtn.textContent = "\u2713 Enrolled";
-                            fetchJson("/my/dojo/json/enrollments").then(function(r){ state.enrollments = r.enrollments || []; });
-                            fetchJson("/my/dojo/json/schedule").then(function(r){ state.sessions = r.sessions || []; });
+                            // Refresh all relevant state, then close overlay and re-render
+                            Promise.all([
+                                fetchJson("/my/dojo/json/enrollments"),
+                                fetchJson("/my/dojo/json/schedule"),
+                                fetchJson("/my/dojo/json/household"),
+                            ]).then(function(results) {
+                                state.enrollments = (results[0] && results[0].enrollments) || state.enrollments;
+                                state.sessions    = (results[1] && results[1].sessions)    || state.sessions;
+                                if (results[2] && results[2].members) state.household = results[2];
+                                closeOverlay();
+                                if (onUpdate) onUpdate();
+                            });
                         } else {
+                            var msg = document.getElementById("dojoEnrollMsg");
                             if (msg) msg.innerHTML = '<span class="text-danger"><i class="fa fa-times me-1"></i>' + esc(res.error || 'Could not enroll.') + '</span>';
-                            enrollBtn.disabled = false; enrollBtn.textContent = "Enroll";
+                            enrollBtn.disabled = false; enrollBtn.textContent = origBtnText;
                         }
                     }).catch(function(){
                         var msg = document.getElementById("dojoEnrollMsg");
                         if (msg) msg.innerHTML = '<span class="text-danger">An error occurred.</span>';
-                        enrollBtn.disabled = false; enrollBtn.textContent = "Enroll";
+                        enrollBtn.disabled = false; enrollBtn.textContent = origBtnText;
                     });
             });
         }
@@ -617,9 +745,9 @@
     /* ── Student switcher (dropdown) ────────────────────────────────────── */
     function studentSwitcherHtml(students, selectedId) {
         if (!students || !students.length) return '';
-        var html = '<div class="dojo-student-switcher card mb-3 border-0 bg-light">';
-        html += '<div class="card-body py-2 px-3 d-flex align-items-center gap-2 flex-wrap">';
-        html += '<label class="text-muted small fw-semibold mb-0 flex-shrink-0"><i class="fa fa-user-circle me-1"></i>Viewing student:</label>';
+        var html = '<div class="dojo-student-switcher mb-3">';
+        html += '<div class="py-2 px-3 d-flex align-items-center gap-2 flex-wrap">';
+        html += '<label style="color:#5f6368;font-size:.8rem;font-weight:600;margin-bottom:0;flex-shrink:0"><i class="fa fa-user-circle me-1"></i>Viewing student:</label>';
         html += '<select class="form-select form-select-sm dojo-student-select" id="dojoStudentSelect" style="max-width:220px">';
         html += '<option value=""' + (!selectedId ? ' selected' : '') + '>All Students</option>';
         students.forEach(function(s) {
@@ -636,14 +764,14 @@
         if (!rank) return '';
         var color = rank.color || '#cccccc';
         var pct = belt.rank_pct || 0;
-        var html = '<div class="dojo-student-context-banner card mb-3 border-0" style="border-left:4px solid ' + esc(color) + ' !important">';
-        html += '<div class="card-body py-2 px-3 d-flex align-items-center gap-3">';
-        html += '<div style="width:32px;height:32px;border-radius:50%;background:' + esc(color) + ';border:2px solid rgba(0,0,0,.15);flex-shrink:0;"></div>';
+        var html = '<div class="dojo-student-context-banner mb-3" style="border-left:3px solid ' + esc(color) + '">';
+        html += '<div class="py-2 px-3 d-flex align-items-center gap-3">';;
+        html += '<div style="width:32px;height:32px;border-radius:50%;background:' + esc(color) + ';flex-shrink:0;"></div>';
         html += '<div class="flex-grow-1">';
-        html += '<div class="fw-semibold small">' + esc(rank.name) + '</div>';
-        html += '<div class="progress mt-1" style="height:4px;max-width:200px"><div class="progress-bar" role="progressbar" style="width:' + pct + '%;background:' + esc(color) + '"></div></div>';
+        html += '<div class="fw-semibold" style="font-size:.85rem;color:#202124">' + esc(rank.name) + '</div>';
+        html += '<div class="dojo-progress mt-1" style="max-width:180px"><div class="dojo-progress-bar" role="progressbar" style="width:' + pct + '%;background:' + esc(color) + '"></div></div>';
         html += '</div>';
-        if (belt.next_rank) html += '<small class="text-muted">Next: ' + esc(belt.next_rank.name) + '</small>';
+        if (belt.next_rank) html += '<small style="color:#5f6368">Next: ' + esc(belt.next_rank.name) + '</small>';
         html += '</div></div>';
         return html;
     }
@@ -698,10 +826,10 @@
         studentPrograms.forEach(function(student) {
             html += '<div class="mb-5">';
             html += '<div class="d-flex align-items-center gap-2 mb-3">';
-            html += '<div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:34px;height:34px;font-size:.85rem">' + esc((student.name || '?')[0].toUpperCase()) + '</div>';
-            html += '<h5 class="fw-bold mb-0">' + esc(student.name) + '</h5>';
+                html += '<div class="rounded-circle flex-shrink-0" style="width:34px;height:34px;border-radius:50%;background:#1a73e8;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem">' + esc((student.name || '?')[0].toUpperCase()) + '</div>';
+                html += '<h5 class="fw-bold mb-0" style="color:#202124">' + esc(student.name) + '</h5>';
             if (student.programs && student.programs.length) {
-                html += '<span class="badge bg-secondary ms-1">' + student.programs.length + ' program' + (student.programs.length !== 1 ? 's' : '') + '</span>';
+                html += '<span class="dojo-chip dojo-chip--neutral ms-1">' + student.programs.length + ' program' + (student.programs.length !== 1 ? 's' : '') + '</span>';
             }
             html += '</div>';
             if (!student.programs || !student.programs.length) {
@@ -722,15 +850,15 @@
         var html = '';
         programs.forEach(function(prog) {
             var progColor = prog.color || '#6C757D';
-            html += '<div class="dojo-program-card card mb-4 shadow-sm" style="border-left:4px solid ' + esc(progColor) + '">';
-            html += '<div class="card-body p-4">';
+            html += '<div class="dojo-program-card mb-4" style="border-left:4px solid ' + esc(progColor) + '">';
+            html += '<div class="p-4">';
             html += '<div class="d-flex align-items-start justify-content-between gap-2 mb-3">';
             html += '<div><h5 class="fw-bold mb-0">' + esc(prog.name) + '</h5>';
-            if (prog.code) html += '<span class="badge bg-secondary small mt-1">' + esc(prog.code) + '</span>';
+            if (prog.code) html += '<span class="dojo-chip dojo-chip--neutral mt-1">' + esc(prog.code) + '</span>';
             html += '</div>';
             if (prog.current_rank_id !== null) {
                 if (prog.test_invite_pending) {
-                    html += '<span class="badge bg-success align-self-start"><i class="fa fa-check me-1"></i>Belt Test Requested</span>';
+                    html += '<span class="dojo-chip dojo-chip--success align-self-start"><i class="fa fa-check me-1"></i>Belt Test Requested</span>';
                 } else {
                     html += '<button class="btn btn-sm btn-outline-warning dojo-test-request-btn flex-shrink-0" data-member-id="' + esc(selectedMemberId || '') + '"><i class="fa fa-trophy me-1"></i>Request Belt Test</button>';
                 }
@@ -740,32 +868,32 @@
                 html += '<div class="d-flex flex-wrap gap-1 mb-3">';
                 prog.templates.forEach(function(t) {
                     var lvl = b(LEVEL, t.level);
-                    html += '<span class="badge ' + esc(lvl.cls) + '"><i class="fa fa-calendar me-1"></i>' + esc(t.name) + '</span>';
+                    html += '<span class="' + esc(lvl.cls) + '" title="' + esc(lvl.label) + '"><i class="fa fa-calendar me-1"></i>' + esc(t.name) + '</span>';
                 });
                 html += '</div>';
             }
             if (prog.belt_path && prog.belt_path.length) {
                 html += '<div class="mb-3">';
                 html += '<div class="d-flex align-items-center justify-content-between mb-2">';
-                html += '<p class="text-muted small fw-semibold mb-0">Belt Progression</p>';
+                html += '<p class="dojo-field-lbl mb-0">Belt Progression</p>';
                 if (prog.current_rank_name) {
                     var rankColor = prog.current_rank_color || '#cccccc';
                     html += '<div class="d-flex align-items-center gap-2">';
                     html += '<div style="width:14px;height:14px;border-radius:50%;background:' + esc(rankColor) + ';border:2px solid rgba(0,0,0,.15);flex-shrink:0"></div>';
-                    html += '<span class="small fw-semibold">' + esc(prog.current_rank_name) + '</span>';
+                    html += '<span style="font-size:.85rem;font-weight:600;color:#202124">' + esc(prog.current_rank_name) + '</span>';
                     if (prog.rank_position && prog.rank_total) {
-                        html += '<span class="text-muted small">(' + prog.rank_position + '/' + prog.rank_total + ')</span>';
+                        html += '<span style="color:#5f6368;font-size:.8rem">(' + prog.rank_position + '/' + prog.rank_total + ')</span>';
                     }
                     html += '</div>';
                 } else {
-                    html += '<span class="text-muted small fst-italic">No rank yet</span>';
+                    html += '<span style="color:#5f6368;font-size:.85rem;font-style:italic">No rank yet</span>';
                 }
                 html += '</div>';
                 html += beltRailHtml(prog.belt_path, prog.current_rank_id, prog.next_rank_id);
                 if (prog.next_rank_name && prog.rank_pct > 0) {
                     html += '<div class="d-flex align-items-center gap-2 mt-2">';
-                    html += '<div class="progress flex-grow-1" style="height:5px;max-width:180px"><div class="progress-bar" role="progressbar" style="width:' + prog.rank_pct + '%;background:' + esc(progColor) + '"></div></div>';
-                    html += '<small class="text-muted">Next: <strong>' + esc(prog.next_rank_name) + '</strong></small>';
+                    html += '<div class="dojo-progress flex-grow-1" style="max-width:180px"><div class="dojo-progress-bar" role="progressbar" style="width:' + prog.rank_pct + '%;background:' + esc(progColor) + '"></div></div>';
+                    html += '<small style="color:#5f6368">Next: <strong>' + esc(prog.next_rank_name) + '</strong></small>';
                     html += '</div>';
                 } else if (!prog.current_rank_name) {
                     html += '<div class="mt-2"><small class="text-muted fst-italic">Complete sessions to advance through the belt path.</small></div>';
@@ -776,22 +904,22 @@
             }
             if (prog.rank_history && prog.rank_history.length) {
                 html += '<div class="border-top pt-3 mt-2 mb-3">';
-                html += '<p class="text-muted small fw-semibold mb-2"><i class="fa fa-history me-1"></i>Rank History</p>';
+                html += '<p class="dojo-field-lbl mb-2"><i class="fa fa-history me-1"></i>Rank History</p>';
                 html += '<div class="vstack gap-2">';
                 prog.rank_history.forEach(function(h) {
                     var rc = h.rank_color || '#cccccc';
-                    html += '<div class="d-flex align-items-center gap-3 p-2 rounded bg-light">';
+                    html += '<div class="dojo-rank-row">';
                     html += '<div style="width:20px;height:20px;border-radius:50%;background:' + esc(rc) + ';border:2px solid rgba(0,0,0,.12);flex-shrink:0"></div>';
-                    html += '<div class="flex-grow-1"><div class="fw-semibold small">' + esc(h.rank_name) + '</div>';
-                    if (h.awarded_by) html += '<div class="text-muted" style="font-size:.75rem">Awarded by ' + esc(h.awarded_by) + '</div>';
+                    html += '<div class="flex-grow-1"><div style="font-size:.85rem;font-weight:600;color:#202124">' + esc(h.rank_name) + '</div>';
+                    if (h.awarded_by) html += '<div style="color:#5f6368;font-size:.75rem">Awarded by ' + esc(h.awarded_by) + '</div>';
                     html += '</div>';
-                    if (h.date_awarded) html += '<small class="text-muted flex-shrink-0">' + esc(fmtDate(h.date_awarded)) + '</small>';
+                    if (h.date_awarded) html += '<small style="color:#5f6368;flex-shrink:0">' + esc(fmtDate(h.date_awarded)) + '</small>';
                     html += '</div>';
                 });
                 html += '</div></div>';
             }
             html += '<div class="border-top pt-3 mt-2">';
-            html += '<p class="text-muted small fw-semibold mb-2"><i class="fa fa-envelope me-1"></i>Message Instructor</p>';
+            html += '<p class="dojo-field-lbl mb-2"><i class="fa fa-envelope me-1"></i>Message Instructor</p>';
             html += '<div class="d-flex gap-2">';
             html += '<textarea class="form-control form-control-sm dojo-msg-input" id="dojoMsgInput_' + prog.id + '" rows="2" placeholder="Write a message to your instructor\u2026" style="resize:none"></textarea>';
             html += '<button class="btn btn-sm btn-outline-primary dojo-msg-send-btn" data-program-id="' + prog.id + '" data-member-id="' + esc(selectedMemberId || '') + '" style="height:fit-content;align-self:flex-end">Send</button>';
@@ -825,21 +953,21 @@
         filtered.forEach(function(p) {
             var key = p.member_id + '_' + p.template_id;
             var isEnrolled = p.enrolled || p.active;
-            html += '<div class="card mb-3 dojo-auto-enroll-card" '
+            html += '<div class="dojo-auto-enroll-card mb-3" '
                   + 'data-member-id="' + p.member_id + '" '
                   + 'data-template-id="' + p.template_id + '">';
             if (isEnrolled) {
-                html += '<div style="height:3px;background:#198754;border-radius:4px 4px 0 0"></div>';
+                html += '<div style="height:3px;background:#188038;border-radius:4px 4px 0 0"></div>';
             } else {
-                html += '<div style="height:3px;background:#dee2e6;border-radius:4px 4px 0 0"></div>';
+                html += '<div style="height:3px;background:#e0e0e0;border-radius:4px 4px 0 0"></div>';
             }
-            html += '<div class="card-body p-3">';
+            html += '<div class="p-3">';
             // Header row: name + on/off toggle
             html += '<div class="d-flex justify-content-between align-items-center mb-2">';
             html += '<div>';
             html += '<span class="fw-semibold">' + esc(p.template_name) + '</span>';
-            if (p.program_name) html += ' <span class="badge bg-secondary ms-1">' + esc(p.program_name) + '</span>';
-            if (!p.active && p.has_pref) html += ' <span class="badge bg-danger ms-1">Opted out</span>';
+            if (p.program_name) html += ' <span class="dojo-chip dojo-chip--neutral ms-1">' + esc(p.program_name) + '</span>';
+            if (!p.active && p.has_pref) html += ' <span class="dojo-chip dojo-chip--danger ms-1">Opted out</span>';
             if (p.member_name && !selectedStudentId) html += '<div class="text-muted small">' + esc(p.member_name) + '</div>';
             html += '</div>';
             html += '<div class="form-check form-switch mb-0">';
@@ -893,14 +1021,51 @@
             html += '<i class="fa fa-check me-1"></i>Save</button>';
             html += '<span class="dojo-ae-saved-msg ms-2 text-success small" id="ae-saved-' + key + '" style="display:none"><i class="fa fa-check-circle me-1"></i>Saved!</span>';
             html += '</div>';
-            html += '</div></div>'; // .card-body .card
+            html += '</div></div>'; // .dojo-auto-enroll-card
         });
         html += '</div>';
         return html;
     }
 
     /* ── Classes tab (merged schedule + enrollments) ────────────────────── */
-    function classesTabHtml(enrollments, sessions, isParent, members, autoEnrollPrefs, selectedStudentId) {
+    /* ── Per-member credit strip (above available sessions) ───────────── */
+    function memberCreditStripHtml(enrollableMembers, hhData) {
+        var hhMems = (hhData && hhData.members) || [];
+        var creditMap = {};
+        hhMems.forEach(function(hm) {
+            var cpp = (hm.plan && hm.plan.credits_per_period) || 0;
+            creditMap[hm.id] = {
+                name: hm.name,
+                balance: hm.credit_balance || 0,
+                pending: hm.credit_pending || 0,
+                creditsPerPeriod: cpp,
+                unlimited: cpp === 0 && !!hm.plan,
+            };
+        });
+        var relevant = enrollableMembers.filter(function(m) { return !!creditMap[m.id]; });
+        if (!relevant.length) return '';
+        var html = '<div class="d-flex flex-wrap gap-2 mb-3">';
+        relevant.forEach(function(m) {
+            var cr = creditMap[m.id];
+            if (!cr) return;
+            html += '<div class="dojo-credit-item">';
+            html += '<span class="fw-semibold" style="color:#202124">' + esc(cr.name) + '</span>';
+            if (cr.unlimited) {
+                html += '<span class="dojo-chip dojo-chip--success"><i class="fa fa-unlock me-1"></i>Unlimited</span>';
+            } else {
+                var chipCls = cr.balance <= 0 ? 'dojo-chip--danger' : cr.balance <= 2 ? 'dojo-chip--warning' : 'dojo-chip--success';
+                html += '<span class="dojo-chip ' + chipCls + '">' + cr.balance + ' credit' + (cr.balance !== 1 ? 's' : '') + '</span>';
+                if (cr.pending < 0) {
+                    html += '<span style="color:#5f6368;font-size:.75rem"><i class="fa fa-clock-o me-1"></i>' + Math.abs(cr.pending) + ' held</span>';
+                }
+            }
+            html += '</div>';
+        });
+        html += '</div>';
+        return html;
+    }
+
+    function classesTabHtml(enrollments, sessions, isParent, members, autoEnrollPrefs, selectedStudentId, hhData) {
         var now = new Date();
         function dt(iso) { return iso ? new Date(iso.indexOf('T') !== -1 ? iso + 'Z' : iso) : null; }
         var active = (enrollments || []).filter(function(e){ return e.status !== 'cancelled'; });
@@ -914,16 +1079,15 @@
             upcoming.forEach(function(e) {
                 var clr = STATUS_CLR[e.status] || '#6c757d';
                 var lvl = b(LEVEL, e.level);
-                html += '<div class="col"><div class="card dojo-activity-card h-100" data-type="enrollment" data-id="' + e.id + '">';
-                html += '<div class="dojo-card-accent" style="background:' + esc(clr) + '"></div>';
-                html += '<div class="card-body p-3">';
+                html += '<div class="col"><div class="dojo-md3-card dojo-md3-card--clickable h-100" style="border-left:3px solid ' + esc(clr) + '" data-type="enrollment" data-id="' + e.id + '">';
+                html += '<div class="p-3">';
                 html += '<div class="d-flex justify-content-between align-items-start mb-2">';
-                html += '<span class="badge ' + esc(lvl.cls) + '">' + esc(lvl.label) + '</span>';
-                html += '<span class="badge bg-success">Registered</span>';
+                html += '<span class="' + esc(lvl.cls) + '">' + esc(lvl.label) + '</span>';
+                html += '<span class="dojo-chip dojo-chip--success">Registered</span>';
                 html += '</div>';
-                html += '<h6 class="card-title fw-bold mb-2 lh-sm">' + esc(e.session_name) + '</h6>';
-                if (e.program_name) html += '<div class="text-muted small mb-1"><i class="fa fa-tag me-1"></i>' + esc(e.program_name) + '</div>';
-                html += '<div class="vstack gap-1 text-muted small mb-3">';
+                html += '<h6 class="fw-bold mb-2 lh-sm" style="color:#202124">' + esc(e.session_name) + '</h6>';
+                if (e.program_name) html += '<div style="color:#5f6368;font-size:.8rem;margin-bottom:.25rem"><i class="fa fa-tag me-1"></i>' + esc(e.program_name) + '</div>';
+                html += '<div class="vstack gap-1 mb-3" style="color:#5f6368;font-size:.8rem">';
                 html += '<div><i class="fa fa-calendar-o me-1"></i>' + esc(fmtDt(e.start_datetime)) + '</div>';
                 if (e.instructor)   html += '<div><i class="fa fa-user me-1"></i>' + esc(e.instructor) + '</div>';
                 if (e.member_name)  html += '<div><i class="fa fa-graduation-cap me-1"></i>' + esc(e.member_name) + '</div>';
@@ -943,6 +1107,8 @@
             if (available.length) {
                 html += '<div class="dojo-classes-section mb-4">';
                 html += '<h6 class="dojo-classes-section-header fw-semibold mb-3"><i class="fa fa-calendar-plus-o me-2 text-primary"></i>Available Sessions</h6>';
+                var enrollableMembers = members.filter(function(m){ return m.role === 'student' || m.role === 'both'; });
+                html += memberCreditStripHtml(enrollableMembers, hhData);
                 html += '<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">';
                 available.forEach(function(s){ html += sessionCard(s); });
                 html += '</div></div>';
@@ -950,20 +1116,19 @@
         }
         if (past.length) {
             html += '<div class="dojo-classes-section">';
-            html += '<h6 class="dojo-classes-section-header fw-semibold mb-3"><i class="fa fa-history me-2 text-muted"></i>Past Sessions <span class="badge bg-secondary ms-1">' + past.length + '</span></h6>';
+            html += '<h6 class="dojo-classes-section-header fw-semibold mb-3"><i class="fa fa-history me-2" style="color:#5f6368"></i>Past Sessions <span class="dojo-chip dojo-chip--neutral ms-1">' + past.length + '</span></h6>';
             html += '<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">';
             past.forEach(function(e) {
                 var at  = b(ATT_STATE, e.attendance_state);
-                var clr = LOG_CLR[e.attendance_state] || '#6c757d';
-                html += '<div class="col"><div class="card dojo-activity-card h-100 opacity-75" data-type="enrollment" data-id="' + e.id + '">';
-                html += '<div class="dojo-card-accent" style="background:' + esc(clr) + '"></div>';
-                html += '<div class="card-body p-3">';
+                var clr = LOG_CLR[e.attendance_state] || '#5f6368';
+                html += '<div class="col"><div class="dojo-md3-card h-100" style="border-left:3px solid ' + esc(clr) + ';opacity:.8" data-type="enrollment" data-id="' + e.id + '">';
+                html += '<div class="p-3">';
                 html += '<div class="d-flex justify-content-between align-items-start mb-2">';
-                html += '<span class="badge ' + esc(at.cls) + '">' + esc(at.label) + '</span>';
+                html += '<span class="' + esc(at.cls) + '">' + esc(at.label) + '</span>';
                 html += '</div>';
-                html += '<h6 class="card-title fw-bold mb-2 lh-sm">' + esc(e.session_name) + '</h6>';
-                if (e.program_name) html += '<div class="text-muted small mb-1"><i class="fa fa-tag me-1"></i>' + esc(e.program_name) + '</div>';
-                html += '<div class="vstack gap-1 text-muted small">';
+                html += '<h6 class="fw-bold mb-2 lh-sm" style="color:#202124">' + esc(e.session_name) + '</h6>';
+                if (e.program_name) html += '<div style="color:#5f6368;font-size:.8rem;margin-bottom:.25rem"><i class="fa fa-tag me-1"></i>' + esc(e.program_name) + '</div>';
+                html += '<div class="vstack gap-1" style="color:#5f6368;font-size:.8rem">';
                 html += '<div><i class="fa fa-calendar-o me-1"></i>' + esc(fmtDt(e.start_datetime)) + '</div>';
                 if (e.instructor) html += '<div><i class="fa fa-user me-1"></i>' + esc(e.instructor) + '</div>';
                 html += '</div></div></div></div>';
@@ -988,10 +1153,10 @@
             var active = state.activeTab === t.key ? " active" : "";
             var aeEnrolled = t.key==="auto_enroll" ? (state.autoEnrollPrefs||[]).filter(function(p){ return p.active; }).length : 0;
             var cnt = t.key==="programs"?state.programs.length : t.key==="classes"?(state.enrollments||[]).filter(function(e){return e.status!=='cancelled';}).length : t.key==="attendance"?state.logs.length : t.key==="billing"?(state.billing?(state.billing.invoices||[]).length:0) : aeEnrolled;
-            var badge = cnt ? '<span class="badge bg-secondary ms-1">' + cnt + '</span>' : "";
+            var badge = cnt ? '<span class="dojo-chip dojo-chip--neutral ms-1">' + cnt + '</span>' : "";
             var iconHtml = t.svg ? t.svg : '<i class="fa ' + t.icon + ' me-1"></i>';
-            return '<li class="nav-item"><button type="button" role="tab" class="nav-link' + active +
-                   ' dojo-tab-btn" data-tab="' + t.key + '">' + iconHtml + t.label + badge + '</button></li>';
+            return '<button type="button" role="tab" class="dojo-tab-btn' + active +
+                   '" data-tab="' + t.key + '">' + iconHtml + t.label + badge + '</button>';
         }).join("");
 
         var body;
@@ -1005,7 +1170,7 @@
                 body = programsTabHtml(state.programs, state.beltHistory, _memberId, isParent);
             }
         } else if (state.activeTab === "classes") {
-            body = classesTabHtml(state.enrollments, state.sessions, isParent, members, state.autoEnrollPrefs, state.selectedStudentId);
+            body = classesTabHtml(state.enrollments, state.sessions, isParent, members, state.autoEnrollPrefs, state.selectedStudentId, state.household);
         } else if (state.activeTab === "auto_enroll") {
             if (isParent && !state.selectedStudentId && students.length > 0) {
                 body = '<div class="alert alert-info mt-2"><i class="fa fa-info-circle me-2"></i>'
@@ -1029,8 +1194,8 @@
             extraHtml += studentSwitcherHtml(students, state.selectedStudentId);
         }
         root.innerHTML = extraHtml +
-                         '<ul class="nav nav-tabs mb-4" role="tablist">' + navHtml + '</ul>' +
-                         '<div id="dojoTabContent">' + body + '</div>';
+                         '<nav class="dojo-tab-nav mb-3" role="tablist">' + navHtml + '</nav>' +
+                         '<div id="dojoTabContent" class="mt-3">' + body + '</div>';
 
         /* ── refreshForStudent: re-fetch all data scoped to one student ── */
         function refreshForStudent(studentId) {
@@ -1080,9 +1245,17 @@
                     .then(function(r){ return r.json(); })
                     .then(function(res){
                         if (res.ok) {
-                            var e = state.enrollments.find(function(x){ return x.id === eid; });
-                            if (e) e.status = 'cancelled';
-                            render(root, state, isParent, members, students, isStudentOnly);
+                            // Refresh enrollments, sessions and household credits then re-render
+                            Promise.all([
+                                fetchJson('/my/dojo/json/enrollments'),
+                                fetchJson('/my/dojo/json/schedule'),
+                                fetchJson('/my/dojo/json/household'),
+                            ]).then(function(results) {
+                                state.enrollments = (results[0] && results[0].enrollments) || state.enrollments;
+                                state.sessions    = (results[1] && results[1].sessions)    || state.sessions;
+                                if (results[2] && results[2].members) state.household = results[2];
+                                render(root, state, isParent, members, students, isStudentOnly);
+                            });
                         } else { btn.disabled = false; btn.textContent = 'Cancel'; alert(res.error || 'Could not cancel.'); }
                     }).catch(function(){ btn.disabled = false; btn.textContent = 'Cancel'; });
             });
@@ -1253,7 +1426,9 @@
                 if (type === "session")    item = state.sessions.find(function(s){ return s.id === id; });
                 if (type === "enrollment") item = state.enrollments.find(function(e){ return e.id === id; });
                 if (type === "attendance") item = state.logs.find(function(l){ return l.id === id; });
-                if (item) openOverlay(type, item, isParent, members, state);
+                if (item) openOverlay(type, item, isParent, members, state, function() {
+                    render(root, state, isParent, members, students, isStudentOnly);
+                });
             });
         });
 
@@ -1375,6 +1550,11 @@
         var students = [];
         try { students = JSON.parse(root.dataset.students || '[]'); } catch(e){}
 
+        // For a 'both' role member (student+parent) who is the only student in the
+        // household, pre-select themselves so student-scoped tabs (auto-enroll,
+        // programs, etc.) render immediately without needing the switcher.
+        var autoSelectedStudent = (isParent && students.length === 1) ? students[0].id : null;
+
         var state = {
             activeTab:          root.dataset.tab || "programs",
             sessions:           [], enrollments: [], logs: [],
@@ -1383,7 +1563,7 @@
             household:          null,
             billing:            null,
             autoEnrollPrefs:    [],
-            selectedStudentId:  null,
+            selectedStudentId:  autoSelectedStudent,
             selectedStudentBelt: null,
             loading:            true,
         };

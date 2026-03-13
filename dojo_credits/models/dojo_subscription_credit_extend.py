@@ -170,6 +170,33 @@ class DojoMemberSubscriptionCreditExtend(models.Model):
             "context": {"default_subscription_id": self.id},
         }
 
+    # ── State-change hook: issue credits on activation ────────────────────
+
+    def write(self, vals):
+        """Issue initial period credits when a subscription becomes active."""
+        # Identify records that are transitioning → 'active'
+        activating = (
+            self.filtered(lambda s: s.state != "active")
+            if vals.get("state") == "active"
+            else self.browse()
+        )
+        result = super().write(vals)
+        for rec in activating:
+            plan = rec.plan_id
+            credits_per_period = getattr(plan, "credits_per_period", 0)
+            if not credits_per_period:
+                continue
+            # Only issue if no transactions exist yet (avoid double-granting)
+            if rec.transaction_ids:
+                continue
+            try:
+                rec._issue_period_credits()
+            except Exception:
+                _logger.exception(
+                    "Failed to issue activation credits for subscription %s", rec.id
+                )
+        return result
+
     def action_generate_invoice(self):
         """Issue period credits after the invoice is created."""
         result = super().action_generate_invoice()
@@ -182,9 +209,9 @@ class DojoMemberSubscriptionCreditExtend(models.Model):
                 )
         return result
 
-    def _generate_household_invoice(self, subscriptions):
+    def _generate_household_invoice(self, subscriptions, today):
         """Issue period credits for every subscription in the household batch."""
-        result = super()._generate_household_invoice(subscriptions)
+        result = super()._generate_household_invoice(subscriptions, today)
         for sub in subscriptions:
             try:
                 sub._issue_period_credits()

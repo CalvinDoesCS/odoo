@@ -19,7 +19,24 @@ appear in the instructor dashboard "My Todos" panel.
 import logging
 from datetime import timedelta
 
+from markupsafe import Markup
+
 from odoo import api, fields, models
+
+
+class ProjectTaskDojo(models.Model):
+    """Adds a session back-reference to project.task so attendance todos
+    can be auto-closed when attendance is completed."""
+
+    _inherit = "project.task"
+
+    dojo_session_id = fields.Many2one(
+        "dojo.class.session",
+        string="Dojo Session",
+        ondelete="set null",
+        copy=False,
+        index=True,
+    )
 
 _logger = logging.getLogger(__name__)
 
@@ -98,11 +115,14 @@ class DojoMemberTodos(models.Model):
         return profiles.mapped("user_id")
 
     @api.model
-    def _create_instructor_todo(self, users, name, deadline=None, description=False):
+    def _create_instructor_todo(self, users, name, deadline=None, description=False, priority="0", session=None):
         """Create one ``project.task`` per user in the Instructor Alerts project.
 
         Silently skips if the seed data (project/stage) hasn't been loaded yet
         or if *users* is empty.
+
+        Pass ``session`` (a ``dojo.class.session`` record) to link the todo so
+        it can be auto-closed when attendance is completed.
         """
         project = self._get_instructor_alert_project()
         stage = self._get_instructor_alert_stage()
@@ -114,16 +134,18 @@ class DojoMemberTodos(models.Model):
 
         user_ids = users.ids if hasattr(users, "ids") else list(users)
         for uid in user_ids:
-            self.env["project.task"].sudo().create(
-                {
-                    "name": name,
-                    "project_id": project.id,
-                    "stage_id": stage.id,
-                    "user_ids": [(4, uid)],
-                    "date_deadline": deadline,
-                    "description": description or "",
-                }
-            )
+            vals = {
+                "name": name,
+                "project_id": project.id,
+                "stage_id": stage.id,
+                "user_ids": [(4, uid)],
+                "date_deadline": deadline,
+                "description": description or "",
+                "priority": priority,
+            }
+            if session:
+                vals["dojo_session_id"] = session.id
+            self.env["project.task"].sudo().create(vals)
 
     def _check_and_create_milestone_todos(self):
         """Check whether *self* has crossed a new attendance milestone and
@@ -232,9 +254,74 @@ class DojoMemberTodos(models.Model):
 
 
 class DojoClassSessionTodos(models.Model):
-    """Detects when a session is marked Done without completing attendance."""
+    """Detects when a session is marked Done without completing attendance,
+    and (via cron) when an instructor forgets to mark a session at all."""
 
     _inherit = "dojo.class.session"
+
+    # Dedup: set True once the missed-attendance todo has been sent for this session
+    attendance_todo_sent = fields.Boolean(
+        string="Attendance Reminder Sent",
+        default=False,
+        copy=False,
+        help="Set when an 'attendance not marked' todo has been created for this session.",
+    )
+
+    def _get_session_instructor_users(self):
+        """Return res.users for this session's instructor, or all company instructors."""
+        self.ensure_one()
+        if self.instructor_profile_id and self.instructor_profile_id.user_id:
+            return self.instructor_profile_id.user_id
+        profiles = self.env["dojo.instructor.profile"].search(
+            [
+                ("company_id", "in", [self.company_id.id, False]),
+                ("user_id", "!=", False),
+            ]
+        )
+        return profiles.mapped("user_id")
+
+    def _session_url(self):
+        """Return a backend URL that opens this session's form view.
+
+        Uses the Odoo 17+ path-based URL format so the correct session is
+        always opened rather than the list-default (today's) session.
+        """
+        self.ensure_one()
+        return "/odoo/action-dojo_classes.action_dojo_class_sessions/%d" % self.id
+
+    def action_open_attendance_wizard(self):
+        """Pre-create the attendance wizard with lines so web_save can only
+        call write() (not create()), letting our write() override preserve
+        the pre-populated lines when the browser's editable list resets."""
+        self.ensure_one()
+        Wizard = self.env['dojo.attendance.quick.wizard']
+        existing_logs = {
+            log.member_id.id: log
+            for log in self.env['dojo.attendance.log'].search([
+                ('session_id', '=', self.id),
+            ])
+        }
+        lines = []
+        for enr in self.enrollment_ids.filtered(lambda e: e.status == 'registered'):
+            log = existing_logs.get(enr.member_id.id)
+            lines.append((0, 0, {
+                'member_id': enr.member_id.id,
+                'enrollment_id': enr.id,
+                'status': log.status if log else 'present',
+                'note': log.note if log else False,
+            }))
+        wizard = Wizard.create({
+            'session_id': self.id,
+            'line_ids': lines,
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Mark Attendance',
+            'res_model': 'dojo.attendance.quick.wizard',
+            'res_id': wizard.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
 
     def write(self, vals):
         old_states = (
@@ -244,33 +331,108 @@ class DojoClassSessionTodos(models.Model):
         )
         result = super().write(vals)
 
+        # If instructor manually toggled attendance_complete = True, suppress the cron reminder
+        if vals.get("attendance_complete"):
+            for session in self:
+                if not session.attendance_todo_sent:
+                    session.attendance_todo_sent = True
+
         if vals.get("state") == "done":
             for session in self:
                 if old_states.get(session.id) == "done":
                     continue  # already done
                 if session.attendance_complete:
                     continue  # nothing to remind
-                instructor_user = (
-                    session.instructor_profile_id.user_id
-                    if session.instructor_profile_id
-                    else self.env["res.users"]
-                )
-                if not instructor_user:
-                    # Fallback: all instructors in company
-                    profiles = self.env["dojo.instructor.profile"].search(
-                        [
-                            ("company_id", "in", [session.company_id.id, False]),
-                            ("user_id", "!=", False),
-                        ]
-                    )
-                    instructor_user = profiles.mapped("user_id")
-
+                if session.attendance_todo_sent:
+                    continue  # cron already fired a reminder
+                instructor_user = session._get_session_instructor_users()
+                url = session._session_url()
+                link = Markup('<br/><a href="%s">→ Open session to mark attendance</a>') % url if url else Markup("")
                 self.env["dojo.member"]._create_instructor_todo(
                     instructor_user,
                     "📋 Mark attendance: %s" % (session.template_id.name or session.name),
                     deadline=fields.Date.today(),
+                    description=Markup(
+                        "<p>Session <em>{name}</em> was marked done but attendance has not been recorded. "
+                        "Please mark each student as present or absent.{link}</p>"
+                    ).format(name=session.name, link=link),
+                    priority="1",
+                    session=session,
                 )
+                session.attendance_todo_sent = True
         return result
+
+    @api.model
+    def _cron_check_missed_attendance(self):
+        """Hourly cron: find sessions that ended without attendance being marked
+        and create an urgent todo for the instructor.
+
+        Targets sessions that are:
+        - still ``open`` (instructor never marked done / took attendance)
+        - end_datetime is in the past
+        - have at least one registered enrollment still ``pending``
+        - attendance_complete not manually set to True
+        - haven't had a reminder sent yet (``attendance_todo_sent=False``)
+        """
+        now = fields.Datetime.now()
+        Sessions = self.search([
+            ("state", "=", "open"),
+            ("end_datetime", "<", now),
+            ("attendance_todo_sent", "=", False),
+            ("attendance_complete", "=", False),
+        ])
+        for session in Sessions:
+            pending = session.enrollment_ids.filtered(
+                lambda e: e.status == "registered" and e.attendance_state == "pending"
+            )
+            if not pending:
+                # No pending enrollments — nothing to remind about
+                session.attendance_todo_sent = True
+                continue
+            instructor_user = session._get_session_instructor_users()
+            url = session._session_url()
+            link = Markup('<br/><a href="%s">→ Open session to mark attendance</a>') % url if url else Markup("")
+            self.env["dojo.member"]._create_instructor_todo(
+                instructor_user,
+                "⚠️ Attendance not marked: %s" % (session.template_id.name or session.name),
+                deadline=session.end_datetime.date(),
+                description=Markup(
+                    "<p>Session <em>{name}</em> ended without attendance being recorded. "
+                    "Please mark each of the {n} enrolled student(s) as present or absent.{link}</p>"
+                ).format(name=session.name, n=len(pending), link=link),
+                priority="1",
+                session=session,
+            )
+            session.attendance_todo_sent = True
+            _logger.info(
+                "Missed-attendance todo created for session %d ('%s') — %d pending enrollments",
+                session.id, session.name, len(pending),
+            )
+
+
+    def _close_attendance_todos(self):
+        """Move all open attendance todos linked to this session to the Done stage.
+
+        Called after the attendance quick wizard confirms, so the instructor's
+        'Mark attendance' / 'Attendance not marked' todos disappear automatically.
+        """
+        self.ensure_one()
+        done_stage = self.env.ref(
+            "dojo_instructor_dashboard.stage_instructor_done",
+            raise_if_not_found=False,
+        )
+        if not done_stage:
+            return
+        todos = self.env["project.task"].sudo().search([
+            ("dojo_session_id", "=", self.id),
+            ("stage_id", "!=", done_stage.id),
+        ])
+        if todos:
+            todos.write({"stage_id": done_stage.id})
+            _logger.info(
+                "Auto-closed %d attendance todo(s) for session %d ('%s')",
+                len(todos), self.id, self.name,
+            )
 
 
 class DojoAttendanceLogTodos(models.Model):

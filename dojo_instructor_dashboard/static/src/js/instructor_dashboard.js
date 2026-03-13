@@ -18,6 +18,7 @@ class InstructorDashboard extends Component {
             sessionsToday: [],
             upcomingSessions: [],
             todos: [],
+            kiosks: [],
         });
 
         onWillStart(() => this._loadData());
@@ -56,7 +57,7 @@ class InstructorDashboard extends Component {
 
         this.state.profile = profile;
 
-        const [sessionsToday, upcomingSessions, todos] = await Promise.all([
+        const [sessionsToday, upcomingSessions, todos, kiosks] = await Promise.all([
             this.orm.searchRead(
                 "dojo.class.session",
                 [
@@ -87,11 +88,18 @@ class InstructorDashboard extends Component {
                 ["name", "project_id", "date_deadline", "priority", "stage_id"],
                 { order: "date_deadline asc", limit: 25 }
             ),
+            this.orm.searchRead(
+                "dojo.kiosk.config",
+                [["active", "=", true]],
+                ["name", "kiosk_url"],
+                { order: "name asc" }
+            ).catch(() => []),
         ]);
 
         this.state.sessionsToday    = sessionsToday;
         this.state.upcomingSessions = upcomingSessions;
         this.state.todos            = todos;
+        this.state.kiosks           = kiosks;
         this.state.loading          = false;
     }
 
@@ -105,10 +113,10 @@ class InstructorDashboard extends Component {
         });
     }
 
-    /** "2025-03-15" → "Mar 15, 2025" */
+    /** "2025-03-15" or "2025-03-15 00:00:00" → "Mar 15, 2025" */
     fmtDate(dateStr) {
         if (!dateStr) return "—";
-        const [y, m, d] = dateStr.split("-").map(Number);
+        const [y, m, d] = dateStr.slice(0, 10).split("-").map(Number);
         return new Date(y, m - 1, d).toLocaleDateString(undefined, {
             month: "short", day: "numeric", year: "numeric",
         });
@@ -152,11 +160,22 @@ class InstructorDashboard extends Component {
         return { draft: "Draft", open: "Open", done: "Done", cancelled: "Cancelled" }[s] || s;
     }
 
-    openTodaysClasses()  { this.action.doAction("dojo_instructor_dashboard.action_my_sessions_today"); }
-    openMyStudents()     { this.action.doAction("dojo_instructor_dashboard.action_my_students"); }
-    openCalendar()       { this.action.doAction("dojo_instructor_dashboard.action_my_sessions_calendar"); }
-    openTodos()          { this.action.doAction("dojo_instructor_dashboard.action_my_todos"); }
-    openMarkAttendance() { this.action.doAction("dojo_instructor_dashboard.action_my_sessions_today"); }
+    openTodaysClasses() { this.action.doAction("dojo_instructor_dashboard.action_my_sessions_today"); }
+    openMyStudents()    { this.action.doAction("dojo_instructor_dashboard.action_my_students"); }
+    openCalendar()      { this.action.doAction("dojo_instructor_dashboard.action_my_sessions_calendar"); }
+    openTodos()         { this.action.doAction("dojo_instructor_dashboard.action_my_todos"); }
+    openKiosk() {
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Kiosks",
+            res_model: "dojo.kiosk.config",
+            view_mode: "list,form",
+            views: [[false, "list"], [false, "form"]],
+        });
+    }
+    launchKioskUrl(url) {
+        if (url) window.open(url, "_blank");
+    }
 
     pct(rate) {
         if (rate === undefined || rate === null) return "—";

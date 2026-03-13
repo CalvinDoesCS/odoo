@@ -18,6 +18,7 @@ Accounts (password: dojo@2026):
   student5@demo.com     Riley Lee      Adult BJJ, standalone
 """
 from datetime import date, datetime, timedelta
+from dateutil.relativedelta import relativedelta
 
 today = date.today()
 PASSWORD = "dojo@2026"
@@ -36,18 +37,61 @@ existing_partners = existing_users.mapped("partner_id")
 # Remove cascading records
 env["dojo.class.enrollment"].search([]).unlink()
 env["dojo.class.session"].search([]).unlink()
+# Clean up subscription invoices before deleting subscriptions
+_all_subs = env["dojo.member.subscription"].search([])
+if _all_subs:
+    _sub_invs = env["account.move"].sudo().search([
+        "|",
+        ("subscription_id", "in", _all_subs.ids),
+        ("dojo_subscription_ids", "in", _all_subs.ids),
+    ])
+    if _sub_invs:
+        _sub_invs.mapped("line_ids").remove_move_reconcile()
+        _sub_invs.filtered(lambda m: m.state == "posted").button_cancel()
+        _sub_invs.unlink()
+# Clean up payments for demo partners (now that their invoices are gone)
+if existing_partners:
+    _demo_pmts = env["account.payment"].sudo().search([
+        ("partner_id", "in", existing_partners.ids)
+    ])
+    if _demo_pmts:
+        _pmt_moves = _demo_pmts.mapped("move_id")
+        if _pmt_moves:
+            _pmt_moves.mapped("line_ids").remove_move_reconcile()
+            _pmt_moves.filtered(lambda m: m.state == "posted").button_cancel()
+            _pmt_moves.unlink()  # cascades to account.payment
 env["dojo.member.subscription"].search([]).unlink()
 env["dojo.subscription.plan"].search([]).unlink()
 env["dojo.class.template"].search([]).unlink()
 env["dojo.program"].search([]).unlink()
 env["dojo.member.rank"].search([]).unlink()
+env["dojo.belt.test.registration"].search([]).unlink()
+env["dojo.belt.test"].search([]).unlink()
 env["dojo.belt.rank"].search([]).unlink()
 env["dojo.guardian.link"].search([]).unlink()
 env["dojo.household"].search([]).unlink()
 demo_members = env["dojo.member"].search([("partner_id", "in", existing_partners.ids)])
+# Clear payment_transaction.token_id FKs to allow token deletion (RESTRICT constraint)
+if "payment.token" in env:
+    demo_tokens = env["payment.token"].sudo().search([("partner_id", "in", existing_partners.ids)])
+    if demo_tokens:
+        env.cr.execute(
+            "UPDATE payment_transaction SET token_id = NULL WHERE token_id IN %s",
+            (tuple(demo_tokens.ids),)
+        )
+        demo_tokens.unlink()
 demo_members.unlink()
+# demo_members.unlink() cascades and removes parent/student users already.
+# Delete instructor profiles first, then remove any remaining users (instructors).
 env["dojo.instructor.profile"].search([("user_id", "in", existing_users.ids)]).unlink()
-existing_users.unlink()
+remaining_users = env["res.users"].search([("login", "in", DEMO_LOGINS)])
+if remaining_users:
+    # Clear hr.employee.user_id FK (RESTRICT) before deleting instructor users
+    env.cr.execute(
+        "UPDATE hr_employee SET user_id = NULL WHERE user_id IN %s",
+        (tuple(remaining_users.ids),)
+    )
+    remaining_users.unlink()
 print("  cleanup done.")
 
 group_instructor     = env.ref("dojo_base.group_dojo_instructor")
@@ -198,28 +242,52 @@ tmpl_little = env["dojo.class.template"].create({
     "name": "Little Champions", "code": "KIDS-BEG",
     "program_id": prog_kids.id, "level": "beginner",
     "duration_minutes": 60, "max_capacity": 12,
+    "recurrence_active": True,
+    "recurrence_time": 16.0,          # 4:00 PM
+    "rec_mon": True, "rec_wed": True,  # Mon & Wed
+    "recurrence_start_date": date(2026, 1, 12),
+    "recurrence_instructor_id": instr1.id,
     "instructor_profile_ids": [(4, instr1.id)],
+    "course_member_ids": [(6, 0, [s1.id, s2.id])],  # Jordan & Casey
     "description": "Foundational BJJ for younger kids (ages 5\u201310). Basic movements, escapes and positional control.",
 })
 tmpl_youth = env["dojo.class.template"].create({
     "name": "Youth Techniques", "code": "KIDS-INT",
     "program_id": prog_kids.id, "level": "intermediate",
     "duration_minutes": 75, "max_capacity": 12,
+    "recurrence_active": True,
+    "recurrence_time": 16.5,          # 4:30 PM
+    "rec_tue": True, "rec_thu": True,  # Tue & Thu
+    "recurrence_start_date": date(2026, 1, 12),
+    "recurrence_instructor_id": instr1.id,
     "instructor_profile_ids": [(4, instr1.id)],
+    "course_member_ids": [(6, 0, [s3.id, s4.id])],  # Taylor & Morgan
     "description": "Intermediate BJJ for older kids and teens (ages 10\u201316). Sweeps, submissions and live drilling.",
 })
 tmpl_adult_fund = env["dojo.class.template"].create({
     "name": "Adult Fundamentals", "code": "ADV-BEG",
     "program_id": prog_adults.id, "level": "beginner",
     "duration_minutes": 60, "max_capacity": 15,
+    "recurrence_active": True,
+    "recurrence_time": 18.0,                        # 6:00 PM
+    "rec_mon": True, "rec_wed": True, "rec_fri": True,  # Mon, Wed & Fri
+    "recurrence_start_date": date(2026, 1, 12),
+    "recurrence_instructor_id": instr1.id,
     "instructor_profile_ids": [(4, instr1.id)],
+    "course_member_ids": [(6, 0, [s5.id])],  # Riley
     "description": "Entry-level adult BJJ. Perfect for beginners with no prior grappling experience.",
 })
 tmpl_adv = env["dojo.class.template"].create({
     "name": "Advanced Sparring", "code": "ADV-ADV",
     "program_id": prog_adults.id, "level": "advanced",
     "duration_minutes": 90, "max_capacity": 8,
+    "recurrence_active": True,
+    "recurrence_time": 19.5,          # 7:30 PM
+    "rec_tue": True, "rec_thu": True,  # Tue & Thu
+    "recurrence_start_date": date(2026, 1, 12),
+    "recurrence_instructor_id": instr2.id,
     "instructor_profile_ids": [(4, instr2.id)],
+    "course_member_ids": [(6, 0, [s5.id])],  # Riley
     "description": "Competition-focused sparring and advanced technique for experienced students.",
 })
 
@@ -231,53 +299,223 @@ plan_kids = env["dojo.subscription.plan"].create({
     "name": "Kids BJJ Monthly", "code": "KIDS-MTH",
     "plan_type": "program", "program_id": prog_kids.id,
     "billing_period": "monthly", "price": 80.00, "initial_fee": 50.00,
-    "currency_id": currency.id, "unlimited_sessions": True, "max_sessions_per_week": 3,
+    "currency_id": currency.id, "unlimited_sessions": True,
+    "max_sessions_per_week": 3,
     "description": "Unlimited BJJ Kids classes, up to 3 sessions per week.",
 })
 plan_adult = env["dojo.subscription.plan"].create({
     "name": "Adult BJJ Monthly", "code": "ADV-MTH",
     "plan_type": "program", "program_id": prog_adults.id,
     "billing_period": "monthly", "price": 120.00, "initial_fee": 50.00,
-    "currency_id": currency.id, "unlimited_sessions": True, "max_sessions_per_week": 5,
-    "description": "Unlimited adult BJJ classes, up to 5 sessions per week.",
+    "currency_id": currency.id, "unlimited_sessions": False,
+    "max_sessions_per_week": 5, "credits_per_period": 12,
+    "description": "12 credits per month. Access to all adult BJJ classes, up to 5 sessions per week.",
 })
 env["dojo.subscription.plan"].create({
     "name": "Private Lessons", "code": "PRIV-MTH",
     "plan_type": "course", "billing_period": "monthly",
     "price": 250.00, "initial_fee": 0.00,
     "currency_id": currency.id, "unlimited_sessions": False,
-    "sessions_per_period": 4, "max_sessions_per_week": 1,
+    "credits_per_period": 4, "max_sessions_per_week": 1,
     "allowed_template_ids": [(4, tmpl_adv.id)],
-    "description": "Four private advanced sparring sessions per month.",
+    "description": "4 credits per month. Advanced Sparring sessions only.",
 })
 
 # ── 10. Member subscriptions ──────────────────────────────────────────────
-# IMPORTANT: must be created BEFORE enrollments — constraint checks active sub.
 print("Creating member subscriptions...")
-sub_start = today - timedelta(days=60)
-sub_next  = today + timedelta(days=30 - today.day + 1)
+sub_start = date(2026, 1, 12)   # subscriptions started Jan 12
+sub_next  = date(2026, 1, 12)   # will be advanced by invoice generation
 
 def make_sub(member, plan, note):
-    return env["dojo.member.subscription"].create({
+    sub = env["dojo.member.subscription"].create({
         "member_id": member.id, "plan_id": plan.id,
         "start_date": sub_start, "next_billing_date": sub_next,
-        "state": "active", "company_id": env.company.id, "note": note,
+        "state": "draft", "company_id": env.company.id, "note": note,
     })
+    # write() to 'active' triggers _issue_period_credits() for credit-based plans
+    sub.write({"state": "active"})
+    print(f"  {member.name} \u2192 {plan.name}")
+    return sub
 
-make_sub(s1, plan_kids,  "Jordan Smith \u2014 Kids BJJ")
-make_sub(s2, plan_kids,  "Casey Smith \u2014 Kids BJJ")
-make_sub(s3, plan_kids,  "Taylor Jones \u2014 Kids BJJ")
-make_sub(s4, plan_kids,  "Morgan Jones \u2014 Kids BJJ")
-make_sub(s5, plan_adult, "Riley Lee \u2014 Adult BJJ")
+sub_s1 = make_sub(s1, plan_kids,  "Jordan Smith \u2014 Kids BJJ")
+sub_s2 = make_sub(s2, plan_kids,  "Casey Smith \u2014 Kids BJJ")
+sub_s3 = make_sub(s3, plan_kids,  "Taylor Jones \u2014 Kids BJJ")
+sub_s4 = make_sub(s4, plan_kids,  "Morgan Jones \u2014 Kids BJJ")
+sub_s5 = make_sub(s5, plan_adult, "Riley Lee \u2014 Adult BJJ")
 
-# ── 11. Sessions & enrollments ────────────────────────────────────────────
-print("Creating sessions and enrollments...")
+# ── 11. Seed invoices (Jan 12 → Mar 12 billing cycles) ──────────────────
+# Three monthly cycles: Jan 12 (paid), Feb 12 (paid), Mar 12 (open/current).
+# Household billing is consolidated: Smith HH (s1+s2 → Mary Smith),
+# Jones HH (s3+s4 → Bob Jones), Riley Lee is invoiced directly.
+print("Seeding subscription invoices...")
 
-def seed_sessions(template, instructor, members, hour, day_shift=0):
-    """3 past (done) + 3 upcoming (open) sessions."""
-    for offset, state in [(-15, "done"), (-8, "done"), (-2, "done"),
-                          (  3, "open"), ( 8, "open"), (13, "open")]:
-        day = today + timedelta(days=offset + day_shift)
+_bank_journal = env["account.journal"].search(
+    [("type", "in", ["bank", "cash"])], limit=1
+)
+_membership_product = env.ref(
+    "dojo_subscriptions.product_membership_subscription", raise_if_not_found=False
+)
+
+
+def _inv_lines(plan, period_start, include_fee=False):
+    """Return (0,0,{}) invoice line tuples for one subscription plan + period."""
+    period_end = period_start + relativedelta(months=1) - relativedelta(days=1)
+    date_range = "{} \u2013 {}".format(
+        period_start.strftime("%-d %b %Y"), period_end.strftime("%-d %b %Y")
+    )
+    lines = []
+    if include_fee and plan.initial_fee:
+        fee = {
+            "name": f"{plan.name} \u2013 Enrollment Fee",
+            "quantity": 1.0,
+            "price_unit": plan.initial_fee,
+        }
+        if _membership_product:
+            fee["product_id"] = _membership_product.id
+        lines.append((0, 0, fee))
+    rec = {
+        "name": f"{plan.name} \u2013 Monthly Membership ({date_range})",
+        "quantity": 1.0,
+        "price_unit": plan.price,
+    }
+    if _membership_product:
+        rec["product_id"] = _membership_product.id
+    lines.append((0, 0, rec))
+    return lines
+
+
+def _register_payment(invoice):
+    """Reconcile a demo invoice as fully paid via a bank payment."""
+    payment = env["account.payment"].sudo().create({
+        "payment_type": "inbound",
+        "partner_type": "customer",
+        "partner_id": invoice.partner_id.id,
+        "amount": invoice.amount_total,
+        "currency_id": invoice.currency_id.id,
+        "date": invoice.invoice_date,
+        "journal_id": _bank_journal.id,
+    })
+    payment.action_post()
+    inv_recv = invoice.line_ids.filtered(
+        lambda l: l.account_id.account_type == "asset_receivable" and not l.reconciled
+    )
+    pay_recv = payment.move_id.line_ids.filtered(
+        lambda l: l.account_id.account_type == "asset_receivable" and not l.reconciled
+    )
+    if inv_recv and pay_recv:
+        (inv_recv + pay_recv).reconcile()
+
+
+def _make_inv(partner, subs_list, line_vals, inv_date, paid=True):
+    """Create, post, and optionally pay a subscription invoice."""
+    is_household = len(subs_list) > 1
+    vals = {
+        "move_type": "out_invoice",
+        "partner_id": partner.id,
+        "invoice_date": inv_date,
+        "invoice_date_due": inv_date + relativedelta(days=7),
+        "company_id": env.company.id,
+        "invoice_line_ids": line_vals,
+    }
+    if is_household:
+        vals["dojo_subscription_ids"] = [(6, 0, [s.id for s in subs_list])]
+    else:
+        vals["subscription_id"] = subs_list[0].id
+    inv = env["account.move"].sudo().create(vals)
+    inv.action_post()
+    for sub in subs_list:
+        sub.last_invoice_id = inv
+    status = "paid"
+    if paid:
+        _register_payment(inv)
+    else:
+        status = "open"
+    print(f"    {inv.name}  {inv_date}  {partner.name}  ${inv.amount_total:.2f}  [{status}]")
+    return inv
+
+
+_billing_cycles = [
+    (date(2026, 1, 12), True),   # Jan \u2014 paid
+    (date(2026, 2, 12), True),   # Feb \u2014 paid
+    (date(2026, 3, 12), False),  # Mar \u2014 open (current)
+]
+
+for _cycle_num, (_inv_date, _paid) in enumerate(_billing_cycles):
+    _is_first = (_cycle_num == 0)
+
+    # Smith Household: Mary Smith billed for Jordan (s1) + Casey (s2)
+    _smith_lines = (
+        _inv_lines(plan_kids, _inv_date, include_fee=_is_first)  # s1 lines
+        + _inv_lines(plan_kids, _inv_date, include_fee=False)    # s2 lines
+    )
+    _make_inv(p1.partner_id, [sub_s1, sub_s2], _smith_lines, _inv_date, _paid)
+
+    # Jones Household: Bob Jones billed for Taylor (s3) + Morgan (s4)
+    _jones_lines = (
+        _inv_lines(plan_kids, _inv_date, include_fee=_is_first)  # s3 lines
+        + _inv_lines(plan_kids, _inv_date, include_fee=False)    # s4 lines
+    )
+    _make_inv(p2.partner_id, [sub_s3, sub_s4], _jones_lines, _inv_date, _paid)
+
+    # Riley Lee: standalone (Adult BJJ)
+    _riley_lines = _inv_lines(plan_adult, _inv_date, include_fee=_is_first)
+    _make_inv(s5.partner_id, [sub_s5], _riley_lines, _inv_date, _paid)
+
+# After 3 cycles, set next billing date to Apr 12 for all subscriptions
+for _sub in [sub_s1, sub_s2, sub_s3, sub_s4, sub_s5]:
+    _sub.next_billing_date = date(2026, 4, 12)
+print("  invoices done (next billing: Apr 12).")
+
+# ── 12. Auto-enroll preferences (this month, specific days) ─────────────
+print("Creating auto-enroll preferences...")
+month_start = today.replace(day=1)
+month_end   = (today.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+
+# Jordan & Casey → Little Champions  Mon / Wed / Fri
+for _m in [s1, s2]:
+    env["dojo.course.auto.enroll"].create({
+        "member_id": _m.id, "template_id": tmpl_little.id,
+        "mode": "multiday", "date_from": month_start, "date_to": month_end,
+        "pref_mon": True, "pref_wed": True, "pref_fri": True,
+    })
+# Taylor & Morgan → Youth Techniques  Tue / Thu
+for _m in [s3, s4]:
+    env["dojo.course.auto.enroll"].create({
+        "member_id": _m.id, "template_id": tmpl_youth.id,
+        "mode": "multiday", "date_from": month_start, "date_to": month_end,
+        "pref_tue": True, "pref_thu": True,
+    })
+# Riley → Adult Fundamentals  Mon / Wed
+env["dojo.course.auto.enroll"].create({
+    "member_id": s5.id, "template_id": tmpl_adult_fund.id,
+    "mode": "multiday", "date_from": month_start, "date_to": month_end,
+    "pref_mon": True, "pref_wed": True,
+})
+# Riley → Advanced Sparring  Tue / Thu
+env["dojo.course.auto.enroll"].create({
+    "member_id": s5.id, "template_id": tmpl_adv.id,
+    "mode": "multiday", "date_from": month_start, "date_to": month_end,
+    "pref_tue": True, "pref_thu": True,
+})
+
+# ── 13. Sessions + selective enrollment ──────────────────────────────────
+# 6 sessions per template (3 past/done + 3 upcoming/open).
+# Past sessions: enrollment created with realistic attendance (one absence per member).
+# Upcoming sessions: enrolled in 2 of 3 (one session left unenrolled).
+print("Creating sessions...")
+
+def seed_sessions(template, instructor, hour, day_shift=0, enroll=None, skip=None):
+    """Create 3 past (done) + 3 upcoming (open) sessions.
+
+    enroll   — list of dojo.member records to enroll into each session.
+    skip     — set of session indices (0-5) where enrollment is omitted
+               (0-2 = past sessions, 3-5 = upcoming sessions).
+    """
+    skip = skip or set()
+    specs = [(-15, "done"), (-8, "done"), (-2, "done"),
+             (  3, "open"), ( 8, "open"), (13, "open")]
+    for idx, (offset, state) in enumerate(specs):
+        day      = today + timedelta(days=offset + day_shift)
         start_dt = datetime(day.year, day.month, day.day, hour, 0)
         end_dt   = start_dt + timedelta(minutes=template.duration_minutes)
         session  = env["dojo.class.session"].create({
@@ -288,23 +526,37 @@ def seed_sessions(template, instructor, members, hour, day_shift=0):
             "capacity": template.max_capacity,
             "state": state,
         })
-        for m in members:
-            env["dojo.class.enrollment"].create({
-                "session_id": session.id, "member_id": m.id,
-                "status": "registered",
-                "attendance_state": "present" if state == "done" else "pending",
-            })
+        if enroll and idx not in skip:
+            att = "present" if state == "done" else "pending"
+            for _m in enroll:
+                env["dojo.class.enrollment"].create({
+                    "session_id": session.id,
+                    "member_id": _m.id,
+                    "status": "registered",
+                    "attendance_state": att,
+                })
 
-# Little Champions: Jordan & Casey @ 4 PM
-seed_sessions(tmpl_little, instr1, [s1, s2], hour=16, day_shift=0)
-# Youth Techniques: Taylor & Morgan @ 5 PM
-seed_sessions(tmpl_youth, instr1, [s3, s4], hour=17, day_shift=1)
-# Adult Fundamentals: empty — open for walk-ins
-seed_sessions(tmpl_adult_fund, instr1, [], hour=18, day_shift=0)
-# Advanced Sparring: Riley Lee @ 7 PM
-seed_sessions(tmpl_adv, instr2, [s5], hour=19, day_shift=2)
+# Little Champions @ 4 PM — Jordan & Casey, Mon/Wed/Fri schedule
+# skip index 1 (past: one absence) + index 5 (last upcoming: not yet signed up)
+seed_sessions(tmpl_little, instr1, hour=16, day_shift=0,
+              enroll=[s1, s2], skip={1, 5})
 
-# ── 12. Force-recompute stored computed fields ─────────────────────────────
+# Youth Techniques @ 5 PM — Taylor & Morgan, Tue/Thu schedule
+# skip index 2 (past: one absence) + index 4 (middle upcoming: not yet signed up)
+seed_sessions(tmpl_youth, instr1, hour=17, day_shift=1,
+              enroll=[s3, s4], skip={2, 4})
+
+# Adult Fundamentals @ 6 PM — Riley, Mon/Wed schedule
+# skip index 0 (past: first class missed) + index 5 (last upcoming)
+seed_sessions(tmpl_adult_fund, instr1, hour=18, day_shift=0,
+              enroll=[s5], skip={0, 5})
+
+# Advanced Sparring @ 7 PM — Riley, Tue/Thu schedule
+# skip index 1 (past: one absence) + indices 4-5 (last two upcoming)
+seed_sessions(tmpl_adv, instr2, hour=19, day_shift=2,
+              enroll=[s5], skip={1, 4, 5})
+
+# ── 14. Force-recompute stored computed fields ─────────────────────────────
 # has_portal_login is a stored computed field on dojo.member that checks
 # partner_id.user_ids.group_ids. The users were created before the member
 # records, so the compute trigger fired before all group implications were
@@ -335,16 +587,27 @@ Programs
   BJJ Kids   belt path: White -> Yellow -> Orange -> Green
   BJJ Adults belt path: White -> Yellow -> Orange -> Green -> Blue -> Purple -> Brown -> Black
 
-Class Templates
-  Little Champions   (BJJ Kids,   beginner)     Jordan & Casey enrolled
-  Youth Techniques   (BJJ Kids,   intermediate) Taylor & Morgan enrolled
-  Adult Fundamentals (BJJ Adults, beginner)     open enrollment (empty)
-  Advanced Sparring  (BJJ Adults, advanced)     Riley Lee enrolled
+Class Templates + Auto-Enroll (this month)
+  Little Champions   (BJJ Kids,   beginner)     Jordan & Casey  — Mon/Wed/Fri
+  Youth Techniques   (BJJ Kids,   intermediate) Taylor & Morgan — Tue/Thu
+  Adult Fundamentals (BJJ Adults, beginner)     Riley Lee       — Mon/Wed
+  Advanced Sparring  (BJJ Adults, advanced)     Riley Lee       — Tue/Thu
 
 Subscription Plans
-  Kids BJJ Monthly  $80/mo  + $50 setup  program-based, max 3 sessions/week
-  Adult BJJ Monthly $120/mo + $50 setup  program-based, max 5 sessions/week
-  Private Lessons   $250/mo, no setup    course-based, 4 sessions/period, 1/week
+  Kids BJJ Monthly  $80/mo  + $50 setup  program-based, unlimited sessions (up to 3/week)
+  Adult BJJ Monthly $120/mo + $50 setup  program-based, 12 credits/month (up to 5/week)
+  Private Lessons   $250/mo, no setup    course-based,  4 credits/month (max 1/week)
+
+Invoices (subscriptions started Jan 12, 2026)
+  Smith Household (Mary Smith)  Jan 12: $260 paid  Feb 12: $160 paid  Mar 12: $160 open
+    └─ Jordan + Casey each on Kids BJJ Monthly ($80); Jan includes $50 enrollment fee each
+  Jones Household (Bob Jones)   Jan 12: $260 paid  Feb 12: $160 paid  Mar 12: $160 open
+    └─ Taylor + Morgan each on Kids BJJ Monthly ($80); Jan includes $50 enrollment fee each
+  Riley Lee (standalone)        Jan 12: $170 paid  Feb 12: $120 paid  Mar 12: $120 open
+    └─ Adult BJJ Monthly ($120); Jan includes $50 enrollment fee
+  Next billing date for all subscriptions: Apr 12, 2026
 
 Sessions: 3 past (done) + 3 upcoming (open) per template = 24 sessions total
+Enrollments seeded selectively — members miss 1 past class and aren't pre-booked
+  for all upcoming sessions (reflects realistic attendance patterns).
 """)

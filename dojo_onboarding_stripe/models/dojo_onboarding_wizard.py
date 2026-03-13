@@ -51,6 +51,13 @@ class DojoOnboardingWizard(models.TransientModel):
         'subscription', 'payment', 'portal_access',
     ]
 
+    # ── Step-skip logic ───────────────────────────────────────────────────
+    def _should_skip_step(self, step_name):
+        if step_name == 'payment' and not self.create_new_household:
+            # Existing household already has a payment method on file — skip capture
+            return True
+        return super()._should_skip_step(step_name)
+
     # ── Validation on the payment step ────────────────────────────────────
     def action_next(self):
         if self.step == 'payment':

@@ -66,58 +66,74 @@
             <!-- ── Banner ────────────────────────────────────────────────── -->
             <div class="dojo-portal-banner mt-3"/>
 
-            <!-- ── Welcome Hero Card ──────────────────────────────────────── -->
-            <div class="card dojo-hero mb-4 mt-3 shadow-sm border-0">
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-start gap-3 flex-wrap">
+            <!-- ── Welcome Hero Card (MD3) ────────────────────────────────── -->
+            <div class="dojo-hero mb-4 mt-3 p-4">
+                <div class="d-flex align-items-start gap-3 flex-wrap">
 
-                        <!-- Avatar circle: belt colour if ranked, else role colour -->
-                        <t t-set="_avatar_bg" t-value="current_rank.color if current_rank and current_rank.color else ('#0d6efd' if is_parent else '#198754')"/>
-                        <div class="dojo-hero-avatar flex-shrink-0 d-flex align-items-center justify-content-center text-white fw-bold fs-3"
-                             t-attf-style="width:64px;height:64px;border-radius:50%;background:#{_avatar_bg};border:3px solid rgba(0,0,0,.12);">
-                            <t t-out="(member.name or '?')[0].upper()"/>
-                        </div>
+                    <!-- Avatar: belt colour if ranked, else role colour -->
+                    <t t-set="_avatar_bg" t-value="current_rank.color if current_rank and current_rank.color else ('#1a73e8' if is_parent else '#188038')"/>
+                    <div class="dojo-hero-avatar-md3" t-attf-style="background:#{_avatar_bg};">
+                        <t t-out="(member.name or '?')[0].upper()"/>
+                    </div>
 
-                        <!-- Name + role + household -->
-                        <div class="flex-grow-1 min-w-0">
-                            <div class="d-flex align-items-center gap-2 flex-wrap">
-                                <h4 class="mb-0 fw-bold lh-1 text-truncate" t-out="member.name"/>
-                                <t t-if="member.member_number">
-                                    <a href="/my/dojo/badge/print" target="_blank" class="btn btn-outline-secondary btn-sm ms-2" title="View &amp; Print Badge">
-                                        <i class="fa fa-id-card me-1"/> View Badge
-                                    </a>
-                                </t>
-                                <t t-if="member.role == 'parent'">
-                                    <span class="badge bg-primary">Parent / Guardian</span>
-                                </t>
-                                <t t-elif="member.role == 'both'">
-                                    <span class="badge bg-success">Student &amp; Parent</span>
-                                </t>
-                                <t t-else="">
-                                    <span class="badge bg-secondary">Student</span>
-                                </t>
-                            </div>
-                            <t t-if="member.household_id">
-                                <small class="text-muted" t-out="member.household_id.name"/>
+                    <!-- Name + meta + stat chips -->
+                    <div class="flex-grow-1 min-w-0">
+                        <!-- Name row -->
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <h4 class="mb-0 fw-bold lh-1" style="color:#202124;" t-out="member.name"/>
+                            <t t-if="member.role == 'parent'">
+                                <span class="dojo-chip dojo-chip--accent">Parent</span>
                             </t>
-
-                            <!-- Stat chips -->
-                            <div class="dojo-hero-stats d-flex flex-wrap gap-3 mt-3">
-                                <span class="badge rounded-pill border dojo-hero-chip text-center text-dark">
-                                    <span class="d-block fs-6 fw-bold text-primary" t-out="attendance_count"/>
-                                    <span class="d-block" style="font-size:0.7rem;font-weight:normal;opacity:.75;color:#000!important;">Sessions</span>
+                            <t t-elif="member.role == 'both'">
+                                <span class="dojo-chip dojo-chip--success">Student &amp; Parent</span>
+                            </t>
+                            <t t-else="">
+                                <span class="dojo-chip dojo-chip--neutral">Student</span>
+                            </t>
+                            <t t-if="current_rank and current_rank.color">
+                                <span class="dojo-chip dojo-chip--ghost"
+                                      t-attf-style="border-color:#{current_rank.color};color:#{current_rank.color};"
+                                      t-out="current_rank.name"/>
+                            </t>
+                        </div>
+                        <!-- Household + member number -->
+                        <div class="d-flex align-items-center gap-2 mb-3" style="color:#5f6368;font-size:.85rem;">
+                            <t t-if="member.household_id">
+                                <span t-out="member.household_id.name"/>
+                            </t>
+                            <t t-if="member.member_number">
+                                <t t-if="member.household_id"><span>·</span></t>
+                                <span t-out="member.member_number"/>
+                            </t>
+                        </div>
+                        <!-- Stat chips row -->
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="dojo-stat-chip">
+                                <span class="dojo-stat-chip__val" t-out="attendance_count"/>
+                                <span class="dojo-stat-chip__lbl">Sessions</span>
+                            </span>
+                            <span class="dojo-stat-chip">
+                                <span class="dojo-stat-chip__val" t-out="upcoming_count"/>
+                                <span class="dojo-stat-chip__lbl">Upcoming</span>
+                            </span>
+                            <t t-if="is_credit_plan">
+                                <span class="dojo-stat-chip">
+                                    <span class="dojo-stat-chip__val" t-out="credit_balance"/>
+                                    <span class="dojo-stat-chip__lbl">Credits</span>
                                 </span>
-                                <span class="badge rounded-pill border dojo-hero-chip text-center text-dark">
-                                    <span class="d-block fs-6 fw-bold text-success" t-out="upcoming_count"/>
-                                    <span class="d-block" style="font-size:0.7rem;font-weight:normal;opacity:.75;color:#000!important;">Upcoming</span>
-                                </span>
-                                <t t-if="is_parent">
-                                    <a href="/my/invoices" class="badge rounded-pill border dojo-hero-chip text-center text-dark text-decoration-none">
-                                        <span class="d-block fs-6 fw-bold text-warning"><i class="fa fa-file-text-o"/></span>
-                                        <span class="d-block" style="font-size:0.7rem;font-weight:normal;opacity:.75;color:#000!important;">Billing</span>
-                                    </a>
-                                </t>
-                            </div>
+                            </t>
+                            <t t-if="is_parent">
+                                <a href="/my/invoices" class="dojo-stat-chip" title="View invoices">
+                                    <span class="dojo-stat-chip__val"><i class="fa fa-file-text-o"/></span>
+                                    <span class="dojo-stat-chip__lbl">Billing</span>
+                                </a>
+                            </t>
+                            <t t-if="member.member_number">
+                                <a href="/my/dojo/badge/print" target="_blank" class="dojo-stat-chip" title="View &amp; Print Badge">
+                                    <span class="dojo-stat-chip__val"><i class="fa fa-id-card"/></span>
+                                    <span class="dojo-stat-chip__lbl">Badge</span>
+                                </a>
+                            </t>
                         </div>
                     </div>
                 </div>

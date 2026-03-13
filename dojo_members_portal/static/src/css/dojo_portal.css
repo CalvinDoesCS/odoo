@@ -1,175 +1,358 @@
 /* =====================================================================
-   Dojo Activities OWL Portal Component – styles
+   Dojo Portal – MD3 Google Design System
    ===================================================================== */
-/* ── Portal banner ─────────────────────────────────────────── */
+
+/* ── Design tokens ─────────────────────────────────────────────────── */
+:root {
+    --p-accent:       #1a73e8;
+    --p-accent-light: #e8f0fe;
+    --p-surface:      #ffffff;
+    --p-surface-2:    #f8f9fa;
+    --p-border:       #e0e0e0;
+    --p-text:         #202124;
+    --p-text-2:       #5f6368;
+    --p-success:      #188038;
+    --p-success-dim:  #e6f4ea;
+    --p-warning:      #e37400;
+    --p-warning-dim:  #fef7e0;
+    --p-danger:       #d93025;
+    --p-danger-dim:   #fce8e6;
+    --p-radius:       8px;
+    --p-radius-sm:    4px;
+}
+
+/* ── Portal banner ─────────────────────────────────────────────────── */
 .dojo-portal-banner {
     width: 100%;
-    height: clamp(70px, 15vw, 130px);
-    border-radius: 0.5rem;
+    height: clamp(64px, 12vw, 110px);
+    border-radius: var(--p-radius);
     overflow: hidden;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     background: url('/dojo_members_portal/static/src/img/dojo_banner.svg') center / cover no-repeat;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-}
-/* ── Activity cards ───────────────────────────────────────────────── */
-.dojo-activity-card {
-    cursor: pointer;
-    border-radius: 0.5rem;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-    overflow: hidden;       /* clip the top accent bar */
 }
 
-.dojo-activity-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12) !important;
+/* ── Hero card ─────────────────────────────────────────────────────── */
+.dojo-hero {
+    background: var(--p-surface);
+    border: 1px solid var(--p-border);
+    border-radius: var(--p-radius);
+    box-shadow: none !important;
 }
-
-.dojo-activity-card:active {
-    transform: translateY(-1px);
-}
-
-/* ── Top accent stripe (4 px coloured bar at card top) ───────────── */
-.dojo-card-accent {
-    height: 4px;
-    width: 100%;
-}
-
-/* Level colours */
-.dojo-level-beginner     { background: #198754; }
-.dojo-level-intermediate { background: #ffc107; }
-.dojo-level-advanced     { background: #dc3545; }
-.dojo-level-all          { background: #6c757d; }
-
-/* Enrollment status colours */
-.dojo-status-registered  { background: #198754; }
-.dojo-status-waitlist    { background: #ffc107; }
-.dojo-status-cancelled   { background: #6c757d; }
-
-/* Attendance log colours */
-.dojo-log-present        { background: #198754; }
-.dojo-log-late           { background: #ffc107; }
-.dojo-log-absent         { background: #dc3545; }
-.dojo-log-excused        { background: #6c757d; }
-
-/* ── Detail overlay – slide-in panel from the right ─────────────── */
-.dojo-overlay-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    z-index: 1055;          /* above Bootstrap modals (1050) */
+.dojo-hero-avatar-md3 {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    flex-shrink: 0;
     display: flex;
-    justify-content: flex-end;
-    animation: dojo-backdrop-in 0.2s ease;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -.02em;
 }
 
-.dojo-overlay-panel {
-    background: #fff;
-    width: 400px;
-    max-width: 92vw;
-    height: 100%;
-    padding: 1.5rem 1.5rem 2rem 1.5rem;
-    overflow-y: auto;
-    position: relative;
-    box-shadow: -6px 0 32px rgba(0, 0, 0, 0.18);
-    animation: dojo-panel-in 0.2s ease;
+/* ── Stat chips ────────────────────────────────────────────────────── */
+.dojo-stat-chip {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 68px;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--p-border);
+    border-radius: 24px;
+    background: var(--p-surface);
+    cursor: default;
+    text-decoration: none !important;
+    color: var(--p-text) !important;
+    transition: border-color .15s;
+}
+.dojo-stat-chip:hover {
+    border-color: var(--p-accent);
+}
+.dojo-stat-chip__val {
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--p-accent);
+}
+.dojo-stat-chip__lbl {
+    font-size: 0.62rem;
+    color: var(--p-text-2);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-top: 2px;
 }
 
-@keyframes dojo-backdrop-in {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+/* ── MD3 status chips ──────────────────────────────────────────────── */
+.dojo-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: var(--p-radius-sm);
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    white-space: nowrap;
+    line-height: 1.7;
+    border: none;
+}
+.dojo-chip--accent   { background: var(--p-accent);    color: #fff; }
+.dojo-chip--success  { background: var(--p-success);   color: #fff; }
+.dojo-chip--warning  { background: var(--p-warning);   color: #fff; }
+.dojo-chip--danger   { background: var(--p-danger);    color: #fff; }
+.dojo-chip--neutral  { background: var(--p-text-2);    color: #fff; }
+.dojo-chip--info     { background: #0288d1;            color: #fff; }
+.dojo-chip--ghost    { background: var(--p-surface-2); color: var(--p-text-2); border: 1px solid var(--p-border); }
+
+/* ── MD3 Underline Tab navigation ──────────────────────────────────── */
+.dojo-tab-nav {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 0;
+    border-bottom: 1px solid var(--p-border);
+}
+.dojo-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--p-text-2);
+    cursor: pointer;
+    transition: color .15s ease, border-color .15s ease;
+    border-radius: 0;
+    flex: 1 1 auto;
+}
+.dojo-tab-btn:hover { color: var(--p-accent); }
+.dojo-tab-btn.active {
+    color: var(--p-accent);
+    border-bottom-color: var(--p-accent);
+    font-weight: 600;
 }
 
-@keyframes dojo-panel-in {
-    from { transform: translateX(40px); opacity: 0; }
-    to   { transform: translateX(0);     opacity: 1; }
+/* ── MD3 Cards ─────────────────────────────────────────────────────── */
+.dojo-md3-card {
+    background: var(--p-surface);
+    border: 1px solid var(--p-border);
+    border-radius: var(--p-radius);
+    overflow: hidden;
+    transition: border-color .15s ease;
+}
+.dojo-md3-card--clickable { cursor: pointer; }
+.dojo-md3-card--clickable:hover { border-color: var(--p-accent); }
+
+/* ── Section headers ───────────────────────────────────────────────── */
+.dojo-section-hd,
+.dojo-classes-section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--p-text-2);
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--p-border);
+    margin-bottom: 1rem;
 }
 
-/* Prevent body scroll while overlay is open */
-body.dojo-overlay-open {
+/* ── Progress (MD3 flat) ───────────────────────────────────────────── */
+.dojo-progress {
+    height: 4px;
+    background: var(--p-border);
+    border-radius: 2px;
     overflow: hidden;
 }
-
-/* ── Student switcher ─────────────────────────────────────────────────── */
-.dojo-student-switcher {
-    border-radius: 0.5rem;
-}
-.dojo-student-switcher .btn-group .btn {
-    font-size: 0.8rem;
+.dojo-progress-bar {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--p-accent);
+    transition: width .3s ease;
 }
 
-/* ── Selected student belt banner ─────────────────────────────────────── */
-.dojo-student-context-banner {
-    background: var(--bs-body-bg);
-}
-@media (max-width: 575px) {
-    .dojo-student-switcher .btn-group {
-        flex-wrap: wrap;
-    }
-}
-
-/* ── Welcome hero card ────────────────────────────────────────────────── */
-.dojo-hero {
-    border-radius: 0.75rem;
-    background: var(--bs-body-bg);
-}
-.dojo-hero .dojo-hero-avatar {
-    box-shadow: 0 2px 10px rgba(0, 0, 0, .15);
-}
-.dojo-hero-chip {
-    min-width: 72px;
-    padding: 0.6rem 1.1rem;
-    color: #212529 !important;
-}
-.dojo-hero-chip.text-decoration-none:hover {
-    background: var(--bs-light);
-}
-@media (max-width: 575px) {
-    .dojo-hero-stats {
-        width: 100%;
-        justify-content: flex-start;
-    }
-}
-
-/* ── Program card ────────────────────────────────────────────────── */
-.dojo-program-card {
-    border-left-width: 4px !important;
-    border-left-style: solid !important;
-    transition: box-shadow 0.15s ease;
-}
-.dojo-program-card:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
-}
-
-/* ── Belt rail ───────────────────────────────────────────────────── */
+/* ── Belt rail ─────────────────────────────────────────────────────── */
 .dojo-belt-rail {
     overflow-x: auto;
     padding-bottom: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--p-border) transparent;
     gap: 0;
 }
-.dojo-belt-node {
-    transition: transform 0.15s ease;
-    cursor: default;
-}
-.dojo-belt-node:hover {
-    transform: scale(1.12);
-}
-.dojo-belt-label {
-    text-align: center;
-}
+.dojo-belt-node { transition: transform .15s ease; cursor: default; }
+.dojo-belt-node:hover { transform: scale(1.1); }
+.dojo-belt-label { text-align: center; }
 
-/* ── Classes tab section headers ────────────────────────────────── */
-.dojo-classes-section-header {
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #dee2e6;
-    color: #495057;
+/* ── Rank history rows ─────────────────────────────────────────────── */
+.dojo-rank-row {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .5rem .75rem;
+    border-bottom: 1px solid var(--p-border);
 }
+.dojo-rank-row:last-child { border-bottom: none; }
 
-/* ── Student select dropdown ────────────────────────────────────── */
+/* ── Student switcher ──────────────────────────────────────────────── */
+.dojo-student-switcher {
+    background: var(--p-surface) !important;
+    border: 1px solid var(--p-border) !important;
+    border-radius: var(--p-radius) !important;
+}
 .dojo-student-select {
-    border-radius: 20px;
+    border-radius: 24px;
     font-size: 0.85rem;
+    border-color: var(--p-border);
+}
+.dojo-student-context-banner {
+    background: var(--p-surface);
+    border: 1px solid var(--p-border) !important;
+    border-radius: var(--p-radius) !important;
+}
+
+/* ── Credit strip ──────────────────────────────────────────────────── */
+.dojo-credit-item {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: 6px 14px;
+    background: var(--p-surface);
+    border: 1px solid var(--p-border);
+    border-radius: 24px;
+    font-size: 0.8rem;
+}
+
+/* ── Program card ──────────────────────────────────────────────────── */
+.dojo-program-card {
+    background: var(--p-surface);
+    border: 1px solid var(--p-border) !important;
+    border-radius: var(--p-radius);
+    overflow: hidden;
+    transition: border-color .15s;
+}
+.dojo-program-card:hover { border-color: var(--p-accent) !important; }
+
+/* ── Billing card ──────────────────────────────────────────────────── */
+.dojo-billing-card {
+    background: var(--p-surface);
+    border: 1px solid var(--p-border);
+    border-radius: var(--p-radius);
+    overflow: hidden;
+}
+.dojo-billing-card-hd {
+    padding: .75rem 1rem;
+    background: var(--p-accent);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+}
+.dojo-billing-field-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .6rem 1rem;
+    border-bottom: 1px solid var(--p-border);
+    font-size: 0.875rem;
+}
+.dojo-billing-field-row:last-child { border-bottom: none; }
+.dojo-billing-field-lbl { color: var(--p-text-2); font-size: 0.78rem; }
+
+/* ── Household member cards ────────────────────────────────────────── */
+.dojo-member-card {
+    background: var(--p-surface);
+    border: 1px solid var(--p-border);
+    border-radius: var(--p-radius);
+    overflow: hidden;
+}
+.dojo-member-card-hd {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .75rem 1rem;
+    border-bottom: 1px solid var(--p-border);
+}
+.dojo-member-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--p-accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+.dojo-field-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .5rem 1rem;
+    border-bottom: 1px solid var(--p-border);
+    font-size: 0.875rem;
+    gap: .5rem;
+}
+.dojo-field-row:last-child { border-bottom: none; }
+.dojo-field-lbl {
+    font-size: 0.72rem;
+    color: var(--p-text-2);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    flex-shrink: 0;
+}
+
+/* ── Auto-enroll card ──────────────────────────────────────────────── */
+.dojo-auto-enroll-card {
+    background: var(--p-surface);
+    border: 1px solid var(--p-border) !important;
+    border-radius: var(--p-radius) !important;
+    overflow: hidden;
+}
+
+/* ── Detail overlay ────────────────────────────────────────────────── */
+.dojo-overlay-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.48);
+    z-index: 1055;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: dojo-backdrop-in 0.15s ease;
+}
+.dojo-overlay-panel {
+    background: var(--p-surface);
+    width: 520px;
+    max-width: 94vw;
+    max-height: 90vh;
+    padding: 1.75rem 1.75rem 2rem 1.75rem;
+    overflow-y: auto;
+    position: relative;
+    border-radius: var(--p-radius);
+    border: 1px solid var(--p-border);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+    animation: dojo-panel-in 0.15s ease;
+}
+@keyframes dojo-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dojo-panel-in {
+    from { transform: scale(0.97); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+}
+body.dojo-overlay-open { overflow: hidden; }
+
+/* ── Responsive ────────────────────────────────────────────────────── */
+@media (max-width: 575px) {
+    .dojo-tab-btn { padding: 8px 10px; font-size: 0.78rem; }
+    .dojo-stat-chip { min-width: 58px; padding: 0.4rem 0.7rem; }
 }

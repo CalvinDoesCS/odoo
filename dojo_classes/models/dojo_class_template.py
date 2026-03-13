@@ -131,6 +131,42 @@ class DojoClassTemplate(models.Model):
             ).search([("template_id", "=", self.id)])
         }
 
+        # Pre-compute billing-period end date per member.
+        # Auto-enrollment is capped to each member's current billing period so
+        # we never consume credits that belong to a future period. When the
+        # period renews (new grant issued) the daily cron will pick up the
+        # remaining sessions automatically.
+        # None = no cap (unlimited plan, drop-in, or no active subscription).
+        _Sub = self.env["dojo.member.subscription"]
+        _tmpl_program = self.program_id
+        period_end_by_member = {}
+        for _m in self.course_member_ids:
+            _active_subs = _Sub.search([
+                ("member_id", "=", _m.id),
+                ("state", "=", "active"),
+            ])
+            _matched = None
+            for _s in _active_subs:
+                _plan = _s.plan_id
+                _ptype = getattr(_plan, "plan_type", False)
+                if _tmpl_program and _ptype == "program" and getattr(_plan, "program_id", False) == _tmpl_program:
+                    _matched = _s
+                    break
+                if _ptype == "course" and self in getattr(_plan, "allowed_template_ids", _Sub.browse()):
+                    _matched = _s
+                    break
+            if not _matched:
+                period_end_by_member[_m.id] = None  # no sub found — no cap
+                continue
+            _cpp = getattr(_matched.plan_id, "credits_per_period", 0)
+            if not _cpp:
+                period_end_by_member[_m.id] = None  # unlimited plan — no cap
+                continue
+            _nbd = _matched.next_billing_date
+            # next_billing_date is the first day of the *next* period, so the
+            # last valid day of the current period is next_billing_date - 1.
+            period_end_by_member[_m.id] = (_nbd - timedelta(days=1)) if _nbd else None
+
         while current <= end:
             if current.weekday() in active_weekdays and current not in existing_dates:
                 start_dt = datetime(current.year, current.month, current.day, hour, minute)
@@ -167,6 +203,11 @@ class DojoClassTemplate(models.Model):
                     else:
                         enroll = pref.should_enroll_on_date(current)
                     if enroll:
+                        # Defer sessions that fall outside the member's current
+                        # billing period — credits for those days aren't issued yet.
+                        _p_end = period_end_by_member.get(member.id)
+                        if _p_end is not None and current > _p_end:
+                            continue
                         Enrollment.with_context(
                             skip_subscription_check=True,
                             skip_course_membership_check=True,
@@ -294,7 +335,8 @@ class DojoClassTemplate(models.Model):
                                 })
                         if to_create:
                             Enrollment.with_context(
-                                skip_course_membership_check=True
+                                skip_course_membership_check=True,
+                                skip_subscription_check=True,
                             ).create(to_create)
         return res
 

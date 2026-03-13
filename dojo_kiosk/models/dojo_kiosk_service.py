@@ -848,10 +848,31 @@ class DojoKioskService(models.AbstractModel):
 
     @api.model
     def close_session(self, session_id):
-        """Mark a session as done."""
+        """Mark a session as done.
+        
+        Requires all enrolled members to have attendance recorded (no pending).
+        Empty sessions (zero enrollments) are always allowed to close.
+        """
         session = self.env["dojo.class.session"].browse(session_id)
         if not session.exists():
             return {"success": False, "error": "Session not found."}
+
+        # Guard: block close if any enrolled member still has attendance_state = pending
+        pending_enrollments = session.enrollment_ids.filtered(
+            lambda e: e.status == "registered" and e.attendance_state == "pending"
+        )
+        if pending_enrollments:
+            count = len(pending_enrollments)
+            return {
+                "success": False,
+                "error": "pending_attendance",
+                "count": count,
+                "message": (
+                    f"{count} member(s) still have attendance pending. "
+                    "Please record attendance for all members before marking done."
+                ),
+            }
+
         session.state = "done"
         return {"success": True}
 

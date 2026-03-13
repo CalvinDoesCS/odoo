@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Restart Odoo web",
+			"type": "shell",
+			"command": "cd /home/calvin/Documents/Work/odoo && docker compose restart web"
+		},
+		{
+			"label": "Check Odoo logs",
+			"type": "shell",
+			"command": "docker logs odoo-web-1 2>&1 | tail -20"
+		}
+	]
+}

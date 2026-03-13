@@ -2,6 +2,20 @@ from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
 
+def _action_open_attendance_wizard(session):
+    """Return the ir.actions dict that opens the quick-attendance wizard for
+    *session* in a popup.  Extracted as a module-level helper so it can be
+    referenced from both the model and from tests."""
+    return {
+        'type': 'ir.actions.act_window',
+        'name': 'Mark Attendance',
+        'res_model': 'dojo.attendance.quick.wizard',
+        'view_mode': 'form',
+        'target': 'new',
+        'context': {'default_session_id': session.id},
+    }
+
+
 class DojoClassSession(models.Model):
     _name = "dojo.class.session"
     _description = "Dojo Class Session"
@@ -84,6 +98,11 @@ class DojoClassSession(models.Model):
                 e.attendance_state != "pending" for e in registered
             )
 
+    def action_open_attendance_wizard(self):
+        """Open the quick attendance marking wizard for this session."""
+        self.ensure_one()
+        return _action_open_attendance_wizard(self)
+
     @api.constrains("start_datetime", "end_datetime")
     def _check_datetime_order(self):
         for session in self:
@@ -95,3 +114,50 @@ class DojoClassSession(models.Model):
         for session in self:
             if session.capacity < 0:
                 raise ValidationError("Capacity cannot be negative.")
+
+    @api.constrains("attendance_complete")
+    def _check_attendance_complete(self):
+        for session in self:
+            if not session.attendance_complete:
+                continue
+            pending = session.enrollment_ids.filtered(
+                lambda e: e.status == "registered" and e.attendance_state == "pending"
+            )
+            if pending:
+                names = ", ".join(pending.mapped("member_id.name"))
+                raise ValidationError(
+                    "Cannot mark attendance complete — the following student(s) are still pending: %s. "
+                    "Please mark each one as present or absent first." % names
+                )
+
+    def write(self, vals):
+        """When a session is marked done, auto-create 'absent' attendance logs
+        for any registered enrollments that are still in 'pending' state.
+        This ensures those students are counted in attendance-rate KPIs rather
+        than being silently excluded from the calculation."""
+        result = super().write(vals)
+        if vals.get("state") == "done":
+            AttLog = self.env["dojo.attendance.log"]
+            for session in self:
+                # Find all registered enrollments still pending
+                pending_enrollments = session.enrollment_ids.filtered(
+                    lambda e: e.status == "registered" and e.attendance_state == "pending"
+                )
+                if not pending_enrollments:
+                    continue
+                # Collect members that already have a log (don't double-create)
+                existing_member_ids = set(
+                    AttLog.search([("session_id", "=", session.id)]).mapped("member_id").ids
+                )
+                for enr in pending_enrollments:
+                    if enr.member_id.id in existing_member_ids:
+                        continue
+                    AttLog.create({
+                        "session_id": session.id,
+                        "member_id": enr.member_id.id,
+                        "enrollment_id": enr.id,
+                        "status": "absent",
+                        "checkin_datetime": session.end_datetime or fields.Datetime.now(),
+                    })
+                    enr.attendance_state = "absent"
+        return result

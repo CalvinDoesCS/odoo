@@ -88,7 +88,6 @@ class DojoOnboardingWizard(models.TransientModel):
     template_ids = fields.Many2many(
         'dojo.class.template',
         string='Add to Class Rosters',
-        domain="[('recurrence_active', '=', True)]",
         help='Add this member to recurring class template rosters so they are auto-enrolled in future sessions.',
     )
     session_ids = fields.Many2many(
@@ -202,6 +201,28 @@ class DojoOnboardingWizard(models.TransientModel):
             'context': self.env.context,
         }
 
+    @api.onchange('role')
+    def _onchange_role(self):
+        """Auto-enable new-household when registering a parent (they are their own guardian)."""
+        if self.role == 'parent':
+            self.create_new_household = True
+
+    def _should_skip_step(self, step_name):
+        """Return True if the given step should be skipped given the current wizard state.
+        Override in sub-modules (always call super()) to add additional skip conditions."""
+        if step_name == 'guardian_setup':
+            # Skip when not creating a new household, or member IS their own guardian
+            return not self.create_new_household or self.role in ('both', 'parent')
+        if step_name == 'enrollment':
+            # Parents don't enrol in a program — they register as account holders only
+            return self.role == 'parent'
+        if step_name == 'auto_enroll':
+            return self.role == 'parent' or not self.template_ids
+        if step_name == 'subscription':
+            # Parents don't need a subscription at registration time
+            return self.role == 'parent'
+        return False
+
     def action_next(self):
         self.ensure_one()
 
@@ -259,30 +280,23 @@ class DojoOnboardingWizard(models.TransientModel):
                     'A subscription plan is required. Please select a plan to continue.'
                 ))
 
-        # ── Advance step, skipping guardian_setup when not creating a new household
-        # or when the member is role='both' (they are their own guardian) ──────────
+        # ── Advance step, cascading over any steps that should be skipped ──────
         idx = self._STEP_ORDER.index(self.step)
-        next_step = self._STEP_ORDER[idx + 1] if idx < len(self._STEP_ORDER) - 1 else self.step
-        if next_step == 'guardian_setup' and (not self.create_new_household or self.role == 'both'):
-            next_step = 'enrollment'
-        # Skip auto_enroll step if no recurring templates were selected
-        if next_step == 'auto_enroll' and not self.template_ids:
-            next_step = 'subscription'
-        self.step = next_step
+        if idx < len(self._STEP_ORDER) - 1:
+            next_idx = idx + 1
+            while next_idx < len(self._STEP_ORDER) - 1 and self._should_skip_step(self._STEP_ORDER[next_idx]):
+                next_idx += 1
+            self.step = self._STEP_ORDER[next_idx]
         return self._reopen_wizard()
 
     def action_back(self):
         self.ensure_one()
         idx = self._STEP_ORDER.index(self.step)
-        prev_step = self._STEP_ORDER[idx - 1] if idx > 0 else self.step
-        # Skip guardian_setup when going back if not on the new-household path
-        # or when the member is role='both' (they are their own guardian)
-        if prev_step == 'guardian_setup' and (not self.create_new_household or self.role == 'both'):
-            prev_step = 'household'
-        # Skip auto_enroll when going back if no templates selected
-        if prev_step == 'auto_enroll' and not self.template_ids:
-            prev_step = 'enrollment'
-        self.step = prev_step
+        if idx > 0:
+            prev_idx = idx - 1
+            while prev_idx > 0 and self._should_skip_step(self._STEP_ORDER[prev_idx]):
+                prev_idx -= 1
+            self.step = self._STEP_ORDER[prev_idx]
         return self._reopen_wizard()
 
     def action_confirm(self):
@@ -290,17 +304,18 @@ class DojoOnboardingWizard(models.TransientModel):
 
         if not self.name:
             raise UserError(_('Member name is required.'))
-        if not self.program_id:
-            raise UserError(_('A program selection is required.'))
-        if not self.plan_id:
-            raise UserError(_('A subscription plan is required.'))
+        if self.role != 'parent':
+            if not self.program_id:
+                raise UserError(_('A program selection is required.'))
+            if not self.plan_id:
+                raise UserError(_('A subscription plan is required.'))
 
         # ── Resolve / create household ────────────────────────────────────────
         household = self.household_id
         guardian_member = None
 
         if self.create_new_household:
-            if self.role == 'both':
+            if self.role in ('both', 'parent'):
                 # The member IS their own guardian — create the household now
                 # and set them as primary_guardian_id after they are created below.
                 hh_name = self.new_household_name or (self.name + ' Household')
@@ -370,16 +385,17 @@ class DojoOnboardingWizard(models.TransientModel):
         # ── Subscription (required) — must be created BEFORE session/template
         # enrollments so the subscription constraint can validate new enrolments.
         # ─────────────────────────────────────────────────────────────────────
-        sub_start = self.subscription_start_date or fields.Date.today()
-        self.env['dojo.member.subscription'].create({
-            'member_id': member.id,
-            'plan_id': self.plan_id.id,
-            'start_date': sub_start,
-            'next_billing_date': sub_start,  # first invoice covers sub_start → sub_start+period
-            'state': 'active',
-            'company_id': self.env.company.id,
-        })
-        # Transition membership state to active now that a plan is assigned
+        if self.plan_id:
+            sub_start = self.subscription_start_date or fields.Date.today()
+            self.env['dojo.member.subscription'].create({
+                'member_id': member.id,
+                'plan_id': self.plan_id.id,
+                'start_date': sub_start,
+                'next_billing_date': sub_start,  # first invoice covers sub_start → sub_start+period
+                'state': 'active',
+                'company_id': self.env.company.id,
+            })
+        # Transition membership state to active
         member.action_set_active()
 
         # ── Program enrollment — access is now controlled by subscription ─────
