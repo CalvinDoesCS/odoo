@@ -845,18 +845,23 @@
     /* ── Programs tab ─────────────────────────────────────────────────── */
     function programsTabHtml(programs, beltHistory, selectedMemberId, isParent) {
         if (!programs || !programs.length) {
-            return '<div class="alert alert-info"><i class="fa fa-info-circle me-2"></i>No programs found. Enroll in a class to see your programs here.</div>';
+            return '<div class="alert alert-info"><i class="fa fa-info-circle me-2"></i>No programs found. Contact your instructor or subscribe to a program to get started.</div>';
         }
-        var html = '';
-        programs.forEach(function(prog) {
-            var progColor = prog.color || '#6C757D';
-            html += '<div class="dojo-program-card mb-4" style="border-left:4px solid ' + esc(progColor) + '">';
+
+        var activePrograms   = programs.filter(function(p){ return p.is_active !== false; });
+        var previousPrograms = programs.filter(function(p){ return p.is_active === false; });
+
+        function programCardHtml(prog, isMuted) {
+            var progColor = isMuted ? '#9aa0a6' : (prog.color || '#6C757D');
+            var html = '';
+            html += '<div class="dojo-program-card mb-4" style="border-left:4px solid ' + esc(progColor) + (isMuted ? ';opacity:.75' : '') + '">';
             html += '<div class="p-4">';
             html += '<div class="d-flex align-items-start justify-content-between gap-2 mb-3">';
             html += '<div><h5 class="fw-bold mb-0">' + esc(prog.name) + '</h5>';
             if (prog.code) html += '<span class="dojo-chip dojo-chip--neutral mt-1">' + esc(prog.code) + '</span>';
+            if (isMuted) html += '<span class="dojo-chip dojo-chip--neutral ms-1" style="color:#9aa0a6">Previous</span>';
             html += '</div>';
-            if (prog.current_rank_id !== null) {
+            if (!isMuted && prog.current_rank_id !== null) {
                 if (prog.test_invite_pending) {
                     html += '<span class="dojo-chip dojo-chip--success align-self-start"><i class="fa fa-check me-1"></i>Belt Test Requested</span>';
                 } else {
@@ -918,15 +923,36 @@
                 });
                 html += '</div></div>';
             }
-            html += '<div class="border-top pt-3 mt-2">';
-            html += '<p class="dojo-field-lbl mb-2"><i class="fa fa-envelope me-1"></i>Message Instructor</p>';
-            html += '<div class="d-flex gap-2">';
-            html += '<textarea class="form-control form-control-sm dojo-msg-input" id="dojoMsgInput_' + prog.id + '" rows="2" placeholder="Write a message to your instructor\u2026" style="resize:none"></textarea>';
-            html += '<button class="btn btn-sm btn-outline-primary dojo-msg-send-btn" data-program-id="' + prog.id + '" data-member-id="' + esc(selectedMemberId || '') + '" style="height:fit-content;align-self:flex-end">Send</button>';
-            html += '</div><div class="dojo-msg-feedback small mt-1" id="dojoMsgFeedback_' + prog.id + '"></div>';
-            html += '</div>';
+            if (!isMuted) {
+                html += '<div class="border-top pt-3 mt-2">';
+                html += '<p class="dojo-field-lbl mb-2"><i class="fa fa-envelope me-1"></i>Message Instructor</p>';
+                html += '<div class="d-flex gap-2">';
+                html += '<textarea class="form-control form-control-sm dojo-msg-input" id="dojoMsgInput_' + prog.id + '" rows="2" placeholder="Write a message to your instructor\u2026" style="resize:none"></textarea>';
+                html += '<button class="btn btn-sm btn-outline-primary dojo-msg-send-btn" data-program-id="' + prog.id + '" data-member-id="' + esc(selectedMemberId || '') + '" style="height:fit-content;align-self:flex-end">Send</button>';
+                html += '</div><div class="dojo-msg-feedback small mt-1" id="dojoMsgFeedback_' + prog.id + '"></div>';
+                html += '</div>';
+            }
             html += '</div></div>';
-        });
+            return html;
+        }
+
+        var html = '';
+
+        if (activePrograms.length) {
+            activePrograms.forEach(function(prog) { html += programCardHtml(prog, false); });
+        } else {
+            html += '<div class="alert alert-info mb-3"><i class="fa fa-info-circle me-2"></i>No active programs. See previous programs below.</div>';
+        }
+
+        if (previousPrograms.length) {
+            html += '<details class="mt-2">';
+            html += '<summary class="dojo-field-lbl mb-3" style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:.4rem">'
+                  + '<i class="fa fa-history me-1"></i>Previous Programs (' + previousPrograms.length + ')'
+                  + '</summary>';
+            previousPrograms.forEach(function(prog) { html += programCardHtml(prog, true); });
+            html += '</details>';
+        }
+
         return html;
     }
 
@@ -1167,7 +1193,16 @@
                 body = allStudentsProgramsHtml(state.studentPrograms);
             } else {
                 var _memberId = state.selectedStudentId || parseInt(root.dataset.memberId, 10);
-                body = programsTabHtml(state.programs, state.beltHistory, _memberId, isParent);
+                // For 'both'-role members the server returns programs inside studentPrograms,
+                // not in the top-level programs array.  Fall back to the student record when
+                // state.programs is empty but a student is pre-selected.
+                var _progs = state.programs;
+                var _hist  = state.beltHistory;
+                if (!_progs.length && state.selectedStudentId && state.studentPrograms.length) {
+                    var _stuData = state.studentPrograms.find(function(s){ return s.id === state.selectedStudentId; });
+                    if (_stuData) { _progs = _stuData.programs || []; _hist = _stuData.belt_history || []; }
+                }
+                body = programsTabHtml(_progs, _hist, _memberId, isParent);
             }
         } else if (state.activeTab === "classes") {
             body = classesTabHtml(state.enrollments, state.sessions, isParent, members, state.autoEnrollPrefs, state.selectedStudentId, state.household);
@@ -1409,17 +1444,22 @@
             });
         });
 
-        root.querySelectorAll(".dojo-tab-btn").forEach(function(btn){
-            btn.addEventListener("click", function(){
+        /* ── Delegated: tab buttons (survive re-renders) ── */
+        root.addEventListener("click", function(ev) {
+            var btn = ev.target.closest(".dojo-tab-btn");
+            if (btn && root.contains(btn)) {
                 state.activeTab = btn.dataset.tab;
                 render(root, state, isParent, members, students, isStudentOnly);
                 var brand = document.querySelector(".o_portal_navbar .navbar-brand");
                 if (brand) brand.textContent = TAB_TITLES[btn.dataset.tab] || "Dojo Portal";
-            });
-        });
+                return;
+            }
 
-        root.querySelectorAll(".dojo-activity-card").forEach(function(card){
-            card.addEventListener("click", function(){
+            /* ── Delegated: clickable cards (survive re-renders) ── */
+            var card = ev.target.closest(".dojo-md3-card--clickable");
+            if (card && root.contains(card)) {
+                // Ignore clicks on interactive children (buttons, links)
+                if (ev.target.closest("button,a")) return;
                 var type = card.dataset.type;
                 var id = parseInt(card.dataset.id, 10);
                 var item = null;
@@ -1429,7 +1469,7 @@
                 if (item) openOverlay(type, item, isParent, members, state, function() {
                     render(root, state, isParent, members, students, isStudentOnly);
                 });
-            });
+            }
         });
 
         var editBtn = document.getElementById("dojoEditHouseholdBtn");

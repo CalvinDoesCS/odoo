@@ -8,7 +8,7 @@
           name="Checkout: Upgrade CTA">
 
     <!-- Inject immediately after the dojo-hero card -->
-    <xpath expr="//div[hasclass('card') and hasclass('dojo-hero')]" position="after">
+    <xpath expr="//div[hasclass('dojo-hero')]" position="after">
         <t t-if="member and member.membership_state in ('lead', 'trial')">
             <div class="alert dojo-upgrade-cta d-flex align-items-center gap-3 flex-wrap mb-4" role="alert"
                  style="background:linear-gradient(135deg,#0d6efd 0%,#0dcaf0 100%);color:#fff;border:none;border-radius:12px;padding:1.25rem 1.5rem;">

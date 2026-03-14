@@ -752,26 +752,56 @@ class DojoMemberPortal(CustomerPortal):
 
     # ── Private helpers ────────────────────────────────────────────────────
     def _build_programs_for_member(self, target):
-        """Build programs data list for a given dojo.member record."""
+        """Build programs data list for a given dojo.member record.
+
+        Uses ``dojo.program.enrollment`` as the authoritative source for which
+        programs the member belongs to (active and historical).  Class-template
+        associations are still populated from the course roster / session history
+        so the card can show which classes are included.
+        """
         env = request.env
-        # Source 1: explicit course-roster membership
+
+        # ── Source: program enrollment records ──────────────────────────────
+        enrollments = env['dojo.program.enrollment'].sudo().search([
+            ('member_id', '=', target.id),
+        ], order='is_active desc, enrolled_date desc')
+
+        if not enrollments:
+            return []
+
+        # Deduplicate programs: for each unique program keep is_active=True if any
+        # enrollment for that program is currently active.
+        program_active_map = {}  # program_id → {'program': record, 'is_active': bool}
+        for enr in enrollments:
+            pid = enr.program_id.id
+            if pid not in program_active_map:
+                program_active_map[pid] = {
+                    'program': enr.program_id,
+                    'is_active': enr.is_active,
+                }
+            elif enr.is_active:
+                program_active_map[pid]['is_active'] = True
+
+        # ── Class templates shown in each program card ───────────────────────
+        # Still inferred from roster + session history (independent of enrollments)
         roster_templates = target.enrolled_template_ids
-        # Source 2: templates the member has actually enrolled in via class sessions
         enrollment_recs = env['dojo.class.enrollment'].sudo().search([
             ('member_id', '=', target.id),
             ('status', '!=', 'cancelled'),
         ])
         enrollment_templates = enrollment_recs.mapped('session_id.template_id')
-        all_template_ids = set(roster_templates.ids) | set(enrollment_templates.ids)
-        enrolled_templates = env['dojo.class.template'].sudo().browse(list(all_template_ids))
-        program_map = {}
-        for t in enrolled_templates:
+        all_templates = roster_templates | enrollment_templates
+
+        templates_by_program = {}
+        for t in all_templates:
             if t.program_id:
                 pid = t.program_id.id
-                if pid not in program_map:
-                    program_map[pid] = {'program': t.program_id, 'templates': []}
-                if t.id not in [x.id for x in program_map[pid]['templates']]:
-                    program_map[pid]['templates'].append(t)
+                if pid not in templates_by_program:
+                    templates_by_program[pid] = []
+                if t.id not in [x.id for x in templates_by_program[pid]]:
+                    templates_by_program[pid].append(t)
+
+        # ── Belt path metadata ────────────────────────────────────────────────
         ODOO_COLORS = [
             '#714B67', '#017E84', '#0D6EFD', '#17A2B8', '#28A745',
             '#FFC107', '#DC3545', '#6F42C1', '#E83E8C', '#FD7E14',
@@ -779,15 +809,16 @@ class DojoMemberPortal(CustomerPortal):
         ]
         current_rank = getattr(target, 'current_rank_id', None) or None
         test_pending = bool(getattr(target, 'test_invite_pending', False))
-        # Gather full rank history once — filter per program below
         all_rank_history = getattr(target, 'rank_history_ids', env['dojo.member.rank'].sudo().browse([]))
         all_company_ranks = env['dojo.belt.rank'].sudo().search(
             [('company_id', '=', target.company_id.id), ('active', '=', True)],
             order='sequence asc',
         )
+
         programs_data = []
-        for pdata in program_map.values():
+        for pdata in program_active_map.values():
             prog = pdata['program']
+            is_active = pdata['is_active']
             prog_belts = prog.belt_rank_ids.sorted(lambda r: r.sequence)
             belt_path = prog_belts if prog_belts else all_company_ranks
             path_ids = belt_path.ids
@@ -816,9 +847,10 @@ class DojoMemberPortal(CustomerPortal):
                 'name': prog.name or '',
                 'code': prog.code or '',
                 'color': prog_color,
+                'is_active': is_active,
                 'templates': [
                     {'id': t.id, 'name': t.name or '', 'level': t.level or 'all'}
-                    for t in pdata['templates']
+                    for t in templates_by_program.get(prog.id, [])
                 ],
                 'belt_path': [
                     {'id': r.id, 'name': r.name or '', 'color': r.color or '#cccccc', 'sequence': r.sequence}

@@ -477,3 +477,92 @@ class DojoMemberSubscription(models.Model):
                 'Invoice %s overdue (due %s, unpaid)'
                 % (sub.last_invoice_id.name, sub.last_invoice_id.invoice_date_due)
             )
+
+    # ── Program Enrollment auto-management ───────────────────────────────
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        Enrollment = self.env['dojo.program.enrollment'].sudo()
+        today = fields.Date.today()
+        for rec in records:
+            if not rec.program_id or rec.state not in ('active', 'draft'):
+                continue
+            # Only create for active (most subscriptions are created as active)
+            if rec.state != 'active':
+                continue
+            # Avoid duplicate active enrollments for the same sub
+            existing = Enrollment.search([
+                ('member_id', '=', rec.member_id.id),
+                ('program_id', '=', rec.program_id.id),
+                ('subscription_id', '=', rec.id),
+            ], limit=1)
+            if not existing:
+                Enrollment.create({
+                    'member_id': rec.member_id.id,
+                    'program_id': rec.program_id.id,
+                    'subscription_id': rec.id,
+                    'is_active': True,
+                    'enrolled_date': rec.start_date or today,
+                    'company_id': rec.company_id.id,
+                })
+        return records
+
+    def write(self, vals):
+        # Snapshot state before the write so we can detect transitions
+        old_states = {rec.id: rec.state for rec in self}
+        result = super().write(vals)
+
+        if 'state' not in vals:
+            return result
+
+        new_state = vals['state']
+        today = fields.Date.today()
+        Enrollment = self.env['dojo.program.enrollment'].sudo()
+
+        for rec in self:
+            old_state = old_states.get(rec.id)
+            if old_state == new_state or not rec.program_id:
+                continue
+
+            if new_state in ('cancelled', 'expired'):
+                # Deactivate all active enrollment records for this subscription
+                enrollments = Enrollment.search([
+                    ('subscription_id', '=', rec.id),
+                    ('is_active', '=', True),
+                ])
+                if enrollments:
+                    enrollments.write({
+                        'is_active': False,
+                        'deactivated_date': today,
+                    })
+
+            elif new_state == 'active' and old_state in ('expired', 'paused', 'cancelled', 'draft'):
+                # Reactivate the enrollment(s) belonging to this subscription
+                enrollments = Enrollment.search([
+                    ('subscription_id', '=', rec.id),
+                    ('is_active', '=', False),
+                ])
+                if enrollments:
+                    enrollments.write({
+                        'is_active': True,
+                        'deactivated_date': False,
+                    })
+                else:
+                    # No existing enrollment record — create a fresh one
+                    # (handles manual reactivation or subscriptions created as draft)
+                    existing = Enrollment.search([
+                        ('member_id', '=', rec.member_id.id),
+                        ('program_id', '=', rec.program_id.id),
+                        ('subscription_id', '=', rec.id),
+                    ], limit=1)
+                    if not existing:
+                        Enrollment.create({
+                            'member_id': rec.member_id.id,
+                            'program_id': rec.program_id.id,
+                            'subscription_id': rec.id,
+                            'is_active': True,
+                            'enrolled_date': rec.start_date or today,
+                            'company_id': rec.company_id.id,
+                        })
+
+        return result

@@ -6,3 +6,4 @@ from . import dojo_account_move
 from . import dojo_class_template_inherit
 from . import dojo_class_enrollment_inherit
 from . import dojo_member_weekly_counter
+from . import dojo_program_enrollment
